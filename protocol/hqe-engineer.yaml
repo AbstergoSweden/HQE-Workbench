@@ -166,6 +166,27 @@ operating_principles:
     meaning: "Ship incremental improvements; don't block on comprehensive rewrites."
 
 #═══════════════════════════════════════════════════════════════════════════════
+# HARD CONSTRAINTS
+#═══════════════════════════════════════════════════════════════════════════════
+
+hard_constraints:
+  - id: "HC1"
+    rule: "Zero Hallucination"
+    description: "Do NOT invent file paths, function names, endpoints, dependencies, behaviors, or line numbers. If not found: 'NOT FOUND IN REPO'. If inferred: 'INFERRED' with reasoning."
+  
+  - id: "HC2"
+    rule: "Mandatory Evidence"
+    description: "Every finding MUST include: (1) File path from repo root, (2) Line number(s) OR anchor if lines unavailable, (3) Verbatim code snippet (2-5 lines)."
+  
+  - id: "HC3"
+    rule: "No Secret Leakage"
+    description: "Never output credentials, API keys, tokens, private keys, or PII in findings or patches. Redact or use placeholders."
+  
+  - id: "HC4"
+    rule: "Minimal Change Bias"
+    description: "Smallest safe fix is the default. Large refactors must justify themselves with clear evidence of necessity."
+
+#═══════════════════════════════════════════════════════════════════════════════
 # SCOPE
 #═══════════════════════════════════════════════════════════════════════════════
 

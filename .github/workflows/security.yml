@@ -20,21 +20,23 @@ jobs:
             - name: Run audit
               run: cargo audit
 
-    scorecard:
-        name: OpenSSF Scorecard
-        runs-on: ubuntu-latest
-        permissions:
-            security-events: write
-            id-token: write
-            contents: read
-            actions: read
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  persist-credentials: false
-            - name: Run analysis
-              uses: ossf/scorecard-action@v2.3.1
-              with:
-                  results_file: results.sarif
-                  results_format: sarif
-                  publish_results: true
+    # OpenSSF Scorecard disabled for private repositories
+    # Re-enable when repository becomes public or when GitHub App permissions are configured
+    # scorecard:
+    #     name: OpenSSF Scorecard
+    #     runs-on: ubuntu-latest
+    #     permissions:
+    #         security-events: write
+    #         id-token: write
+    #         contents: read
+    #         actions: read
+    #     steps:
+    #         - uses: actions/checkout@v4
+    #           with:
+    #               persist-credentials: false
+    #         - name: Run analysis
+    #           uses: ossf/scorecard-action@v2.3.1
+    #           with:
+    #               results_file: results.sarif
+    #               results_format: sarif
+    #               publish_results: true

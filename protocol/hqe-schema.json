@@ -18,13 +18,17 @@
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+$",
       "description": "Semantic version of the schema",
-      "examples": ["3.1.0"]
+      "examples": [
+        "3.1.0"
+      ]
     },
     "protocol_version": {
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+$",
       "description": "Semantic version of the protocol",
-      "examples": ["3.1.0"]
+      "examples": [
+        "3.1.0"
+      ]
     },
     "last_updated": {
       "type": "string",
@@ -34,7 +38,11 @@
     "license": {
       "type": "string",
       "description": "SPDX license identifier",
-      "examples": ["MIT", "Apache-2.0", "CC0-1.0"]
+      "examples": [
+        "MIT",
+        "Apache-2.0",
+        "CC0-1.0"
+      ]
     },
     "maintainer": {
       "type": "string",
@@ -114,11 +122,14 @@
       "$ref": "#/$defs/Metadata"
     }
   },
-  "additionalProperties": false,
+  "additionalProperties": true,
   "$defs": {
     "Role": {
       "type": "object",
-      "required": ["title", "mandate"],
+      "required": [
+        "title",
+        "mandate"
+      ],
       "properties": {
         "title": {
           "type": "string",
@@ -134,18 +145,22 @@
           "additionalProperties": {
             "type": "string"
           },
-          "examples": [{
-            "default": "Principal Engineer",
-            "security": "Penetration Tester for security-focused audits",
-            "performance": "Performance Optimizer for perf-related scans"
-          }]
+          "examples": [
+            {
+              "default": "Principal Engineer",
+              "security": "Penetration Tester for security-focused audits",
+              "performance": "Performance Optimizer for perf-related scans"
+            }
+          ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "OutputStructure": {
       "type": "object",
-      "required": ["order"],
+      "required": [
+        "order"
+      ],
       "properties": {
         "order": {
           "type": "array",
@@ -162,11 +177,16 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "OutputSection": {
       "type": "object",
-      "required": ["id", "title", "content", "required"],
+      "required": [
+        "id",
+        "title",
+        "content",
+        "required"
+      ],
       "properties": {
         "id": {
           "type": "string"
@@ -184,7 +204,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "HardConstraints": {
       "type": "array",
@@ -195,7 +215,11 @@
     },
     "HardConstraint": {
       "type": "object",
-      "required": ["id", "rule", "description"],
+      "required": [
+        "id",
+        "rule",
+        "description"
+      ],
       "properties": {
         "id": {
           "type": "string"
@@ -207,11 +231,15 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "NoStallRule": {
       "type": "object",
-      "required": ["description", "requirements", "enforcement"],
+      "required": [
+        "description",
+        "requirements",
+        "enforcement"
+      ],
       "properties": {
         "description": {
           "type": "string"
@@ -226,11 +254,14 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "ChangeBudget": {
       "type": "object",
-      "required": ["description", "rules"],
+      "required": [
+        "description",
+        "rules"
+      ],
       "properties": {
         "description": {
           "type": "string"
@@ -242,11 +273,14 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "AntiRegressionRule": {
       "type": "object",
-      "required": ["description", "requirements"],
+      "required": [
+        "description",
+        "requirements"
+      ],
       "properties": {
         "description": {
           "type": "string"
@@ -258,11 +292,13 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "VerificationHonestyPolicy": {
       "type": "object",
-      "required": ["rules"],
+      "required": [
+        "rules"
+      ],
       "properties": {
         "rules": {
           "type": "array",
@@ -274,11 +310,15 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "StopTheLineCriteria": {
       "type": "object",
-      "required": ["description", "criteria", "flag_format"],
+      "required": [
+        "description",
+        "criteria",
+        "flag_format"
+      ],
       "properties": {
         "description": {
           "type": "string"
@@ -293,11 +333,14 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "DefinitionOfDone": {
       "type": "object",
-      "required": ["description", "checklist"],
+      "required": [
+        "description",
+        "checklist"
+      ],
       "properties": {
         "description": {
           "type": "string"
@@ -309,11 +352,14 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "ChecklistItem": {
       "type": "object",
-      "required": ["item", "required"],
+      "required": [
+        "item",
+        "required"
+      ],
       "properties": {
         "item": {
           "type": "string"
@@ -322,7 +368,7 @@
           "type": "boolean"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "OperatingPrinciples": {
       "type": "array",
@@ -333,7 +379,10 @@
     },
     "OperatingPrinciple": {
       "type": "object",
-      "required": ["principle", "meaning"],
+      "required": [
+        "principle",
+        "meaning"
+      ],
       "properties": {
         "principle": {
           "type": "string"
@@ -342,7 +391,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "HealthScoreRubric": {
       "type": "object",
@@ -357,14 +406,16 @@
               "type": "string"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "EvidenceRequirements": {
       "type": "object",
-      "required": ["acceptable_formats"],
+      "required": [
+        "acceptable_formats"
+      ],
       "properties": {
         "acceptable_formats": {
           "type": "array",
@@ -379,18 +430,18 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "Phases": {
       "type": "object",
       "required": [
         "phase_minus_one",
         "phase_zero",
+        "phase_zero_five",
         "phase_one",
         "phase_two",
         "phase_three",
-        "phase_four",
-        "phase_five"
+        "phase_four"
       ],
       "properties": {
         "phase_minus_one": {
@@ -413,13 +464,21 @@
         },
         "phase_five": {
           "$ref": "#/$defs/PhaseFive"
+        },
+        "phase_zero_five": {
+          "$ref": "#/$defs/Phase"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseMinusOne": {
       "type": "object",
-      "required": ["id", "name", "condition", "process"],
+      "required": [
+        "id",
+        "name",
+        "condition",
+        "process"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -447,11 +506,14 @@
           "description": "Step-by-step reasoning instructions for this phase"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "ProcessStep": {
       "type": "object",
-      "required": ["step", "action"],
+      "required": [
+        "step",
+        "action"
+      ],
       "properties": {
         "step": {
           "type": "integer"
@@ -475,11 +537,16 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseZero": {
       "type": "object",
-      "required": ["id", "name", "description", "sections"],
+      "required": [
+        "id",
+        "name",
+        "description",
+        "sections"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -501,11 +568,14 @@
           "description": "Step-by-step reasoning instructions for this phase"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseZeroSection": {
       "type": "object",
-      "required": ["name", "checklist"],
+      "required": [
+        "name",
+        "checklist"
+      ],
       "properties": {
         "name": {
           "type": "string"
@@ -514,17 +584,26 @@
           "type": "array",
           "items": {
             "anyOf": [
-              { "type": "string" },
-              { "type": "object" }
+              {
+                "type": "string"
+              },
+              {
+                "type": "object"
+              }
             ]
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseOne": {
       "type": "object",
-      "required": ["id", "name", "id_prefix", "mandate"],
+      "required": [
+        "id",
+        "name",
+        "id_prefix",
+        "mandate"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -545,8 +624,12 @@
           "type": "array",
           "items": {
             "anyOf": [
-              { "type": "string" },
-              { "type": "object" }
+              {
+                "type": "string"
+              },
+              {
+                "type": "object"
+              }
             ]
           }
         },
@@ -570,11 +653,16 @@
           "description": "Step-by-step reasoning instructions for this phase"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseTwo": {
       "type": "object",
-      "required": ["id", "name", "finding_format", "sections"],
+      "required": [
+        "id",
+        "name",
+        "finding_format",
+        "sections"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -596,11 +684,15 @@
           "description": "Step-by-step reasoning instructions for this phase"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseTwoSection": {
       "type": "object",
-      "required": ["id", "name", "checklist"],
+      "required": [
+        "id",
+        "name",
+        "checklist"
+      ],
       "properties": {
         "id": {
           "type": "string"
@@ -615,11 +707,18 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseThree": {
       "type": "object",
-      "required": ["id", "name", "schema", "severity_definitions", "risk_definitions", "id_prefixes"],
+      "required": [
+        "id",
+        "name",
+        "schema",
+        "severity_definitions",
+        "risk_definitions",
+        "id_prefixes"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -654,11 +753,15 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseFour": {
       "type": "object",
-      "required": ["id", "name", "phases"],
+      "required": [
+        "id",
+        "name",
+        "phases"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -679,11 +782,14 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "ImplementationPhase": {
       "type": "object",
-      "required": ["name", "items"],
+      "required": [
+        "name",
+        "items"
+      ],
       "properties": {
         "name": {
           "type": "string"
@@ -698,11 +804,16 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "PhaseFive": {
       "type": "object",
-      "required": ["id", "name", "patch_packaging", "execution_rules"],
+      "required": [
+        "id",
+        "name",
+        "patch_packaging",
+        "execution_rules"
+      ],
       "properties": {
         "id": {
           "type": "integer"
@@ -723,11 +834,14 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "SessionLog": {
       "type": "object",
-      "required": ["required", "format"],
+      "required": [
+        "required",
+        "format"
+      ],
       "properties": {
         "required": {
           "type": "boolean"
@@ -736,11 +850,14 @@
           "type": "object"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "QualityGates": {
       "type": "object",
-      "required": ["description", "checklist"],
+      "required": [
+        "description",
+        "checklist"
+      ],
       "properties": {
         "description": {
           "type": "string"
@@ -752,7 +869,7 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "EscapeHatches": {
       "type": "object",
@@ -764,17 +881,18 @@
           "type": "object"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "AntiPatterns": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/AntiPattern"
-      }
+      "type": "object",
+      "additionalProperties": true
     },
     "AntiPattern": {
       "type": "object",
-      "required": ["dont", "do_instead"],
+      "required": [
+        "dont",
+        "do_instead"
+      ],
       "properties": {
         "dont": {
           "type": "string"
@@ -783,7 +901,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "InvocationExamples": {
       "type": "array",
@@ -793,7 +911,10 @@
     },
     "InvocationExample": {
       "type": "object",
-      "required": ["context", "prompt"],
+      "required": [
+        "context",
+        "prompt"
+      ],
       "properties": {
         "context": {
           "type": "string"
@@ -802,7 +923,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "EntryPoint": {
       "type": "object",
@@ -811,7 +932,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "Changelog": {
       "type": "array",
@@ -821,7 +942,11 @@
     },
     "ChangelogEntry": {
       "type": "object",
-      "required": ["version", "date", "additions"],
+      "required": [
+        "version",
+        "date",
+        "additions"
+      ],
       "properties": {
         "version": {
           "type": "string",
@@ -838,11 +963,14 @@
           }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "ChangelogAddition": {
       "type": "object",
-      "required": ["item", "purpose"],
+      "required": [
+        "item",
+        "purpose"
+      ],
       "properties": {
         "item": {
           "type": "string"
@@ -851,7 +979,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "Metadata": {
       "type": "object",
@@ -869,7 +997,11 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
+    },
+    "Phase": {
+      "type": "object",
+      "additionalProperties": true
     }
   }
 }
