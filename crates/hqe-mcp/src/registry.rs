@@ -3,7 +3,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use anyhow::{Result, anyhow};
+use anyhow::Result;
+use thiserror::Error;
 use hqe_protocol::models::MCPToolDefinition;
 use serde_json::Value;
 use jsonschema::JSONSchema;
@@ -32,30 +33,21 @@ pub struct RegisteredTool {
 }
 
 /// Errors that can occur during tool operations
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ToolError {
     /// Tool not found
+    #[error("Tool not found: {0}")]
     NotFound(String),
     /// Invalid arguments provided
+    #[error("Invalid arguments: {0}")]
     InvalidArguments(String),
     /// Schema compilation failed
+    #[error("Schema error: {0}")]
     SchemaError(String),
     /// Handler execution failed
+    #[error("Execution error: {0}")]
     ExecutionError(String),
 }
-
-impl std::fmt::Display for ToolError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ToolError::NotFound(name) => write!(f, "Tool not found: {}", name),
-            ToolError::InvalidArguments(msg) => write!(f, "Invalid arguments: {}", msg),
-            ToolError::SchemaError(msg) => write!(f, "Schema error: {}", msg),
-            ToolError::ExecutionError(msg) => write!(f, "Execution error: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for ToolError {}
 
 impl ToolRegistry {
     /// Create a new empty registry
@@ -64,14 +56,15 @@ impl ToolRegistry {
     }
 
     /// Compile a JSON schema for validation
-    fn compile_schema(schema: &Value) -> anyhow::Result<JSONSchema> {
+    fn compile_schema(schema: &Value) -> Result<JSONSchema, ToolError> {
         JSONSchema::compile(schema)
-            .map_err(|e| anyhow::anyhow!("Failed to compile schema: {}", e))
+            .map_err(|e| ToolError::SchemaError(e.to_string()))
     }
 
     /// Register a new tool from a topic.
     /// Compiles the input schema for validation.
-    pub async fn register_tool(&self, topic_id: &str, def: MCPToolDefinition, handler: ToolHandler) {
+    /// Returns error if schema compilation fails.
+    pub async fn register_tool(&self, topic_id: &str, def: MCPToolDefinition, handler: ToolHandler) -> Result<(), ToolError> {
         let mut tools = self.tools.write().await;
         let key = format!("{}__{}", topic_id, def.name);
         
@@ -83,10 +76,10 @@ impl ToolRegistry {
             }
             Err(e) => {
                 warn!(
-                    "Failed to compile schema for tool {}: {}. Validation will be skipped.",
+                    "Failed to compile schema for tool {}: {}. Tool cannot be registered.",
                     def.name, e
                 );
-                None
+                return Err(e);
             }
         };
         
@@ -96,6 +89,8 @@ impl ToolRegistry {
             topic_id: topic_id.to_string(),
             schema_validator,
         });
+
+        Ok(())
     }
 
     /// List all registered tools.
@@ -136,21 +131,19 @@ impl ToolRegistry {
 
     /// Call a tool by name (format: "topic__toolname" or just "toolname" if unique).
     /// Validates arguments against the tool's input schema before calling.
-    pub async fn call_tool(&self, name: &str, args: Value) -> Result<Value> {
+    pub async fn call_tool(&self, name: &str, args: Value) -> Result<Value, ToolError> {
         let tools = self.tools.read().await;
         
         // Simple lookup for now
         if let Some(tool) = tools.get(name) {
             // Validate arguments against schema
-            if let Err(e) = Self::validate_args(tool, &args) {
-                return Err(anyhow!(e));
-            }
+            Self::validate_args(tool, &args)?;
             
             // Call the handler
-            return (tool.handler)(args).await;
+            return (tool.handler)(args).await.map_err(|e| ToolError::ExecutionError(e.to_string()));
         }
         
-        Err(anyhow!("Tool not found: {}", name))
+        Err(ToolError::NotFound(name.to_string()))
     }
 
     /// Get a tool's definition by name
@@ -201,7 +194,7 @@ mod tests {
             }),
         };
         
-        registry.register_tool("test_topic", def, create_test_handler()).await;
+        registry.register_tool("test_topic", def, create_test_handler()).await.expect("Failed to register tool");
         
         let tools = registry.list_tools().await;
         assert_eq!(tools.len(), 1);
@@ -224,7 +217,7 @@ mod tests {
             }),
         };
         
-        registry.register_tool("test_topic", def, create_test_handler()).await;
+        registry.register_tool("test_topic", def, create_test_handler()).await.expect("Failed to register tool");
         
         // Valid args
         let result = registry.call_tool(
@@ -251,7 +244,7 @@ mod tests {
             }),
         };
         
-        registry.register_tool("test_topic", def, create_test_handler()).await;
+        registry.register_tool("test_topic", def, create_test_handler()).await.expect("Failed to register tool");
         
         // Invalid args - negative count violates minimum
         let result = registry.call_tool(
@@ -275,5 +268,31 @@ mod tests {
         
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Tool not found"));
+    }
+
+    #[tokio::test]
+    async fn test_register_invalid_schema() {
+        let registry = ToolRegistry::new();
+        
+        let def = MCPToolDefinition {
+            name: "invalid_tool".to_string(),
+            description: "A tool with invalid schema".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "count": { "type": "unknown_type" } // "unknown_type" is not valid JSON schema
+                }
+            }),
+        };
+        
+        // registration should fail
+        let result = registry.register_tool("test_topic", def, create_test_handler()).await;
+        
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        match err {
+            ToolError::SchemaError(_) => {}, // Expected
+            _ => panic!("Expected SchemaError, got {:?}", err),
+        }
     }
 }

@@ -1,10 +1,53 @@
-use anyhow::{Context, Result};
+use std::path::{Path, PathBuf};
+use thiserror::Error;
 use hqe_protocol::models::MCPToolDefinition;
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 use walkdir::WalkDir;
 use serde_json::json;
+
+/// Errors that can occur during prompt loading
+#[derive(Debug, Error)]
+pub enum LoaderError {
+    /// IO operation failed
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// Path traversal detected
+    #[error("Path traversal detected: file '{0}' is outside allowed directory")]
+    PathTraversal(PathBuf),
+
+    /// Failed to parse TOML
+    #[error("Failed to parse TOML in {path}: {source}")]
+    ParseToml {
+        /// File path
+        path: PathBuf,
+        /// Underlying error
+        source: toml::de::Error,
+    },
+
+    /// Failed to parse YAML
+    #[error("Failed to parse YAML in {path}: {source}")]
+    ParseYaml {
+        /// File path
+        path: PathBuf,
+        /// Underlying error
+        source: serde_yaml::Error,
+    },
+
+    /// Path canonicalization failed
+    #[error("Failed to canonicalize path {path}: {source}")]
+    Canonicalization {
+        /// The path that failed
+        path: PathBuf,
+        /// The underlying error
+        source: std::io::Error,
+    },
+
+    /// Failed to strip prefix
+    #[error("Failed to strip prefix from path: {0}")]
+    StripPrefix(#[from] std::path::StripPrefixError),
+}
 
 /// A loaded prompt file parsed from disk
 #[derive(Debug, Clone, Deserialize)]
@@ -51,7 +94,7 @@ impl PromptLoader {
     }
 
     /// Load all prompt files from the root directory
-    pub fn load(&self) -> Result<Vec<LoadedPromptTool>> {
+    pub fn load(&self) -> Result<Vec<LoadedPromptTool>, LoaderError> {
         let mut tools = Vec::new();
         info!("Scanning prompts from: {}", self.root_path.display());
 
@@ -77,27 +120,25 @@ impl PromptLoader {
         Ok(tools)
     }
 
-    fn load_prompt_file(&self, path: &Path) -> Result<LoadedPromptTool> {
+    fn load_prompt_file(&self, path: &Path) -> Result<LoadedPromptTool, LoaderError> {
         // Security: Validate the file is within the root directory (prevent path traversal)
         let canonical_path = path.canonicalize()
-            .with_context(|| format!("Failed to canonicalize path: {}", path.display()))?;
+            .map_err(|e| LoaderError::Canonicalization { path: path.to_path_buf(), source: e })?;
         let canonical_root = self.root_path.canonicalize()
-            .with_context(|| format!("Failed to canonicalize root path: {}", self.root_path.display()))?;
+            .map_err(|e| LoaderError::Canonicalization { path: self.root_path.clone(), source: e })?;
         
         if !canonical_path.starts_with(&canonical_root) {
-            anyhow::bail!("Path traversal detected: file '{}' is outside the allowed directory", 
-                path.display());
+            return Err(LoaderError::PathTraversal(path.to_path_buf()));
         }
 
-        let content = std::fs::read_to_string(&canonical_path)
-            .with_context(|| format!("Failed to read file: {}", canonical_path.display()))?;
+        let content = std::fs::read_to_string(&canonical_path)?;
 
         let prompt_file: PromptFile = if canonical_path.extension().is_some_and(|e| e == "toml") {
             toml::from_str(&content)
-                .with_context(|| format!("Failed to parse TOML: {}", canonical_path.display()))?
+                .map_err(|e| LoaderError::ParseToml { path: canonical_path.clone(), source: e })?
         } else {
             serde_yaml::from_str(&content)
-                .with_context(|| format!("Failed to parse YAML: {}", canonical_path.display()))?
+                .map_err(|e| LoaderError::ParseYaml { path: canonical_path.clone(), source: e })?
         };
 
         // Determine tool name from file path relative to root

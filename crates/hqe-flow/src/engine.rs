@@ -67,7 +67,7 @@ impl FlowEngine {
                 let args = step.params.clone(); 
                 
                 info!("Step {}: Calling tool {}", step.id, tool_name);
-                self.tool_registry.call_tool(tool_name, args).await
+                self.tool_registry.call_tool(tool_name, args).await.map_err(|e| anyhow!(e))
             }
             _ => Err(anyhow!("Unknown action: {}", step.action)),
         }

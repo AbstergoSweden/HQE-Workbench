@@ -29,7 +29,7 @@ async fn test_flow_execution() -> anyhow::Result<()> {
                 }))
             })
         })
-    ).await;
+    ).await.expect("Failed to register tool");
 
     // 3. Register a Flow that uses the tool
     let flow = WorkflowDefinition {

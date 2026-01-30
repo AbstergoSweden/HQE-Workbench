@@ -275,7 +275,10 @@ async fn handle_prompt(
             })
         });
 
-        registry.register_tool("prompts", tool.definition, handler).await;
+        let tool_name = tool.definition.name.clone();
+        if let Err(e) = registry.register_tool("prompts", tool.definition, handler).await {
+            tracing::warn!("Failed to register tool '{}': {}", tool_name, e);
+        }
     }
 
     // 4. Execute the requested tool

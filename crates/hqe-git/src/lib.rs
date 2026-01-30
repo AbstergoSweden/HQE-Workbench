@@ -6,8 +6,52 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use thiserror::Error;
 use tokio::process::Command;
 use tracing::{debug, error, info, instrument};
+
+/// Errors that can occur during git operations
+#[derive(Debug, Error)]
+pub enum GitError {
+    /// IO operation failed
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// Path canonicalization failed
+    #[error("Failed to canonicalize path {path}: {source}")]
+    PathCanonicalization {
+        /// The path that failed to canonicalize
+        path: PathBuf,
+        /// The underlying error
+        source: std::io::Error,
+    },
+
+    /// Not a git repository
+    #[error("Not a git repository: {0}")]
+    NotARepository(PathBuf),
+
+    /// Git command failed
+    #[error("Git command failed: {stderr}")]
+    CommandFailed {
+        /// Standard output
+        stdout: String,
+        /// Standard error
+        stderr: String,
+    },
+
+    /// Clone operation failed
+    #[error("Clone failed: {0}")]
+    CloneFailed(String),
+
+    /// Operation failed
+    #[error("Failed to {operation}: {details}")]
+    OperationFailed {
+        /// The operation that failed
+        operation: String,
+        /// Details of the failure
+        details: String,
+    },
+}
 
 /// Git repository handle
 #[derive(Debug, Clone)]
@@ -57,15 +101,15 @@ pub struct CommitInfo {
 
 impl GitRepo {
     /// Open a git repository at the given path
-    pub async fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub async fn open(path: impl AsRef<Path>) -> Result<Self, GitError> {
         let path = path.as_ref().to_path_buf();
         let canonical_path = tokio::fs::canonicalize(&path).await
-            .map_err(|e| anyhow::anyhow!("Failed to canonicalize path {}: {}", path.display(), e))?;
+            .map_err(|e| GitError::PathCanonicalization { path: path.clone(), source: e })?;
 
         // Verify it's a git repo
         let git_dir = canonical_path.join(".git");
         if tokio::fs::metadata(&git_dir).await.is_err() {
-            anyhow::bail!("Not a git repository: {}", canonical_path.display());
+            return Err(GitError::NotARepository(canonical_path));
         }
 
         Ok(Self { path: canonical_path })
@@ -84,7 +128,9 @@ impl GitRepo {
 
     /// Run a git command
     #[instrument(skip(self))]
-    async fn run_git(&self, args: &[&str]) -> anyhow::Result<GitResult> {
+    /// Run a git command
+    #[instrument(skip(self))]
+    async fn run_git(&self, args: &[&str]) -> Result<GitResult, GitError> {
         let mut cmd = Command::new("git");
         cmd.current_dir(&self.path)
             .args(args)
@@ -111,43 +157,52 @@ impl GitRepo {
     }
 
     /// Get current status
-    pub async fn status(&self) -> anyhow::Result<String> {
+    pub async fn status(&self) -> Result<String, GitError> {
         let result = self.run_git(&["status", "--porcelain"]).await?;
         if result.success {
             Ok(result.stdout)
         } else {
-            anyhow::bail!("Failed to get status: {}", result.stderr)
+            Err(GitError::OperationFailed {
+                operation: "get status".to_string(),
+                details: result.stderr,
+            })
         }
     }
 
     /// Check if working directory is clean
-    pub async fn is_clean(&self) -> anyhow::Result<bool> {
+    pub async fn is_clean(&self) -> Result<bool, GitError> {
         let status = self.status().await?;
         Ok(status.trim().is_empty())
     }
 
     /// Get current branch name
-    pub async fn current_branch(&self) -> anyhow::Result<String> {
+    pub async fn current_branch(&self) -> Result<String, GitError> {
         let result = self.run_git(&["rev-parse", "--abbrev-ref", "HEAD"]).await?;
         if result.success {
             Ok(result.stdout.trim().to_string())
         } else {
-            anyhow::bail!("Failed to get branch: {}", result.stderr)
+            Err(GitError::OperationFailed {
+                operation: "get branch".to_string(),
+                details: result.stderr,
+            })
         }
     }
 
     /// Get current commit hash
-    pub async fn current_commit(&self) -> anyhow::Result<String> {
+    pub async fn current_commit(&self) -> Result<String, GitError> {
         let result = self.run_git(&["rev-parse", "HEAD"]).await?;
         if result.success {
             Ok(result.stdout.trim().to_string())
         } else {
-            anyhow::bail!("Failed to get commit: {}", result.stderr)
+            Err(GitError::OperationFailed {
+                operation: "get commit".to_string(),
+                details: result.stderr,
+            })
         }
     }
 
     /// Get remote URL
-    pub async fn remote_url(&self, remote: &str) -> anyhow::Result<Option<String>> {
+    pub async fn remote_url(&self, remote: &str) -> Result<Option<String>, GitError> {
         let result = self.run_git(&["remote", "get-url", remote]).await?;
         if result.success {
             Ok(Some(result.stdout.trim().to_string()))
@@ -157,10 +212,13 @@ impl GitRepo {
     }
 
     /// List branches
-    pub async fn list_branches(&self) -> anyhow::Result<Vec<BranchInfo>> {
+    pub async fn list_branches(&self) -> Result<Vec<BranchInfo>, GitError> {
         let result = self.run_git(&["branch", "-vv"]).await?;
         if !result.success {
-            anyhow::bail!("Failed to list branches: {}", result.stderr);
+            return Err(GitError::OperationFailed {
+                operation: "list branches".to_string(),
+                details: result.stderr,
+            });
         }
 
         let mut branches = Vec::new();
@@ -190,39 +248,51 @@ impl GitRepo {
     }
 
     /// Create a new branch
-    pub async fn create_branch(&self, name: &str) -> anyhow::Result<()> {
+    pub async fn create_branch(&self, name: &str) -> Result<(), GitError> {
         let result = self.run_git(&["checkout", "-b", name]).await?;
         if result.success {
             info!("Created and checked out branch: {}", name);
             Ok(())
         } else {
-            anyhow::bail!("Failed to create branch: {}", result.stderr)
+            Err(GitError::OperationFailed {
+                operation: "create branch".to_string(),
+                details: result.stderr,
+            })
         }
     }
 
     /// Apply a patch (dry-run first if not in dry-run mode)
-    pub async fn apply_patch(&self, patch: &str, dry_run: bool) -> anyhow::Result<()> {
+    pub async fn apply_patch(&self, patch: &str, dry_run: bool) -> Result<(), GitError> {
         if dry_run {
             // Only do dry-run check
             let output = self.run_git_with_stdin(&["apply", "--check", "-"], patch).await?;
             if !output.status.success() {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                anyhow::bail!("Patch dry-run failed: {}", stderr);
+                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                return Err(GitError::OperationFailed {
+                    operation: "patch dry-run".to_string(),
+                    details: stderr,
+                });
             }
             info!("Patch dry-run successful");
         } else {
             // First do dry-run check
             let check_output = self.run_git_with_stdin(&["apply", "--check", "-"], patch).await?;
             if !check_output.status.success() {
-                let stderr = String::from_utf8_lossy(&check_output.stderr);
-                anyhow::bail!("Patch check failed: {}", stderr);
+                let stderr = String::from_utf8_lossy(&check_output.stderr).to_string();
+                return Err(GitError::OperationFailed {
+                    operation: "patch check".to_string(),
+                    details: stderr,
+                });
             }
 
             // Then apply for real
             let output = self.run_git_with_stdin(&["apply", "-"], patch).await?;
             if !output.status.success() {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                anyhow::bail!("Failed to apply patch: {}", stderr);
+                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                return Err(GitError::OperationFailed {
+                    operation: "apply patch".to_string(),
+                    details: stderr,
+                });
             }
             info!("Patch applied successfully");
         }
@@ -231,7 +301,7 @@ impl GitRepo {
     }
 
     /// Run a git command with input from stdin
-    async fn run_git_with_stdin(&self, args: &[&str], stdin_input: &str) -> anyhow::Result<std::process::Output> {
+    async fn run_git_with_stdin(&self, args: &[&str], stdin_input: &str) -> Result<std::process::Output, GitError> {
         let mut cmd = Command::new("git");
         cmd.current_dir(&self.path)
             .args(args)
@@ -250,7 +320,7 @@ impl GitRepo {
     }
 
     /// Stage files
-    pub async fn add(&self, paths: &[&str]) -> anyhow::Result<()> {
+    pub async fn add(&self, paths: &[&str]) -> Result<(), GitError> {
         let mut args = vec!["add"];
         args.extend(paths);
 
@@ -258,23 +328,29 @@ impl GitRepo {
         if result.success {
             Ok(())
         } else {
-            anyhow::bail!("Failed to stage files: {}", result.stderr)
+            Err(GitError::OperationFailed {
+                operation: "stage files".to_string(),
+                details: result.stderr,
+            })
         }
     }
 
     /// Commit changes
-    pub async fn commit(&self, message: &str) -> anyhow::Result<()> {
+    pub async fn commit(&self, message: &str) -> Result<(), GitError> {
         let result = self.run_git(&["commit", "-m", message]).await?;
         if result.success {
             info!("Created commit: {}", message.lines().next().unwrap_or(""));
             Ok(())
         } else {
-            anyhow::bail!("Failed to commit: {}", result.stderr)
+            Err(GitError::OperationFailed {
+                operation: "commit".to_string(),
+                details: result.stderr,
+            })
         }
     }
 
     /// Get diff
-    pub async fn diff(&self, target: Option<&str>) -> anyhow::Result<String> {
+    pub async fn diff(&self, target: Option<&str>) -> Result<String, GitError> {
         let args = match target {
             Some(t) => vec!["diff", t],
             None => vec!["diff"],
@@ -284,12 +360,15 @@ impl GitRepo {
         if result.success {
             Ok(result.stdout)
         } else {
-            anyhow::bail!("Failed to get diff: {}", result.stderr)
+            Err(GitError::OperationFailed {
+                operation: "get diff".to_string(),
+                details: result.stderr,
+            })
         }
     }
 
     /// Clone a repository
-    pub async fn clone(url: &str, target: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub async fn clone(url: &str, target: impl AsRef<Path>) -> Result<Self, GitError> {
         let target = target.as_ref();
 
         info!("Cloning {} into {}", url, target.display());
@@ -303,8 +382,8 @@ impl GitRepo {
             info!("Clone successful");
             Self::open(target).await
         } else {
-            let stderr = String::from_utf8_lossy(&result.stderr);
-            anyhow::bail!("Clone failed: {}", stderr)
+            let stderr = String::from_utf8_lossy(&result.stderr).to_string();
+            Err(GitError::CloneFailed(stderr))
         }
     }
 }
@@ -312,7 +391,7 @@ impl GitRepo {
 /// Clone a repository from URL
 ///
 /// This is a convenience wrapper around `GitRepo::clone`.
-pub async fn clone_repo(url: &str, target: impl AsRef<Path>) -> anyhow::Result<GitRepo> {
+pub async fn clone_repo(url: &str, target: impl AsRef<Path>) -> Result<GitRepo, GitError> {
     GitRepo::clone(url, target).await
 }
 

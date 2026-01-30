@@ -40,7 +40,7 @@ impl RepoScanner {
     }
 
     /// Scan repository and build directory tree summary
-    pub fn scan(&self) -> anyhow::Result<ScannedRepo> {
+    pub fn scan(&self) -> crate::Result<ScannedRepo> {
         let mut files = Vec::new();
         let mut directories = Vec::new();
         let mut total_size: u64 = 0;
@@ -49,9 +49,10 @@ impl RepoScanner {
             .follow_links(false)
             .max_depth(self.max_depth)
         {
-            let entry = entry?;
+            let entry = entry.map_err(|e| crate::HqeError::Scan(e.to_string()))?;
             let path = entry.path();
-            let relative_path = path.strip_prefix(&self.root_path)?;
+            let relative_path = path.strip_prefix(&self.root_path)
+                .map_err(|e| crate::HqeError::Scan(format!("Failed to strip prefix: {}", e)))?;
             let path_str = relative_path.to_string_lossy().to_string();
 
             if path.is_dir() {
@@ -87,7 +88,7 @@ impl RepoScanner {
     }
 
     /// Detect entrypoints in the repository
-    pub fn detect_entrypoints(&self) -> anyhow::Result<Vec<Entrypoint>> {
+    pub fn detect_entrypoints(&self) -> crate::Result<Vec<Entrypoint>> {
         let mut entrypoints = Vec::new();
 
         // Common entrypoint patterns
@@ -162,7 +163,7 @@ impl RepoScanner {
     }
 
     /// Detect tech stack from package manifests
-    pub fn detect_tech_stack(&self) -> anyhow::Result<TechStack> {
+    pub fn detect_tech_stack(&self) -> crate::Result<TechStack> {
         let mut detected = Vec::new();
         let mut package_managers = Vec::new();
 
@@ -269,7 +270,7 @@ impl RepoScanner {
     }
 
     /// Run comprehensive local risk checks with snippets
-    pub async fn local_risk_checks(&self) -> anyhow::Result<Vec<LocalFinding>> {
+    pub async fn local_risk_checks(&self) -> crate::Result<Vec<LocalFinding>> {
         let mut findings = Vec::new();
 
         // Check for .env files
@@ -293,7 +294,7 @@ impl RepoScanner {
         Ok(findings)
     }
 
-    async fn check_env_files(&self) -> anyhow::Result<Vec<LocalFinding>> {
+    async fn check_env_files(&self) -> crate::Result<Vec<LocalFinding>> {
         let mut findings = Vec::new();
         let env_files = vec![
             ".env",
@@ -376,7 +377,7 @@ impl RepoScanner {
         Ok(findings)
     }
 
-    async fn check_code_secrets(&self) -> anyhow::Result<Vec<LocalFinding>> {
+    async fn check_code_secrets(&self) -> crate::Result<Vec<LocalFinding>> {
         let mut findings = Vec::new();
         let scanned = self.scan()?;
         // Patterns to check in source code
@@ -481,7 +482,7 @@ impl RepoScanner {
         Ok(findings)
     }
 
-    async fn check_security_patterns(&self) -> anyhow::Result<Vec<LocalFinding>> {
+    async fn check_security_patterns(&self) -> crate::Result<Vec<LocalFinding>> {
         let mut findings = Vec::new();
         let scanned = self.scan()?;
 
@@ -598,7 +599,7 @@ impl RepoScanner {
         Ok(findings)
     }
 
-    async fn check_code_quality(&self) -> anyhow::Result<Vec<LocalFinding>> {
+    async fn check_code_quality(&self) -> crate::Result<Vec<LocalFinding>> {
         let mut findings = Vec::new();
         let scanned = self.scan()?;
 
@@ -652,7 +653,7 @@ impl RepoScanner {
         Ok(findings)
     }
 
-    fn check_config_issues(&self) -> anyhow::Result<Vec<LocalFinding>> {
+    fn check_config_issues(&self) -> crate::Result<Vec<LocalFinding>> {
         let mut findings = Vec::new();
 
         // Check for missing README
@@ -705,7 +706,7 @@ impl RepoScanner {
         Ok(findings)
     }
 
-    fn check_suspicious_files(&self) -> anyhow::Result<Vec<LocalFinding>> {
+    fn check_suspicious_files(&self) -> crate::Result<Vec<LocalFinding>> {
         let mut findings = Vec::new();
         let scanned = self.scan()?;
 
@@ -770,25 +771,25 @@ impl RepoScanner {
     }
 
     /// Read file content with size limit
-    pub async fn read_file(&self, relative_path: &str) -> anyhow::Result<Option<String>> {
+    pub async fn read_file(&self, relative_path: &str) -> crate::Result<Option<String>> {
         // Prevent path traversal by ensuring the resolved path is within the root directory
         let full_path = self.root_path.join(relative_path);
 
         // Canonicalize both paths to resolve any '..' components and verify the file is within the allowed directory
         let canonical_full_path = full_path.canonicalize().map_err(|e| {
-            anyhow::anyhow!("Failed to canonicalize path '{}': {}", relative_path, e)
+            crate::HqeError::Io(e)
         })?;
         let canonical_root = self
             .root_path
             .canonicalize()
-            .map_err(|e| anyhow::anyhow!("Failed to canonicalize root path: {}", e))?;
+            .map_err(|e| crate::HqeError::Io(e))?;
 
         if !canonical_full_path.starts_with(&canonical_root) {
             warn!("Path traversal attempt detected: {}", relative_path);
-            return Err(anyhow::anyhow!(
+            return Err(crate::HqeError::Scan(format!(
                 "Path traversal detected: file '{}' is outside the allowed directory",
                 relative_path
-            ));
+            )));
         }
 
         if !canonical_full_path.exists() {

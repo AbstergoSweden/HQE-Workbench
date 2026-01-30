@@ -40,7 +40,7 @@ pub struct ScanPipeline {
 
 impl ScanPipeline {
     /// Creates a new ScanPipeline for the given repository path and configuration
-    pub fn new(repo_path: impl AsRef<Path>, config: ScanConfig) -> anyhow::Result<Self> {
+    pub fn new(repo_path: impl AsRef<Path>, config: ScanConfig) -> crate::Result<Self> {
         let provider_name = config
             .provider_profile
             .clone()
@@ -65,7 +65,7 @@ impl ScanPipeline {
 
     /// Run the complete scan pipeline
     #[instrument(skip(self))]
-    pub async fn run(&mut self) -> anyhow::Result<ScanResult> {
+    pub async fn run(&mut self) -> crate::Result<ScanResult> {
         info!("Starting HQE scan pipeline");
 
         // Phase A: Ingestion
@@ -105,7 +105,7 @@ impl ScanPipeline {
     }
 
     /// Phase A: Local repo ingestion
-    async fn run_ingestion(&mut self) -> anyhow::Result<IngestionResult> {
+    async fn run_ingestion(&mut self) -> crate::Result<IngestionResult> {
         let scanner = RepoScanner::new(&self.manifest.repo.path);
 
         // Scan repository structure
@@ -165,7 +165,7 @@ impl ScanPipeline {
     async fn run_local_analysis(
         &self,
         ingestion: &IngestionResult,
-    ) -> anyhow::Result<AnalysisResult> {
+    ) -> crate::Result<AnalysisResult> {
         // Build partial report from local findings
         let mut findings = Vec::new();
 
@@ -239,7 +239,7 @@ impl ScanPipeline {
         &self,
         ingestion: &IngestionResult,
         analysis: &AnalysisResult,
-    ) -> anyhow::Result<HqeReport> {
+    ) -> crate::Result<HqeReport> {
         // Calculate weighted health score based on findings
         let critical_count = analysis
             .findings
@@ -383,7 +383,7 @@ impl ScanPipeline {
     }
 
     /// Phase D: Artifact export
-    async fn export_artifacts(&self, _report: &HqeReport) -> anyhow::Result<ArtifactPaths> {
+    async fn export_artifacts(&self, _report: &HqeReport) -> crate::Result<ArtifactPaths> {
         // Placeholder - actual export happens in hqe-artifacts crate
         Ok(ArtifactPaths {
             report_md: PathBuf::from(format!("hqe_run_{}/report.md", self.manifest.run_id)),
