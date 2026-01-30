@@ -1,0 +1,28 @@
+{
+  "run_id": "scan-20260128-191354-e2041e5d",
+  "repo": {
+    "source": "local",
+    "path": ".",
+    "git_remote": null,
+    "git_commit": "n/a"
+  },
+  "provider": {
+    "name": "venice",
+    "base_url": "https://api.venice.ai/v1",
+    "model": "venice-medium",
+    "llm_enabled": true
+  },
+  "limits": {
+    "max_files_sent": 40,
+    "max_total_chars_sent": 250000,
+    "snippet_chars": 4000
+  },
+  "timestamps": {
+    "started": "2026-01-29T03:13:54Z",
+    "ended": null
+  },
+  "protocol": {
+    "protocol_version": "3.1.0",
+    "schema_version": "3.1.0"
+  }
+}

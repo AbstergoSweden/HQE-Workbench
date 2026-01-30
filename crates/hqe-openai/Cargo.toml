@@ -1,0 +1,43 @@
+[package]
+name = "hqe-openai"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "OpenAI-compatible provider client for HQE"
+
+[dependencies]
+# Core
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+# Async
+async-trait = { workspace = true }
+
+# HTTP
+reqwest = { workspace = true }
+url = { workspace = true }
+
+# Security
+secrecy = { workspace = true }
+keyring = { workspace = true }
+regex = { workspace = true }
+
+# Filesystem
+dirs = { workspace = true }
+
+# HQE internal
+hqe-core = { workspace = true }
+hqe-protocol = { path = "../hqe-protocol" }
+
+[dev-dependencies]
+mockito = { workspace = true }
+tokio-test = "0.4"
+

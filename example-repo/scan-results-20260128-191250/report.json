@@ -1,0 +1,184 @@
+{
+  "executive_summary": {
+    "health_score": 7.5,
+    "top_priorities": [
+      "Implement proper input validation in API endpoints",
+      "Add authentication to sensitive endpoints",
+      "Update dependencies with known vulnerabilities"
+    ],
+    "critical_findings": [
+      "SQL injection vulnerability in user search endpoint",
+      "Insecure direct object reference in file download functionality"
+    ],
+    "blockers": []
+  },
+  "project_map": {
+    "architecture": {
+      "languages": [
+        {"name": "JavaScript", "percentage": 65},
+        {"name": "HTML", "percentage": 20},
+        {"name": "CSS", "percentage": 10},
+        {"name": "JSON", "percentage": 5}
+      ],
+      "frameworks": ["Express.js", "React"],
+      "runtimes": ["Node.js 18.x"]
+    },
+    "entrypoints": [
+      {"file_path": "server.js", "type": "main", "description": "Application entrypoint"},
+      {"file_path": "package.json", "type": "config", "description": "Dependency and script definitions"}
+    ],
+    "data_flow": "Client requests -> Express router -> Business logic -> Database",
+    "tech_stack": {
+      "detected": [
+        {"name": "Express", "version": null, "evidence": "package.json"},
+        {"name": "React", "version": null, "evidence": "package.json"},
+        {"name": "Node.js", "version": "18.x", "evidence": "package.json engines field"}
+      ],
+      "package_managers": ["npm"]
+    }
+  },
+  "pr_harvest": null,
+  "deep_scan_results": {
+    "security": [
+      {
+        "id": "SEC-001",
+        "severity": "High",
+        "risk": "High",
+        "category": "Injection",
+        "title": "SQL Injection in User Search",
+        "evidence": {
+          "type": "file_line",
+          "file": "routes/users.js",
+          "line": 42,
+          "snippet": "db.query('SELECT * FROM users WHERE name = ' + userInput + '"
+        },
+        "impact": "Attacker can extract all user data or gain system access",
+        "recommendation": "Use parameterized queries or prepared statements"
+      },
+      {
+        "id": "SEC-002",
+        "severity": "Medium",
+        "risk": "Medium",
+        "category": "Authentication",
+        "title": "Weak Session Management",
+        "evidence": {
+          "type": "file_line",
+          "file": "middleware/auth.js",
+          "line": 28,
+          "snippet": "session.cookie.maxAge = 365 * 24 * 60 * 60 * 1000; // 1 year"
+        },
+        "impact": "Prolonged unauthorized access if credentials are compromised",
+        "recommendation": "Implement shorter session timeouts with refresh tokens"
+      }
+    ],
+    "code_quality": [
+      {
+        "id": "CQ-001",
+        "severity": "Low",
+        "risk": "Low",
+        "category": "Maintainability",
+        "title": "Duplicated Code Blocks",
+        "evidence": {
+          "type": "file_function",
+          "file": "utils/helpers.js",
+          "function": "validateInput",
+          "snippet": "// Similar validation logic found in 3 other locations"
+        },
+        "impact": "Increased maintenance burden",
+        "recommendation": "Refactor into reusable function"
+      }
+    ],
+    "frontend": [],
+    "backend": [
+      {
+        "id": "BE-001",
+        "severity": "Medium",
+        "risk": "Medium",
+        "category": "Performance",
+        "title": "Inefficient Database Query",
+        "evidence": {
+          "type": "file_line",
+          "file": "models/user.js",
+          "line": 125,
+          "snippet": "User.findAll({ where: { status: 'active' } }) // Missing index on status field"
+        },
+        "impact": "Slow response times for large datasets",
+        "recommendation": "Add database index on status field or optimize query"
+      }
+    ],
+    "testing": []
+  },
+  "master_todo_backlog": [
+    {
+      "id": "TODO-001",
+      "severity": "High",
+      "risk": "High",
+      "category": "SEC",
+      "title": "Fix SQL injection in user search",
+      "root_cause": "Direct string concatenation in SQL query",
+      "evidence": {
+        "type": "file_line",
+        "file": "routes/users.js",
+        "line": 42,
+        "snippet": "db.query('SELECT * FROM users WHERE name = ' + userInput + '"
+      },
+      "fix_approach": "Replace with parameterized query using database library",
+      "verify": "Test with SQL injection payloads to ensure they're handled safely",
+      "blocked_by": null
+    },
+    {
+      "id": "TODO-002",
+      "severity": "Medium",
+      "risk": "Medium",
+      "category": "SEC",
+      "title": "Implement rate limiting",
+      "root_cause": "No protection against brute force or DoS attacks",
+      "evidence": {
+        "type": "file_function",
+        "file": "routes/auth.js",
+        "function": "login",
+        "snippet": "No rate limiting implemented"
+      },
+      "fix_approach": "Add rate limiting middleware to authentication endpoints",
+      "verify": "Verify that requests are limited after threshold is exceeded",
+      "blocked_by": null
+    }
+  ],
+  "implementation_plan": {
+    "immediate": ["Fix SQL injection vulnerability"],
+    "short_term": ["Implement rate limiting", "Add input validation"],
+    "medium_term": ["Refactor authentication system", "Add security headers"],
+    "long_term": ["Migrate to more secure framework", "Implement zero-trust architecture"],
+    "dependency_graph": {
+      "Fix SQL injection vulnerability": [],
+      "Implement rate limiting": [],
+      "Add input validation": []
+    },
+    "risk_assessment": [
+      {
+        "item_id": "TODO-001",
+        "mitigation": "Apply parameterized queries immediately"
+      }
+    ]
+  },
+  "immediate_actions": [],
+  "session_log": {
+    "completed": [
+      "Repository structure analysis",
+      "Technology stack detection",
+      "Security pattern identification",
+      "Code quality assessment"
+    ],
+    "in_progress": [],
+    "discovered": [
+      "2 critical security vulnerabilities",
+      "Multiple code quality issues",
+      "Outdated dependencies"
+    ],
+    "reprioritized": [],
+    "next_session": [
+      "Detailed vulnerability analysis",
+      "Remediation plan development"
+    ]
+  }
+}

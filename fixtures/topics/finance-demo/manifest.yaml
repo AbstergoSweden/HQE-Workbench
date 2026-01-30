@@ -1,0 +1,37 @@
+id: "finance-demo"
+name: "Financial Analysis Suite"
+version: "1.0.0"
+
+capabilities:
+  tools:
+    - name: "get_stock_price"
+      description: "Fetches the current price of a stock ticker."
+      input_schema:
+        type: "object"
+        properties:
+          ticker:
+            type: "string"
+            description: "The stock ticker symbol (e.g., AAPL)"
+        required: ["ticker"]
+  prompts:
+    - name: "analyze_earnings"
+      template: "Analyze the earnings report for {{ticker}}."
+      input_variables: ["ticker"]
+  flows:
+    - id: "daily_briefing"
+      name: "Daily Market Briefing"
+      steps:
+        - id: "step1"
+          action: "call_tool"
+          params:
+            tool: "get_stock_price"
+            ticker: "SPY"
+
+data_schemas:
+  StockTicker:
+    type: "object"
+    properties:
+      symbol:
+        type: "string"
+      price:
+        type: "number"

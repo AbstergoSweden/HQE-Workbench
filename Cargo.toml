@@ -1,0 +1,78 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/hqe-core",
+    "crates/hqe-openai",
+    "crates/hqe-git",
+    "crates/hqe-artifacts",
+    "crates/hqe-protocol",
+    "crates/hqe-mcp",
+    "crates/hqe-ingest",
+    "crates/hqe-vector",
+    "crates/hqe-flow",
+    "cli/hqe",
+    "apps/workbench/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Faye Håkansdotter <2-craze-headmen@icloud.com>"]
+license = "MIT"
+repository = "https://github.com/AbstergoSweden/hqe-workbench"
+rust-version = "1.75"
+
+[workspace.dependencies]
+# Core
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Async
+async-trait = "0.1"
+futures = "0.3"
+
+# HTTP / API
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+url = { version = "2.5", features = ["serde"] }
+
+# Security
+secrecy = { version = "0.8", features = ["serde"] }
+keyring = "2.3"
+regex = "1.10"
+
+# Filesystem
+walkdir = "2.4"
+tempfile = "3.9"
+dirs = "5"
+
+# HQE internal
+hqe-core = { path = "crates/hqe-core" }
+hqe-openai = { path = "crates/hqe-openai" }
+hqe-git = { path = "crates/hqe-git" }
+hqe-artifacts = { path = "crates/hqe-artifacts" }
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+indicatif = "0.17"
+console = "0.15"
+
+# Testing
+mockito = "1.2"
+pretty_assertions = "1.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 1

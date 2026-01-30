@@ -1,0 +1,285 @@
+prompt = """
+# Write Technical Blog Post
+
+Please write a comprehensive technical blog post about:
+
+{{args}}
+
+## Blog Post Structure
+
+### 1. Title
+
+Create an engaging, SEO-friendly title:
+- Clear and specific
+- Include main keyword
+- Promise value/solution
+- 50-60 characters optimal
+
+**Format examples:**
+- "How to [Achieve Result] with [Technology]"
+- "[Technology]: A Complete Guide for [Audience]"
+- "[Number] Ways to [Benefit] using [Technology]"
+- "Understanding [Concept]: A Deep Dive"
+
+### 2. Meta Description (150-160 characters)
+Brief summary for search engines and social sharing.
+
+### 3. Introduction
+
+**Hook** (1-2 paragraphs):
+Start with:
+- A relatable problem
+- Surprising stat or fact
+- Personal anecdote
+- Common misconception
+
+**Context** (1-2 paragraphs):
+- Why this topic matters
+- Who should read this
+- What you'll learn
+
+**Preview**:
+"In this post, you'll learn:
+- Key point 1
+- Key point 2
+- Key point 3"
+
+### 4. Main Content
+
+#### Section 1: [Foundational Concept]
+
+**Explanation**:
+Clear, concise explanation of the concept
+
+**Code Example**:
+```javascript
+// Well-commented, working code
+```
+
+**Visual Aid** (if applicable):
+Diagram, screenshot, or ASCII art
+
+**Key Takeaway**:
+- Main point summarized
+
+---
+
+#### Section 2: [Practical Application]
+
+**Real-World Scenario**:
+Describe when/why you'd use this
+
+**Step-by-Step Guide**:
+1. **Step 1**: Description
+   ```javascript
+   // Code
+   ```
+
+2. **Step 2**: Description
+   ```javascript
+   // Code
+   ```
+
+3. **Step 3**: Description
+   ```javascript
+   // Code
+   ```
+
+**Common Pitfalls**:
+- ⚠️ Mistake 1: How to avoid
+- ⚠️ Mistake 2: How to avoid
+
+---
+
+#### Section 3: [Advanced Topic]
+
+**Going Deeper**:
+Advanced concepts for experienced readers
+
+**Code Example**:
+```javascript
+// More complex implementation
+```
+
+**Performance Considerations**:
+- Optimization tip 1
+- Optimization tip 2
+
+**Best Practices**:
+- ✅ Do this
+- ❌ Don't do this
+
+### 5. Complete Working Example
+
+**Full Implementation**:
+```javascript
+// Complete, working code example
+// that readers can copy and run
+```
+
+**Demo/Live Example**:
+Link to CodePen, CodeSandbox, or GitHub repo
+
+### 6. Comparison / Alternatives
+
+Compare with related approaches:
+
+| Approach | Pros | Cons | When to Use |
+|----------|------|------|-------------|
+| Approach A | ... | ... | ... |
+| Approach B | ... | ... | ... |
+
+### 7. Troubleshooting
+
+**Common Issues**:
+
+**Issue 1: Error message or problem**
+- **Cause**: Why it happens
+- **Solution**: How to fix it
+- **Prevention**: How to avoid it
+
+**Issue 2: Error message or problem**
+- **Cause**: Why it happens
+- **Solution**: How to fix it
+- **Prevention**: How to avoid it
+
+### 8. Conclusion
+
+**Summary**:
+- Recap main points in 2-3 sentences
+- Restate key benefit
+
+**Call to Action**:
+- Try implementing this
+- Share your results
+- Ask questions in comments
+- Check out related posts
+
+**Next Steps**:
+- Related topic to explore
+- Advanced guide link
+- Community resources
+
+### 9. Additional Resources
+
+**Further Reading**:
+- [Official Documentation](link)
+- [Related Article](link)
+- [Video Tutorial](link)
+
+**Tools & Libraries**:
+- [Tool 1](link): Description
+- [Tool 2](link): Description
+
+**Community**:
+- [Forum/Discord](link)
+- [GitHub Discussions](link)
+
+## Writing Style Guidelines
+
+### Tone
+- **Conversational**: Write like you're explaining to a friend
+- **Clear**: Avoid unnecessary jargon
+- **Confident**: Be authoritative but not condescending
+- **Encouraging**: Make readers feel capable
+
+### Structure
+- **Short paragraphs**: 2-4 sentences max
+- **Subheadings**: Every 200-300 words
+- **Lists**: Break down complex info
+- **White space**: Don't wall-of-text
+
+### Code Examples
+- **Working**: All code should run
+- **Complete**: Include imports/setup
+- **Commented**: Explain non-obvious parts
+- **Formatted**: Proper indentation
+- **Tested**: Verify it works
+
+### Visuals
+- **Diagrams**: For architecture/flow
+- **Screenshots**: For UI/tools
+- **Syntax highlighting**: For code
+- **Annotations**: Point out key parts
+
+## SEO Best Practices
+
+### Keywords
+- Include main keyword in title
+- Use in first paragraph
+- Sprinkle naturally throughout
+- Use in subheadings
+
+### Structure
+- Use H2, H3 hierarchy
+- Add meta description
+- Internal links to related posts
+- External links to authority sites
+
+### Readability
+- Short sentences (15-20 words)
+- Simple language (8th-grade level)
+- Active voice
+- Scannable format
+
+## Content Checklist
+
+Before publishing, verify:
+
+- [ ] Title is clear and compelling
+- [ ] Introduction hooks the reader
+- [ ] Code examples are complete and working
+- [ ] Explanations are clear and jargon-free
+- [ ] Screenshots/diagrams enhance understanding
+- [ ] Common pitfalls are addressed
+- [ ] Troubleshooting section included
+- [ ] Conclusion summarizes key points
+- [ ] Links to resources provided
+- [ ] SEO optimized (keywords, meta, structure)
+- [ ] Proofread for typos/grammar
+- [ ] Technical accuracy verified
+- [ ] Code tested and runs correctly
+
+## Example Sections
+
+### Good Introduction Example:
+```
+Ever spent hours debugging only to find a missing semicolon? We've all been there.
+But what if I told you there's a way to catch these errors before they even reach
+your browser?
+
+That's where [Technology] comes in. It's a static analysis tool that checks your
+code as you write it, catching errors, enforcing best practices, and making your
+code more maintainable.
+
+In this comprehensive guide, you'll learn:
+- How to set up [Technology] in your project
+- Essential rules every developer should use
+- Advanced configurations for team projects
+- Common issues and how to solve them
+
+Whether you're a beginner or experienced developer, this guide will help you write
+better, more reliable code.
+```
+
+### Good Conclusion Example:
+```
+You've now learned how to set up [Technology], configure it for your project, and
+customize it for your team's needs. By following these best practices, you'll catch
+bugs earlier, write more consistent code, and ship with confidence.
+
+Ready to try it? Start by adding [Technology] to one of your projects today. Begin
+with the basic configuration, then gradually add rules as your team gets comfortable.
+
+Have questions or run into issues? Drop a comment below or join the [community link].
+
+**Next Steps:**
+- Check out my guide on [related topic]
+- Explore the [official documentation]
+- Join the [community] for support
+
+Happy coding!
+```
+
+Generate a complete, publication-ready blog post following these guidelines.
+"""

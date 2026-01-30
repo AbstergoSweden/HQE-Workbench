@@ -1,0 +1,300 @@
+prompt = """
+# Test Coverage Analysis
+
+Please analyze test coverage for the following code and identify gaps:
+
+{{args}}
+
+## Analysis Areas
+
+### 1. Code Coverage Metrics
+
+#### Line Coverage
+- Percentage of lines executed
+- Uncovered lines identification
+- Critical uncovered lines
+
+#### Branch Coverage
+- Percentage of branches tested
+- Uncovered if/else branches
+- Uncovered switch cases
+- Uncovered ternary operators
+- Short-circuit evaluations
+
+#### Function Coverage
+- Percentage of functions tested
+- Untested functions
+- Partially tested functions
+
+#### Statement Coverage
+- Individual statement execution
+- Dead code identification
+
+### 2. Coverage by Category
+
+#### Happy Path Coverage
+✓ **Covered:**
+- Normal operation scenarios
+- Expected inputs
+- Standard workflows
+
+✗ **Missing:**
+- Additional common use cases
+- Variations in normal flow
+
+#### Error Path Coverage
+✓ **Covered:**
+- Handled exceptions
+- Validation errors
+
+✗ **Missing:**
+- Unhandled exceptions
+- Edge case errors
+- System errors
+- Network failures
+
+#### Edge Case Coverage
+✓ **Covered:**
+- Empty inputs
+- Null/undefined
+- Basic boundaries
+
+✗ **Missing:**
+- Extreme values
+- Resource limits
+- Concurrent access
+- State combinations
+
+### 3. Detailed Gap Analysis
+
+For each uncovered area, provide:
+
+#### Gap Description
+What functionality is not tested
+
+#### Risk Level
+- **Critical**: Could cause data loss, security issues, or system failure
+- **High**: Could cause incorrect behavior or crashes
+- **Medium**: Could cause user-facing issues
+- **Low**: Minor issues or unlikely scenarios
+
+#### Impact Assessment
+What could go wrong if this remains untested
+
+#### Test Recommendation
+Specific tests that should be added
+
+### 4. Coverage Report Structure
+
+```markdown
+## Current Coverage Summary
+
+| Metric | Percentage | Status |
+|--------|------------|--------|
+| Lines | 75% | 🟡 Fair |
+| Branches | 60% | 🔴 Poor |
+| Functions | 85% | 🟢 Good |
+| Statements | 73% | 🟡 Fair |
+
+### Coverage Goals
+- Lines: 80%+ (current: 75%)
+- Branches: 75%+ (current: 60%)
+- Functions: 90%+ (current: 85%)
+- Statements: 80%+ (current: 73%)
+
+## Detailed Gap Analysis
+
+### 1. Uncovered Functions (15%)
+
+#### `handleError(error)` - Lines 45-60
+**Risk**: High
+**Issue**: Error handling logic is completely untested
+**Tests Needed**:
+- Test with different error types
+- Test error logging
+- Test error recovery
+- Test error propagation
+
+#### `parseDate(dateString)` - Lines 120-135
+**Risk**: Medium
+**Issue**: Date parsing edge cases not tested
+**Tests Needed**:
+- Invalid date formats
+- Null/undefined inputs
+- Future dates
+- Leap year dates
+
+### 2. Uncovered Branches (40%)
+
+#### File: `user.js`, Lines 78-82
+```javascript
+if (user.age > 18) {
+  // ✓ Tested
+} else {
+  // ✗ Not tested
+}
+```
+**Risk**: Medium
+**Tests Needed**: Add test for users under 18
+
+#### File: `payment.js`, Lines 145-152
+```javascript
+switch (paymentMethod) {
+  case 'credit': // ✓ Tested
+    break;
+  case 'debit': // ✗ Not tested
+    break;
+  case 'paypal': // ✗ Not tested
+    break;
+  default: // ✗ Not tested
+}
+```
+**Risk**: Critical
+**Tests Needed**: Test all payment methods
+
+### 3. Untested Edge Cases
+
+#### Empty Array Handling
+**Location**: Lines 200-210
+**Risk**: Medium
+**Current**: Only non-empty arrays tested
+**Add**: Tests for empty arrays
+
+#### Null/Undefined Inputs
+**Location**: Throughout
+**Risk**: High
+**Current**: Assumes valid inputs
+**Add**: Null safety tests for all public functions
+
+### 4. Missing Integration Tests
+
+#### Database Operations
+**Coverage**: 0%
+**Risk**: High
+**Needed**:
+- Connection failure handling
+- Transaction rollback
+- Query timeout
+- Concurrent access
+
+#### API Integrations
+**Coverage**: 30%
+**Risk**: High
+**Needed**:
+- Error response handling
+- Timeout scenarios
+- Rate limiting
+- Retry logic
+
+### 5. Missing Scenario Tests
+
+#### Concurrent Operations
+**Coverage**: 0%
+**Risk**: Critical
+**Needed**: Race condition tests
+
+#### Resource Exhaustion
+**Coverage**: 0%
+**Risk**: High
+**Needed**: Memory/connection limit tests
+
+#### State Transitions
+**Coverage**: 40%
+**Risk**: Medium
+**Needed**: Invalid state transition tests
+
+## Recommendations
+
+### Priority 1 (Critical) - Implement Immediately
+1. Test error handling in `handleError()` function
+2. Test all payment method branches
+3. Add concurrent operation tests
+4. Test database failure scenarios
+
+### Priority 2 (High) - Implement This Sprint
+1. Test `parseDate()` edge cases
+2. Add null/undefined checks for all public APIs
+3. Test API integration error paths
+4. Add resource exhaustion tests
+
+### Priority 3 (Medium) - Next Sprint
+1. Test else branches in user age validation
+2. Test empty array handling
+3. Test state transition edge cases
+4. Improve boundary value testing
+
+### Priority 4 (Low) - Backlog
+1. Test default cases in switches
+2. Add performance benchmarks
+3. Test obscure edge cases
+
+## Test Code Examples
+
+### Example 1: Error Handling Test
+```javascript
+describe('handleError', () => {
+  it('should log error with correct severity', () => {
+    const error = new Error('Test error');
+    handleError(error);
+    expect(logger.error).toHaveBeenCalledWith(error);
+  });
+
+  it('should handle null error gracefully', () => {
+    expect(() => handleError(null)).not.toThrow();
+  });
+});
+```
+
+### Example 2: Branch Coverage Test
+```javascript
+describe('payment processing', () => {
+  it('should handle debit card payment', () => {
+    const result = processPayment('debit', 100);
+    expect(result.method).toBe('debit');
+  });
+
+  it('should handle paypal payment', () => {
+    const result = processPayment('paypal', 100);
+    expect(result.method).toBe('paypal');
+  });
+
+  it('should reject invalid payment method', () => {
+    expect(() => processPayment('invalid', 100)).toThrow();
+  });
+});
+```
+
+## Coverage Improvement Plan
+
+### Phase 1 (Week 1)
+- Add critical missing tests
+- Bring branch coverage to 70%
+- Test all error paths
+
+### Phase 2 (Week 2)
+- Add high-priority tests
+- Bring line coverage to 80%
+- Add integration tests
+
+### Phase 3 (Week 3)
+- Add medium-priority tests
+- Achieve 85% total coverage
+- Add scenario tests
+
+### Phase 4 (Ongoing)
+- Maintain coverage as code evolves
+- Add tests for new features
+- Refine existing tests
+
+## Metrics Tracking
+
+Track these metrics over time:
+- Coverage percentage by type
+- Number of uncovered critical paths
+- Test execution time
+- Test flakiness rate
+- Code churn vs test churn
+```
+
+Generate a detailed coverage analysis following this structure.
+"""

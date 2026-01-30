@@ -1,0 +1,278 @@
+prompt = """
+# Debug Error
+
+Please help diagnose and fix the following error:
+
+{{args}}
+
+## Diagnostic Process
+
+### 1. Error Analysis
+
+#### Understand the Error
+- What is the error message?
+- What type of error is it? (Syntax, Runtime, Logic, Type, Reference, etc.)
+- When does it occur? (Compile-time, Runtime, specific conditions)
+- What is the stack trace showing?
+
+#### Identify the Source
+- Which file and line number?
+- Which function/method is failing?
+- What was the execution path leading to the error?
+
+### 2. Context Investigation
+
+#### Code Context
+```
+Analyze the code around the error:
+- What is this code trying to do?
+- What are the inputs at the time of error?
+- What are the variable states?
+- Are there any assumptions being made?
+```
+
+#### Environment Context
+- What environment? (Development, Staging, Production)
+- Browser/Node version?
+- Operating system?
+- Dependencies and versions?
+
+#### User Context
+- What action triggered the error?
+- Can it be reproduced consistently?
+- Does it happen for all users or specific ones?
+- What are the reproduction steps?
+
+### 3. Root Cause Analysis
+
+#### Common Error Patterns
+
+**Null/Undefined Errors**
+```javascript
+// Error: Cannot read property 'x' of undefined
+// Cause: Variable is undefined/null
+// Fix: Add null checks
+if (obj && obj.x) {
+  // Use obj.x
+}
+```
+
+**Type Errors**
+```javascript
+// Error: arr.map is not a function
+// Cause: Variable is not an array
+// Fix: Validate type
+if (Array.isArray(arr)) {
+  arr.map(...)
+}
+```
+
+**Async Errors**
+```javascript
+// Error: Promise rejection unhandled
+// Cause: Missing error handling
+// Fix: Add try-catch or .catch()
+try {
+  await asyncFunction();
+} catch (error) {
+  handleError(error);
+}
+```
+
+**Scope Errors**
+```javascript
+// Error: Variable not defined
+// Cause: Variable out of scope or not declared
+// Fix: Declare variable or adjust scope
+```
+
+**Off-by-One Errors**
+```javascript
+// Error: Index out of bounds
+// Cause: Loop condition incorrect
+// Fix: Check array.length - 1
+for (let i = 0; i < arr.length; i++) { // not <=
+  // Use arr[i]
+}
+```
+
+### 4. Common Error Types & Solutions
+
+#### JavaScript/TypeScript Errors
+
+**ReferenceError**
+- Variable not declared
+- Accessing before declaration
+- Typo in variable name
+
+**TypeError**
+- Calling undefined as function
+- Accessing property of null/undefined
+- Wrong type passed to function
+
+**SyntaxError**
+- Missing brackets/parentheses
+- Invalid syntax
+- Import/export issues
+
+**RangeError**
+- Invalid array length
+- Number out of range
+- Stack overflow (recursion)
+
+#### Network/API Errors
+
+**404 Not Found**
+- Wrong endpoint URL
+- Resource doesn't exist
+- Routing issue
+
+**CORS Error**
+- Cross-origin request blocked
+- Missing CORS headers
+- Incorrect origin configuration
+
+**Timeout**
+- Request taking too long
+- Network issues
+- Server not responding
+
+**401/403 Errors**
+- Authentication failed
+- Missing token
+- Insufficient permissions
+
+### 5. Debugging Steps
+
+#### Step 1: Reproduce the Error
+```
+1. Identify exact steps to trigger error
+2. Note any specific conditions
+3. Try in different environments
+```
+
+#### Step 2: Isolate the Problem
+```
+1. Add console.logs/debugger statements
+2. Check variable values before error
+3. Verify function inputs
+4. Test in isolation
+```
+
+#### Step 3: Form Hypothesis
+```
+1. What do you think is causing it?
+2. Why does it fail under these conditions?
+3. What would fix it?
+```
+
+#### Step 4: Test the Fix
+```
+1. Apply potential fix
+2. Verify error is resolved
+3. Check for side effects
+4. Test edge cases
+```
+
+#### Step 5: Prevent Recurrence
+```
+1. Add error handling
+2. Add input validation
+3. Add tests for this scenario
+4. Add logging/monitoring
+```
+
+### 6. Debug Code Examples
+
+#### Add Defensive Checks
+```javascript
+// Before (error-prone)
+function process(data) {
+  return data.items.map(item => item.value);
+}
+
+// After (defensive)
+function process(data) {
+  if (!data || !Array.isArray(data.items)) {
+    console.error('Invalid data format:', data);
+    return [];
+  }
+
+  return data.items
+    .filter(item => item && typeof item.value !== 'undefined')
+    .map(item => item.value);
+}
+```
+
+#### Add Try-Catch
+```javascript
+// Before
+async function fetchData() {
+  const response = await fetch(url);
+  return response.json();
+}
+
+// After
+async function fetchData() {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+    throw error; // or return default value
+  }
+}
+```
+
+#### Add Logging
+```javascript
+function complexCalculation(a, b, c) {
+  console.log('Input:', { a, b, c });
+
+  const step1 = a * b;
+  console.log('After step1:', step1);
+
+  const step2 = step1 + c;
+  console.log('After step2:', step2);
+
+  const result = step2 / (a + b);
+  console.log('Final result:', result);
+
+  return result;
+}
+```
+
+### 7. Output Format
+
+Provide the following:
+
+#### 1. Error Diagnosis
+- What the error means
+- Why it's occurring
+- Root cause analysis
+
+#### 2. Immediate Fix
+- Code changes needed
+- Step-by-step fix instructions
+- Fixed code example
+
+#### 3. Prevention
+- How to prevent this error
+- Validation to add
+- Tests to write
+
+#### 4. Additional Recommendations
+- Related issues to check
+- Code improvements
+- Best practices to follow
+
+#### 5. Debugging Tips
+- How to debug similar issues
+- Tools to use
+- Logging strategies
+
+Generate a complete error analysis and solution following this structure.
+"""

@@ -1,0 +1,38 @@
+[package]
+name = "hqe"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "HQE Workbench CLI"
+
+[[bin]]
+name = "hqe"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1.35", features = ["full", "process"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+console = "0.15"
+indicatif = "0.17"
+directories = "5.0"
+dirs = "5.0"
+keyring = "2.3"
+secrecy = "0.8"
+tempfile = "3.10"
+
+# Workspace members
+hqe-core = { path = "../../crates/hqe-core" }
+hqe-openai = { path = "../../crates/hqe-openai" }
+hqe-artifacts = { path = "../../crates/hqe-artifacts" }
+hqe-mcp = { path = "../../crates/hqe-mcp" }
+hqe-protocol = { path = "../../crates/hqe-protocol" }

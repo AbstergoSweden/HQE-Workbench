@@ -1,0 +1,254 @@
+prompt = """
+# Generate CONTRIBUTING.md
+
+Please create comprehensive contribution guidelines for the following project:
+
+{{args}}
+
+## Structure
+
+Your CONTRIBUTING.md should include:
+
+### 1. Welcome Message
+- Thank contributors
+- State the project's openness to contributions
+- Briefly explain the project's mission
+
+### 2. Code of Conduct
+Reference or include:
+```markdown
+## Code of Conduct
+
+This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [email].
+```
+
+### 3. How Can I Contribute?
+
+#### Reporting Bugs
+- Use issue templates
+- Search existing issues first
+- Include reproduction steps
+- Provide system information
+- Include error messages and logs
+
+**Bug Report Template**:
+```markdown
+**Describe the bug**
+A clear description of the bug
+
+**To Reproduce**
+Steps to reproduce:
+1. Go to '...'
+2. Click on '....'
+3. See error
+
+**Expected behavior**
+What you expected to happen
+
+**Screenshots**
+If applicable
+
+**Environment**
+- OS: [e.g., Windows 10]
+- Version: [e.g., 1.0.0]
+```
+
+#### Suggesting Features
+- Use feature request template
+- Explain the problem it solves
+- Provide use cases
+- Consider alternatives
+
+**Feature Request Template**:
+```markdown
+**Is your feature request related to a problem?**
+A clear description of the problem
+
+**Describe the solution you'd like**
+What you want to happen
+
+**Describe alternatives you've considered**
+Other solutions you've thought about
+
+**Additional context**
+Any other relevant information
+```
+
+#### Pull Requests
+- Fork and create branches
+- Follow code style
+- Write tests
+- Update documentation
+- Reference issues
+
+### 4. Development Setup
+
+#### Prerequisites
+- Required software/tools
+- Versions needed
+- System requirements
+
+#### Setup Instructions
+```bash
+# Clone the repository
+git clone https://github.com/user/repo.git
+
+# Navigate to directory
+cd repo
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Start development server
+npm run dev
+```
+
+### 5. Development Workflow
+
+#### Branch Naming
+- `feature/description` for new features
+- `fix/description` for bug fixes
+- `docs/description` for documentation
+- `refactor/description` for refactoring
+
+#### Commit Messages
+Follow conventional commits:
+```
+type(scope): subject
+
+body
+
+footer
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+Examples:
+```
+feat(auth): add OAuth2 support
+fix(api): resolve timeout issue in user endpoint
+docs(readme): update installation instructions
+```
+
+### 6. Coding Standards
+
+#### Style Guide
+- Language-specific conventions
+- Linting rules
+- Formatting guidelines
+- Naming conventions
+
+#### Best Practices
+- Write self-documenting code
+- Add comments for complex logic
+- Keep functions small and focused
+- Follow SOLID principles
+
+### 7. Testing
+
+#### Writing Tests
+- Unit tests required for new features
+- Integration tests for API changes
+- E2E tests for critical user flows
+
+#### Running Tests
+```bash
+npm test                 # Run all tests
+npm test -- --watch      # Watch mode
+npm run test:coverage    # Coverage report
+```
+
+#### Test Coverage
+- Minimum coverage requirements
+- How to check coverage
+- What to test
+
+### 8. Documentation
+
+#### Code Documentation
+- JSDoc/docstrings required
+- Document public APIs
+- Explain complex algorithms
+- Include examples
+
+#### README Updates
+- Update for new features
+- Add examples for new functionality
+- Update configuration options
+
+### 9. Pull Request Process
+
+1. **Before Submitting**
+   - Run tests locally
+   - Run linter
+   - Update documentation
+   - Self-review your changes
+
+2. **PR Description Template**
+   ```markdown
+   ## Description
+   Brief description of changes
+
+   ## Type of Change
+   - [ ] Bug fix
+   - [ ] New feature
+   - [ ] Breaking change
+   - [ ] Documentation update
+
+   ## Related Issues
+   Fixes #(issue number)
+
+   ## Testing
+   - [ ] Tests pass locally
+   - [ ] Added new tests
+   - [ ] Updated existing tests
+
+   ## Checklist
+   - [ ] Code follows style guidelines
+   - [ ] Self-reviewed code
+   - [ ] Commented complex code
+   - [ ] Updated documentation
+   - [ ] No new warnings
+   ```
+
+3. **Review Process**
+   - Reviewers will be assigned
+   - Address feedback
+   - Maintain discussion
+   - Squash commits if requested
+
+4. **Merging**
+   - Requires approval from maintainers
+   - All checks must pass
+   - Conflicts must be resolved
+
+### 10. Community
+
+#### Getting Help
+- Where to ask questions (Discussions, Discord, Slack)
+- Documentation resources
+- FAQ link
+
+#### Recognition
+- Contributors will be acknowledged
+- Link to contributors list
+
+### 11. Release Process (for maintainers)
+- Versioning strategy
+- Release checklist
+- Changelog updates
+
+### 12. License
+Reminder about project license and contributor agreement
+
+## Tone
+- Welcoming and inclusive
+- Clear and instructive
+- Encouraging
+- Professional but friendly
+
+Generate complete, beginner-friendly contribution guidelines following these standards.
+"""

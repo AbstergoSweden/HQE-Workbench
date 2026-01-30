@@ -1,0 +1,85 @@
+prompt = """
+# Code Refactoring Suggestions
+
+Please analyze the following code and provide refactoring recommendations:
+
+```
+{{args}}
+```
+
+Focus on:
+
+## 1. Code Smells
+Identify and suggest fixes for:
+- Long methods/functions (>20-30 lines)
+- Long parameter lists (>3-4 parameters)
+- Duplicated code
+- Large classes/modules
+- Primitive obsession
+- Feature envy
+- Data clumps
+- Switch/conditional complexity
+
+## 2. Design Patterns
+Suggest appropriate design patterns:
+- Can Strategy pattern replace conditionals?
+- Would Factory pattern improve object creation?
+- Is Observer pattern needed for events?
+- Should Decorator pattern be used?
+- Would Adapter pattern help integration?
+- Is Singleton appropriate (or anti-pattern)?
+
+## 3. Simplification Opportunities
+- Can complex conditionals be simplified?
+- Are there opportunities to use guard clauses?
+- Can nested structures be flattened?
+- Should temporary variables be eliminated?
+- Can expression complexity be reduced?
+
+## 4. Extract & Compose
+- Methods that should be extracted
+- Classes that should be split
+- Modules that should be separated
+- Utilities that should be shared
+- Constants that should be defined
+
+## 5. Naming Improvements
+- Variables with unclear names
+- Functions that don't describe what they do
+- Classes with vague or misleading names
+- Naming inconsistencies
+
+## 6. Dependency Management
+- Dependencies that should be inverted
+- Coupling that should be reduced
+- Cohesion that should be improved
+- Circular dependencies to eliminate
+
+## 7. Modern Code Practices
+- Legacy patterns to modernize
+- Functional programming opportunities
+- Async/await over callbacks
+- Modern syntax improvements
+- Type safety enhancements
+
+## 8. Architecture Improvements
+- Layer violations to fix
+- Separation of concerns issues
+- API design improvements
+- State management enhancements
+
+Provide:
+1. **High Impact Refactorings**: Most valuable changes
+2. **Medium Impact**: Worthwhile improvements
+3. **Low Impact**: Polish and minor enhancements
+4. **Before/After Examples**: Show concrete refactoring steps
+5. **Step-by-Step Guide**: Safe refactoring sequence
+6. **Tests to Write**: What to test before/during refactoring
+
+For each refactoring, explain:
+- What needs to change
+- Why it's beneficial
+- How to refactor safely
+- What tests to have in place
+- Expected improvement in maintainability
+"""

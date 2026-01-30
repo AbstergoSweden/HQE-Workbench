@@ -1,0 +1,378 @@
+prompt = """
+# Design RESTful API
+
+Please design a comprehensive RESTful API for the following requirements:
+
+{{args}}
+
+## API Design Principles
+
+### 1. Resource Modeling
+
+#### Identify Resources
+- What are the main entities?
+- What are the relationships?
+- What operations are needed?
+
+#### Resource Naming
+- Use nouns, not verbs
+- Use plural forms (`/users`, not `/user`)
+- Use kebab-case for multi-word resources (`/user-profiles`)
+- Keep URLs simple and intuitive
+
+### 2. HTTP Methods & Operations
+
+#### Standard CRUD Operations
+
+**GET - Read/Retrieve**
+```
+GET /users              - List all users
+GET /users/123          - Get specific user
+GET /users/123/posts    - Get user's posts
+```
+
+**POST - Create**
+```
+POST /users             - Create new user
+POST /users/123/posts   - Create post for user
+```
+
+**PUT - Full Update**
+```
+PUT /users/123          - Replace entire user
+```
+
+**PATCH - Partial Update**
+```
+PATCH /users/123        - Update specific fields
+```
+
+**DELETE - Remove**
+```
+DELETE /users/123       - Delete user
+DELETE /users/123/posts/456 - Delete specific post
+```
+
+### 3. URL Structure
+
+#### Hierarchy and Nesting
+```
+/resources
+/resources/{id}
+/resources/{id}/subresources
+/resources/{id}/subresources/{id}
+```
+
+**Good Examples:**
+```
+GET /users/123/orders
+GET /posts/456/comments
+GET /companies/789/employees
+```
+
+**Avoid Deep Nesting:**
+```
+❌ /users/123/orders/456/items/789/reviews
+✅ /order-items/789/reviews
+```
+
+### 4. Query Parameters
+
+#### Filtering
+```
+GET /users?role=admin
+GET /posts?author=john&status=published
+GET /products?category=electronics&price_min=100&price_max=500
+```
+
+#### Sorting
+```
+GET /users?sort=created_at:desc
+GET /posts?sort=title:asc,created_at:desc
+```
+
+#### Pagination
+```
+GET /users?page=2&limit=20
+GET /users?offset=40&limit=20
+```
+
+#### Field Selection
+```
+GET /users?fields=id,name,email
+```
+
+#### Search
+```
+GET /users?q=john
+GET /products?search=laptop
+```
+
+### 5. Request/Response Format
+
+#### Request Body Example
+```json
+POST /users
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "role": "admin",
+  "profile": {
+    "bio": "Software developer",
+    "location": "New York"
+  }
+}
+```
+
+#### Response Format
+```json
+{
+  "data": {
+    "id": "123",
+    "type": "user",
+    "attributes": {
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "admin",
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    "relationships": {
+      "posts": {
+        "links": {
+          "related": "/users/123/posts"
+        }
+      }
+    }
+  },
+  "meta": {
+    "request_id": "abc123",
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+#### List Response with Pagination
+```json
+{
+  "data": [
+    { "id": "1", "name": "User 1" },
+    { "id": "2", "name": "User 2" }
+  ],
+  "meta": {
+    "pagination": {
+      "page": 1,
+      "per_page": 20,
+      "total": 100,
+      "total_pages": 5
+    }
+  },
+  "links": {
+    "self": "/users?page=1",
+    "next": "/users?page=2",
+    "last": "/users?page=5"
+  }
+}
+```
+
+### 6. Status Codes
+
+#### Success Codes
+- `200 OK` - Successful GET, PUT, PATCH, DELETE
+- `201 Created` - Successful POST (resource created)
+- `202 Accepted` - Request accepted, processing async
+- `204 No Content` - Successful DELETE (no response body)
+
+#### Client Error Codes
+- `400 Bad Request` - Invalid request format
+- `401 Unauthorized` - Missing or invalid authentication
+- `403 Forbidden` - Authenticated but not authorized
+- `404 Not Found` - Resource doesn't exist
+- `405 Method Not Allowed` - HTTP method not supported
+- `409 Conflict` - Resource conflict (duplicate)
+- `422 Unprocessable Entity` - Validation errors
+- `429 Too Many Requests` - Rate limit exceeded
+
+#### Server Error Codes
+- `500 Internal Server Error` - Server error
+- `502 Bad Gateway` - Invalid response from upstream
+- `503 Service Unavailable` - Temporary unavailable
+- `504 Gateway Timeout` - Upstream timeout
+
+### 7. Error Response Format
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request data",
+    "details": [
+      {
+        "field": "email",
+        "message": "Email must be valid format",
+        "code": "INVALID_FORMAT"
+      },
+      {
+        "field": "age",
+        "message": "Age must be at least 18",
+        "code": "MIN_VALUE"
+      }
+    ],
+    "request_id": "abc123",
+    "documentation_url": "https://api.example.com/docs/errors/validation"
+  }
+}
+```
+
+### 8. Authentication & Authorization
+
+#### Authentication Methods
+```
+Bearer Token:
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+API Key:
+X-API-Key: your-api-key-here
+
+Basic Auth:
+Authorization: Basic base64(username:password)
+```
+
+#### OAuth 2.0 Flow
+```
+1. GET /oauth/authorize
+2. POST /oauth/token
+3. Use access_token in requests
+4. POST /oauth/refresh (when expired)
+```
+
+### 9. Versioning
+
+#### URL Versioning (Recommended)
+```
+/v1/users
+/v2/users
+```
+
+#### Header Versioning
+```
+Accept: application/vnd.api+json; version=1
+API-Version: 1
+```
+
+### 10. Rate Limiting
+
+#### Response Headers
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1640000000
+Retry-After: 3600
+```
+
+#### Rate Limit Response
+```json
+HTTP/1.1 429 Too Many Requests
+
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests. Please try again later.",
+    "retry_after": 3600
+  }
+}
+```
+
+### 11. HATEOAS (Hypermedia)
+
+```json
+{
+  "data": {
+    "id": "123",
+    "name": "John Doe",
+    "status": "active"
+  },
+  "links": {
+    "self": "/users/123",
+    "edit": "/users/123",
+    "delete": "/users/123",
+    "posts": "/users/123/posts",
+    "avatar": "/users/123/avatar"
+  }
+}
+```
+
+### 12. Caching
+
+#### Cache Headers
+```
+Cache-Control: max-age=3600, public
+ETag: "33a64df551425fcc55e4d42a148795d9f25f89d4"
+Last-Modified: Wed, 15 Jan 2024 10:30:00 GMT
+```
+
+#### Conditional Requests
+```
+GET /users/123
+If-None-Match: "33a64df551425fcc55e4d42a148795d9f25f89d4"
+
+Response: 304 Not Modified (if not changed)
+```
+
+### 13. Bulk Operations
+
+```
+POST /users/bulk
+Content-Type: application/json
+
+{
+  "operations": [
+    { "method": "POST", "path": "/users", "body": {...} },
+    { "method": "PATCH", "path": "/users/123", "body": {...} },
+    { "method": "DELETE", "path": "/users/456" }
+  ]
+}
+```
+
+### 14. Webhooks
+
+```json
+POST /webhooks
+{
+  "url": "https://example.com/webhook",
+  "events": ["user.created", "user.updated"],
+  "secret": "webhook_secret_key"
+}
+```
+
+### 15. API Documentation Format
+
+Provide for each endpoint:
+- HTTP Method & Path
+- Description
+- Authentication required
+- Request parameters
+- Request body schema
+- Response schema
+- Status codes
+- Example requests/responses
+- Rate limits
+- Common errors
+
+## Output Format
+
+Provide:
+
+1. **API Overview** - Purpose, base URL, authentication
+2. **Resource Models** - Data structures and relationships
+3. **Endpoint Specifications** - Complete endpoint documentation
+4. **Authentication** - Auth flow and examples
+5. **Error Handling** - Error codes and formats
+6. **Rate Limiting** - Limits and headers
+7. **Versioning Strategy** - How versions are managed
+8. **Example Requests** - cURL examples for key operations
+9. **OpenAPI/Swagger Spec** - If applicable
+
+Generate complete, production-ready API documentation following REST best practices.
+"""

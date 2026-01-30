@@ -1,0 +1,147 @@
+{
+  "name": "claude-prompts",
+  "version": "1.1.0",
+  "description": "Claude Custom Prompts MCP Server",
+  "author": "minipuft",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-prompts": "./dist/index.js"
+  },
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "config.json",
+    "resources",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prebuild": "npm run generate:contracts",
+    "build": "tsc --project tsconfig.json",
+    "postbuild": "chmod +x dist/index.js || true",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "validate:execution-modifiers": "node scripts/validate-execution-modifiers.js",
+    "typecheck": "npm run validate:execution-modifiers && tsc --noEmit --project tsconfig.json",
+    "typecheck:tests": "tsc --noEmit --project tsconfig.test.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:ratchet": "node scripts/eslint-ratchet.js check",
+    "lint:ratchet:baseline": "node scripts/eslint-ratchet.js update-baseline",
+    "lint:staged": "lint-staged",
+    "lint:unused:internal": "ts-prune --project tsconfig.json --ignore \"^src/(?!gates/|execution/).*|/index.ts$|/index$|src/types.ts|src/tooling/contracts/_generated/|src/gates/(index.ts|constants.ts|gate-state-manager.ts|types.ts|services/index.ts|core/(gate-definitions.ts|review-utils.ts|types.ts|llm-review-parser.ts))|src/execution/(types.ts|pipeline/index.ts|pipeline/state/index.ts|pipeline/decisions/index.ts|parsers/index.ts|parsers/argument-schema.ts|operators/index.ts|context/index.ts)\"",
+    "lint:unused:full": "ts-prune --project tsconfig.json --ignore \"src/index.ts|src/types.ts|src/utils/global-resource-tracker.ts|src/mcp-tools/|src/prompts/|src/runtime/|src/tooling/|src/server/|/index.ts$|/index$|src/tooling/contracts/_generated/|src/metrics/|src/performance/|src/config/|src/logging/|src/semantic/|src/frameworks/|src/text-references/|src/chain-session/\"",
+    "start": "node dist/index.js",
+    "dev": "tsc --project tsconfig.json --watch & node --watch dist/index.js",
+    "start:sse": "node dist/index.js --transport=sse",
+    "start:stdio": "node dist/index.js --transport=stdio",
+    "start:quiet": "node dist/index.js --quiet",
+    "start:verbose": "node dist/index.js --verbose",
+    "start:debug": "node dist/index.js --debug-startup",
+    "start:production": "node dist/index.js --quiet --transport=stdio",
+    "start:development": "node dist/index.js --verbose --transport=sse",
+    "start:test": "node dist/index.js --startup-test",
+    "help": "node dist/index.js --help",
+    "test": "npm run pretest && npm run test:unit",
+    "pretest": "npm run generate:contracts",
+    "test:unit": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --runInBand tests/unit",
+    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch tests/unit",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage tests/unit",
+    "test:integration": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --runInBand tests/integration",
+    "test:e2e": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --runInBand tests/e2e",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:ci": "npm run test:unit",
+    "validate": "npm run test:ci",
+    "validate:arch": "depcruise --config .dependency-cruiser.cjs src",
+    "validate:filesize": "node scripts/validate-filesize.js",
+    "validate:metadata": "npm run verify:action-metadata",
+    "validate:build": "npm run build && npm run start:test",
+    "generate:contracts": "tsx scripts/generate-contracts.ts",
+    "validate:contracts": "tsx scripts/generate-contracts.ts --check",
+    "validate:methodologies": "node scripts/validate-methodologies.js",
+    "validate:all": "npm run lint && npm run validate:arch && npm run validate:filesize && npm run validate:metadata && npm run validate:contracts && npm run validate:methodologies",
+    "verify:action-metadata": "node scripts/verify-action-inventory.js",
+    "dev:graph": "madge --ts-config ./tsconfig.json --extensions ts src --image graph.svg",
+    "dev:graph:json": "madge --ts-config ./tsconfig.json --extensions ts src --json",
+    "prepublishOnly": "npm run build",
+    "release": "npm run build && npm test && npm publish --access public",
+    "pack:mcpb": "../scripts/build-extension.sh",
+    "pack:mcpb:validate": "cd .. && npx @anthropic-ai/mcpb validate manifest.json"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,cjs,mjs}": [
+      "eslint --fix"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minipuft/claude-prompts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/minipuft/claude-prompts/issues"
+  },
+  "homepage": "https://github.com/minipuft/claude-prompts#readme",
+  "keywords": [
+    "claude",
+    "ai",
+    "mcp",
+    "model-context-protocol",
+    "prompts",
+    "language-model",
+    "server"
+  ],
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.1",
+    "@types/nunjucks": "^3.2.6",
+    "cors": "^2.8.5",
+    "diff": "^8.0.2",
+    "express": "^4.18.2",
+    "js-yaml": "^4.1.1",
+    "nunjucks": "^3.2.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/cors": "^2.8.17",
+    "@types/diff": "^7.0.2",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.5.14",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
+    "dependency-cruiser": "^17.3.2",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "jest": "^30.0.0",
+    "lint-staged": "^16.2.7",
+    "madge": "^8.0.0",
+    "prettier": "^3.7.4",
+    "ts-jest": "^29.1.2",
+    "ts-prune": "^0.10.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.48.1",
+    "ws": "^8.18.1"
+  }
+}

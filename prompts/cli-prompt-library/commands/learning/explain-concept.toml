@@ -1,0 +1,199 @@
+prompt = """
+# Explain Technical Concept
+
+Please provide a comprehensive explanation of the following technical concept:
+
+{{args}}
+
+## Explanation Structure
+
+### 1. Simple Definition (ELI5 Level)
+Start with a simple, intuitive explanation that anyone can understand:
+- Use everyday analogies
+- Avoid technical jargon
+- Focus on the "what" and "why"
+- Make it relatable
+
+**Example format:**
+"Imagine [everyday analogy]. That's basically how [concept] works..."
+
+### 2. Intermediate Explanation
+Build on the simple definition with more detail:
+- Introduce key terminology
+- Explain how it works
+- Common use cases
+- When and why it's used
+
+### 3. Technical Deep Dive
+Provide detailed technical explanation:
+- Precise technical definition
+- Underlying mechanisms
+- Implementation details
+- Performance characteristics
+- Trade-offs and limitations
+
+### 4. Visual Representation
+Use ASCII diagrams or step-by-step illustrations:
+```
+Step 1: [Description]
+   ┌───────┐
+   │  A    │
+   └───┬───┘
+       │
+Step 2: [Description]
+   ┌───▼───┐
+   │  B    │
+   └───────┘
+```
+
+### 5. Code Examples
+
+#### Basic Example
+```javascript
+// Simple, clear example showing the concept
+```
+
+#### Real-World Example
+```javascript
+// Practical use case
+```
+
+#### Advanced Example
+```javascript
+// Complex scenario with edge cases
+```
+
+### 6. Key Concepts & Terminology
+
+**Term 1**: Definition
+**Term 2**: Definition
+**Term 3**: Definition
+
+### 7. Common Use Cases
+
+When to use this concept:
+1. **Use Case 1**: Description and example
+2. **Use Case 2**: Description and example
+3. **Use Case 3**: Description and example
+
+### 8. Common Misconceptions
+
+**Misconception 1**: "People think X..."
+- **Reality**: "Actually, Y because..."
+
+**Misconception 2**: "Many believe X..."
+- **Reality**: "In fact, Y..."
+
+### 9. Comparison with Related Concepts
+
+#### vs Concept A
+- **Similarities**: What they have in common
+- **Differences**: How they differ
+- **When to use each**: Decision criteria
+
+#### vs Concept B
+- **Similarities**: What they have in common
+- **Differences**: How they differ
+- **When to use each**: Decision criteria
+
+### 10. Advantages & Disadvantages
+
+#### Advantages
+- ✅ Benefit 1
+- ✅ Benefit 2
+- ✅ Benefit 3
+
+#### Disadvantages
+- ❌ Limitation 1
+- ❌ Limitation 2
+- ❌ Limitation 3
+
+### 11. Best Practices
+
+1. **Practice 1**: Description and why it matters
+2. **Practice 2**: Description and why it matters
+3. **Practice 3**: Description and why it matters
+
+### 12. Common Pitfalls
+
+**Pitfall 1**: What to avoid and why
+**Pitfall 2**: What to avoid and why
+**Pitfall 3**: What to avoid and why
+
+### 13. Real-World Applications
+
+Where this concept is used in practice:
+- **Industry/Domain 1**: Specific application
+- **Industry/Domain 2**: Specific application
+- **Popular tools/frameworks**: How they use it
+
+### 14. Historical Context (if relevant)
+
+- When was it introduced?
+- What problem did it solve?
+- How has it evolved?
+- Who created/popularized it?
+
+### 15. Learning Resources
+
+#### For Beginners
+- Resource 1 (Article/Video)
+- Resource 2 (Tutorial)
+
+#### For Intermediate
+- Resource 1 (Book/Course)
+- Resource 2 (Documentation)
+
+#### For Advanced
+- Resource 1 (Research paper)
+- Resource 2 (Deep dive)
+
+### 16. Hands-On Exercise
+
+Provide a practical exercise to reinforce understanding:
+
+**Challenge**: Build/implement something using this concept
+
+**Steps**:
+1. Step 1
+2. Step 2
+3. Step 3
+
+**Solution**:
+```javascript
+// Implementation
+```
+
+### 17. Interview Questions
+
+Common questions about this concept:
+1. **Q**: Question 1
+   **A**: Answer with explanation
+
+2. **Q**: Question 2
+   **A**: Answer with explanation
+
+3. **Q**: Question 3
+   **A**: Answer with explanation
+
+### 18. Related Concepts to Explore
+
+- **Concept A**: Why it's related and worth learning
+- **Concept B**: Why it's related and worth learning
+- **Concept C**: Why it's related and worth learning
+
+## Explanation Guidelines
+
+1. **Progressive Complexity**: Start simple, build up gradually
+2. **Multiple Perspectives**: Explain from different angles
+3. **Concrete Examples**: Always provide code/practical examples
+4. **Visual Aids**: Use diagrams where helpful
+5. **Analogies**: Make abstract concepts tangible
+6. **Context**: Explain when/why to use it
+7. **Completeness**: Cover common questions and edge cases
+8. **Accuracy**: Ensure technical correctness
+9. **Clarity**: Use clear, precise language
+10. **Engagement**: Make it interesting and relatable
+
+Generate a comprehensive, multi-level explanation following this structure.
+"""

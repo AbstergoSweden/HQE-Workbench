@@ -1,0 +1,431 @@
+prompt = """
+# Create Prompt Template
+
+Please create a reusable prompt template for:
+
+{{args}}
+
+## Prompt Template Structure
+
+### 1. Template Metadata
+
+**Template Name**: Clear, descriptive name
+
+**Category**: Type of prompt (Technical, Creative, Analysis, etc.)
+
+**Purpose**: What this prompt accomplishes
+
+**Use Cases**: When to use this template
+- Use case 1
+- Use case 2
+- Use case 3
+
+**Target Audience**: Who should use this
+- Skill level
+- Role
+- Context
+
+### 2. Template Variables
+
+Define all customizable parts:
+
+**Required Variables:**
+- `{{variable1}}`: Description of what goes here
+- `{{variable2}}`: Description of what goes here
+
+**Optional Variables:**
+- `{{optionalVar}}`: Description (defaults to: X)
+
+**Example Values:**
+```
+{{variable1}}: "Example input here"
+{{variable2}}: "Another example"
+```
+
+### 3. The Prompt Template
+
+```
+[ROLE/CONTEXT]
+You are a [role] helping with [task].
+
+[OBJECTIVE]
+Your goal is to [primary objective] based on the following [input type]:
+
+{{variable1}}
+
+[CONSTRAINTS/REQUIREMENTS]
+Please ensure:
+- Requirement 1
+- Requirement 2
+- Requirement 3
+
+[OUTPUT FORMAT]
+Provide your response in the following format:
+
+## Section 1: [Name]
+[Description of what goes here]
+
+## Section 2: [Name]
+[Description of what goes here]
+
+## Section 3: [Name]
+[Description of what goes here]
+
+[ADDITIONAL GUIDELINES]
+- Guideline 1
+- Guideline 2
+- Guideline 3
+
+[EXAMPLES] (if helpful)
+Example input:
+```
+[sample input]
+```
+
+Expected output:
+```
+[sample output]
+```
+```
+
+### 4. Prompt Engineering Best Practices Applied
+
+#### Clarity
+- ✅ Clear role definition
+- ✅ Explicit objective
+- ✅ Specific requirements
+- ✅ Defined output format
+
+#### Completeness
+- ✅ All necessary context provided
+- ✅ Edge cases considered
+- ✅ Examples included
+- ✅ Constraints specified
+
+#### Flexibility
+- ✅ Variables for customization
+- ✅ Optional parameters
+- ✅ Adaptable to different inputs
+
+#### Effectiveness
+- ✅ Structured output
+- ✅ Clear expectations
+- ✅ Actionable instructions
+- ✅ Quality guidelines
+
+### 5. Usage Instructions
+
+#### How to Use This Template
+
+**Step 1: Prepare Your Input**
+Gather the information needed for each variable:
+- {{variable1}}: [What to prepare]
+- {{variable2}}: [What to prepare]
+
+**Step 2: Fill in Variables**
+Replace template variables with your specific content:
+```
+Original: {{variable1}}
+Your input: [Your actual content]
+```
+
+**Step 3: Review and Adjust**
+- Check that all variables are filled
+- Adjust requirements if needed
+- Add context-specific constraints
+
+**Step 4: Execute**
+Submit the completed prompt to the AI model.
+
+**Step 5: Iterate**
+Based on results, refine the prompt:
+- Add more specific requirements
+- Clarify ambiguous instructions
+- Include additional examples
+
+### 6. Example Implementations
+
+#### Example 1: Basic Use Case
+
+**Input:**
+```
+{{variable1}}: [Example input 1]
+{{variable2}}: [Example input 2]
+```
+
+**Completed Prompt:**
+```
+[Full prompt with variables filled in]
+```
+
+**Expected Output:**
+```
+[What the AI should produce]
+```
+
+---
+
+#### Example 2: Advanced Use Case
+
+**Input:**
+```
+{{variable1}}: [Complex input]
+{{variable2}}: [Additional context]
+```
+
+**Completed Prompt:**
+```
+[Full prompt with variables filled in]
+```
+
+**Expected Output:**
+```
+[More complex expected output]
+```
+
+### 7. Variations and Modifications
+
+#### Variation 1: [Purpose]
+**Modification:**
+- Change [element] to [new value]
+- Add [new requirement]
+- Remove [element]
+
+**When to Use:**
+- Scenario 1
+- Scenario 2
+
+---
+
+#### Variation 2: [Purpose]
+**Modification:**
+- Adjust [element]
+- Include [addition]
+
+**When to Use:**
+- Scenario 1
+- Scenario 2
+
+### 8. Common Mistakes to Avoid
+
+**Mistake 1: Being Too Vague**
+- ❌ Bad: "Analyze this code"
+- ✅ Good: "Perform security analysis focusing on [specific aspects]"
+
+**Mistake 2: Missing Context**
+- ❌ Bad: Jumping straight to task without background
+- ✅ Good: Providing role, objective, and context first
+
+**Mistake 3: Unclear Output Format**
+- ❌ Bad: No structure specified
+- ✅ Good: Clear sections and formatting requirements
+
+**Mistake 4: Too Many Requirements**
+- ❌ Bad: 20+ bullet points of requirements
+- ✅ Good: 5-7 key requirements, grouped logically
+
+### 9. Optimization Tips
+
+#### For Better Clarity:
+- Use simple, direct language
+- Break complex requests into steps
+- Provide examples liberally
+- Define technical terms
+
+#### For Better Results:
+- Specify desired output format
+- Include quality criteria
+- Provide success examples
+- Set clear boundaries
+
+#### For Better Reusability:
+- Use variables for all changing parts
+- Keep structure consistent
+- Document edge cases
+- Provide usage examples
+
+### 10. Testing Your Template
+
+#### Test Checklist:
+- [ ] Template works with minimal input
+- [ ] Template works with complex input
+- [ ] Edge cases handled appropriately
+- [ ] Output format is consistent
+- [ ] Instructions are clear
+- [ ] Variables are well-defined
+- [ ] Examples are helpful
+
+#### Test Cases:
+1. **Simple case**: [Test with basic input]
+2. **Complex case**: [Test with detailed input]
+3. **Edge case**: [Test with unusual input]
+4. **Error case**: [Test with invalid input]
+
+### 11. Template Categories
+
+#### Technical Prompts
+- Code generation
+- Code review
+- Architecture design
+- Debugging
+- Optimization
+
+#### Analysis Prompts
+- Data analysis
+- Performance analysis
+- Security analysis
+- Trend analysis
+- Comparison
+
+#### Creative Prompts
+- Content writing
+- Ideation
+- Storytelling
+- Design concepts
+- Marketing copy
+
+#### Learning Prompts
+- Explanations
+- Tutorials
+- Study guides
+- Question generation
+- Learning paths
+
+#### Professional Prompts
+- Email drafting
+- Report writing
+- Documentation
+- Presentations
+- Summaries
+
+### 12. Advanced Template Features
+
+#### Conditional Logic
+```
+{{if variable1}}
+  Include this section when variable1 is provided
+{{endif}}
+
+{{if-else variable2}}
+  Use this when variable2 is X
+{{else}}
+  Use this otherwise
+{{endif}}
+```
+
+#### Multi-Step Templates
+```
+Step 1: [First task]
+{{variable1}}
+
+Step 2: Based on Step 1, [second task]
+{{variable2}}
+
+Step 3: Combining results, [final task]
+```
+
+#### Iterative Templates
+```
+For each {{item}} in {{collection}}:
+1. Analyze {{item}}
+2. Compare with {{criteria}}
+3. Output results
+```
+
+### 13. Documentation Template
+
+For sharing your template with others:
+
+```markdown
+# Template Name
+
+## Description
+[What this template does]
+
+## When to Use
+- Use case 1
+- Use case 2
+
+## Variables
+
+### Required
+- `{{var1}}`: Description
+
+### Optional
+- `{{var2}}`: Description (default: value)
+
+## Template
+
+[The actual prompt template]
+
+## Examples
+
+### Example 1
+Input:
+```
+var1: value
+```
+
+Output:
+```
+[Expected result]
+```
+
+## Notes
+- Note 1
+- Note 2
+```
+
+### 14. Prompt Template Library Organization
+
+#### File Structure
+```
+templates/
+├── technical/
+│   ├── code-review.md
+│   ├── debugging.md
+│   └── architecture.md
+├── writing/
+│   ├── blog-post.md
+│   ├── documentation.md
+│   └── email.md
+└── analysis/
+    ├── data-analysis.md
+    └── security-audit.md
+```
+
+#### Naming Convention
+- Use kebab-case
+- Descriptive names
+- Include category prefix if needed
+- Example: `tech-code-review-security.md`
+
+### 15. Quality Checklist for Templates
+
+**Structure:**
+- [ ] Clear role/context
+- [ ] Explicit objective
+- [ ] Well-defined variables
+- [ ] Structured output format
+- [ ] Examples provided
+
+**Content:**
+- [ ] Comprehensive requirements
+- [ ] Appropriate constraints
+- [ ] Quality guidelines
+- [ ] Edge cases covered
+
+**Usability:**
+- [ ] Easy to understand
+- [ ] Easy to customize
+- [ ] Clear instructions
+- [ ] Good documentation
+
+**Effectiveness:**
+- [ ] Produces consistent results
+- [ ] Works across use cases
+- [ ] Handles variations well
+- [ ] Tested and validated
+
+Generate a complete, reusable prompt template following this structure.
+"""

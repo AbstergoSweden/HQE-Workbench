@@ -1,0 +1,635 @@
+prompt = """
+# Suggest Design Patterns
+
+Please analyze the following code/requirements and suggest appropriate design patterns:
+
+{{args}}
+
+## Design Pattern Analysis Framework
+
+### 1. Problem Identification
+
+First, identify what problems exist in the code:
+- Code duplication
+- Tight coupling
+- Hard to test
+- Difficult to extend
+- Complex conditionals
+- Unclear responsibilities
+- Global state issues
+- Object creation complexity
+
+### 2. Creational Patterns
+
+#### Factory Pattern
+**When to use:**
+- Object creation logic is complex
+- Need to create different types of objects
+- Want to decouple object creation from usage
+
+**Before:**
+```javascript
+class UserService {
+  createUser(type) {
+    if (type === 'admin') {
+      return new AdminUser();
+    } else if (type === 'customer') {
+      return new CustomerUser();
+    } else if (type === 'guest') {
+      return new GuestUser();
+    }
+  }
+}
+```
+
+**After:**
+```javascript
+class UserFactory {
+  static createUser(type) {
+    const users = {
+      admin: AdminUser,
+      customer: CustomerUser,
+      guest: GuestUser
+    };
+
+    const UserClass = users[type];
+    if (!UserClass) {
+      throw new Error(`Unknown user type: ${type}`);
+    }
+
+    return new UserClass();
+  }
+}
+
+// Usage
+const user = UserFactory.createUser('admin');
+```
+
+#### Builder Pattern
+**When to use:**
+- Object has many optional parameters
+- Step-by-step object construction
+- Want immutable objects
+
+**Example:**
+```javascript
+class QueryBuilder {
+  constructor() {
+    this.query = {};
+  }
+
+  select(...fields) {
+    this.query.select = fields;
+    return this;
+  }
+
+  from(table) {
+    this.query.from = table;
+    return this;
+  }
+
+  where(conditions) {
+    this.query.where = conditions;
+    return this;
+  }
+
+  build() {
+    return this.query;
+  }
+}
+
+// Usage
+const query = new QueryBuilder()
+  .select('id', 'name', 'email')
+  .from('users')
+  .where({ active: true })
+  .build();
+```
+
+#### Singleton Pattern
+**When to use:**
+- Need exactly one instance (database connection, logger)
+- Global access point needed
+- **Warning**: Often an anti-pattern; consider dependency injection instead
+
+**Example:**
+```javascript
+class Database {
+  constructor() {
+    if (Database.instance) {
+      return Database.instance;
+    }
+    this.connection = null;
+    Database.instance = this;
+  }
+
+  connect() {
+    if (!this.connection) {
+      this.connection = createConnection();
+    }
+    return this.connection;
+  }
+}
+
+// Usage
+const db1 = new Database();
+const db2 = new Database();
+// db1 === db2 (same instance)
+```
+
+#### Prototype Pattern
+**When to use:**
+- Object creation is expensive
+- Need to clone objects
+
+**Example:**
+```javascript
+class GameCharacter {
+  constructor(config) {
+    this.health = config.health;
+    this.strength = config.strength;
+    this.inventory = config.inventory;
+  }
+
+  clone() {
+    return new GameCharacter({
+      health: this.health,
+      strength: this.strength,
+      inventory: [...this.inventory]
+    });
+  }
+}
+```
+
+### 3. Structural Patterns
+
+#### Adapter Pattern
+**When to use:**
+- Make incompatible interfaces work together
+- Integrate third-party libraries
+- Legacy code integration
+
+**Example:**
+```javascript
+// Old interface
+class OldPaymentProcessor {
+  processPayment(amount) {
+    return `Processing $${amount}`;
+  }
+}
+
+// New interface expected by our code
+class PaymentAdapter {
+  constructor(processor) {
+    this.processor = processor;
+  }
+
+  pay(paymentDetails) {
+    return this.processor.processPayment(paymentDetails.amount);
+  }
+}
+
+// Usage
+const oldProcessor = new OldPaymentProcessor();
+const adapter = new PaymentAdapter(oldProcessor);
+adapter.pay({ amount: 100, currency: 'USD' });
+```
+
+#### Decorator Pattern
+**When to use:**
+- Add functionality dynamically
+- Extend object behavior
+- Alternative to subclassing
+
+**Example:**
+```javascript
+class Coffee {
+  cost() {
+    return 5;
+  }
+}
+
+class MilkDecorator {
+  constructor(coffee) {
+    this.coffee = coffee;
+  }
+
+  cost() {
+    return this.coffee.cost() + 1;
+  }
+}
+
+class SugarDecorator {
+  constructor(coffee) {
+    this.coffee = coffee;
+  }
+
+  cost() {
+    return this.coffee.cost() + 0.5;
+  }
+}
+
+// Usage
+let coffee = new Coffee();
+coffee = new MilkDecorator(coffee);
+coffee = new SugarDecorator(coffee);
+console.log(coffee.cost()); // 6.5
+```
+
+#### Facade Pattern
+**When to use:**
+- Simplify complex subsystems
+- Provide unified interface
+- Reduce coupling
+
+**Example:**
+```javascript
+// Complex subsystem
+class CPU {
+  freeze() { /* ... */ }
+  execute() { /* ... */ }
+}
+
+class Memory {
+  load() { /* ... */ }
+}
+
+class HardDrive {
+  read() { /* ... */ }
+}
+
+// Facade
+class Computer {
+  constructor() {
+    this.cpu = new CPU();
+    this.memory = new Memory();
+    this.hardDrive = new HardDrive();
+  }
+
+  start() {
+    this.cpu.freeze();
+    this.memory.load();
+    this.hardDrive.read();
+    this.cpu.execute();
+  }
+}
+
+// Usage (simple!)
+const computer = new Computer();
+computer.start();
+```
+
+#### Proxy Pattern
+**When to use:**
+- Control access to objects
+- Lazy loading
+- Logging/caching
+- Access control
+
+**Example:**
+```javascript
+class DatabaseQuery {
+  execute(query) {
+    // Expensive operation
+    return performQuery(query);
+  }
+}
+
+class CachingProxy {
+  constructor(database) {
+    this.database = database;
+    this.cache = new Map();
+  }
+
+  execute(query) {
+    if (this.cache.has(query)) {
+      console.log('Cache hit');
+      return this.cache.get(query);
+    }
+
+    console.log('Cache miss');
+    const result = this.database.execute(query);
+    this.cache.set(query, result);
+    return result;
+  }
+}
+```
+
+#### Composite Pattern
+**When to use:**
+- Tree structures
+- Part-whole hierarchies
+- Treat individual objects and compositions uniformly
+
+**Example:**
+```javascript
+class File {
+  constructor(name) {
+    this.name = name;
+  }
+
+  getSize() {
+    return 100; // KB
+  }
+}
+
+class Folder {
+  constructor(name) {
+    this.name = name;
+    this.children = [];
+  }
+
+  add(child) {
+    this.children.push(child);
+  }
+
+  getSize() {
+    return this.children.reduce((total, child) => {
+      return total + child.getSize();
+    }, 0);
+  }
+}
+
+// Usage
+const root = new Folder('root');
+root.add(new File('file1'));
+const subfolder = new Folder('subfolder');
+subfolder.add(new File('file2'));
+root.add(subfolder);
+console.log(root.getSize()); // 200
+```
+
+### 4. Behavioral Patterns
+
+#### Strategy Pattern
+**When to use:**
+- Multiple algorithms for same task
+- Eliminate conditionals
+- Make algorithms interchangeable
+
+**Before:**
+```javascript
+function calculateShipping(type, weight) {
+  if (type === 'express') {
+    return weight * 5;
+  } else if (type === 'standard') {
+    return weight * 2;
+  } else if (type === 'economy') {
+    return weight * 1;
+  }
+}
+```
+
+**After:**
+```javascript
+class ExpressShipping {
+  calculate(weight) {
+    return weight * 5;
+  }
+}
+
+class StandardShipping {
+  calculate(weight) {
+    return weight * 2;
+  }
+}
+
+class EconomyShipping {
+  calculate(weight) {
+    return weight * 1;
+  }
+}
+
+class ShippingCalculator {
+  constructor(strategy) {
+    this.strategy = strategy;
+  }
+
+  calculate(weight) {
+    return this.strategy.calculate(weight);
+  }
+}
+
+// Usage
+const calculator = new ShippingCalculator(new ExpressShipping());
+console.log(calculator.calculate(10)); // 50
+```
+
+#### Observer Pattern
+**When to use:**
+- One-to-many dependencies
+- Event systems
+- Pub-sub systems
+
+**Example:**
+```javascript
+class EventEmitter {
+  constructor() {
+    this.listeners = {};
+  }
+
+  on(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  emit(event, data) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(callback => callback(data));
+    }
+  }
+}
+
+// Usage
+const emitter = new EventEmitter();
+emitter.on('user:created', (user) => {
+  console.log('Send welcome email to', user.email);
+});
+emitter.on('user:created', (user) => {
+  console.log('Log user creation:', user.id);
+});
+
+emitter.emit('user:created', { id: 1, email: 'user@example.com' });
+```
+
+#### Command Pattern
+**When to use:**
+- Encapsulate requests as objects
+- Undo/redo functionality
+- Queue operations
+- Logging operations
+
+**Example:**
+```javascript
+class Command {
+  execute() {}
+  undo() {}
+}
+
+class AddTextCommand extends Command {
+  constructor(editor, text) {
+    super();
+    this.editor = editor;
+    this.text = text;
+  }
+
+  execute() {
+    this.editor.addText(this.text);
+  }
+
+  undo() {
+    this.editor.removeText(this.text.length);
+  }
+}
+
+class CommandHistory {
+  constructor() {
+    this.history = [];
+  }
+
+  execute(command) {
+    command.execute();
+    this.history.push(command);
+  }
+
+  undo() {
+    const command = this.history.pop();
+    if (command) {
+      command.undo();
+    }
+  }
+}
+```
+
+#### Template Method Pattern
+**When to use:**
+- Define algorithm skeleton
+- Let subclasses override specific steps
+- Code reuse in similar algorithms
+
+**Example:**
+```javascript
+class DataParser {
+  parse(data) {
+    const raw = this.readData(data);
+    const processed = this.processData(raw);
+    return this.formatOutput(processed);
+  }
+
+  readData(data) {
+    // Common implementation
+    return data;
+  }
+
+  processData(data) {
+    // Override in subclass
+    throw new Error('Must implement processData');
+  }
+
+  formatOutput(data) {
+    // Common implementation
+    return JSON.stringify(data);
+  }
+}
+
+class CSVParser extends DataParser {
+  processData(data) {
+    return data.split(',').map(item => item.trim());
+  }
+}
+
+class XMLParser extends DataParser {
+  processData(data) {
+    // XML-specific processing
+    return parseXML(data);
+  }
+}
+```
+
+#### Chain of Responsibility
+**When to use:**
+- Multiple handlers for a request
+- Handler selection at runtime
+- Middleware pattern
+
+**Example:**
+```javascript
+class AuthMiddleware {
+  setNext(middleware) {
+    this.next = middleware;
+    return middleware;
+  }
+
+  handle(request) {
+    if (this.next) {
+      return this.next.handle(request);
+    }
+    return true;
+  }
+}
+
+class Authentication extends AuthMiddleware {
+  handle(request) {
+    if (!request.token) {
+      throw new Error('No token');
+    }
+    return super.handle(request);
+  }
+}
+
+class Authorization extends AuthMiddleware {
+  handle(request) {
+    if (!request.hasPermission) {
+      throw new Error('No permission');
+    }
+    return super.handle(request);
+  }
+}
+
+// Usage
+const auth = new Authentication();
+const authz = new Authorization();
+auth.setNext(authz);
+
+auth.handle({ token: 'xyz', hasPermission: true });
+```
+
+### 5. Pattern Selection Guide
+
+#### For Object Creation Issues
+- Too many constructor parameters → **Builder**
+- Complex object creation logic → **Factory**
+- Need to clone objects → **Prototype**
+- Need single instance → **Singleton** (use cautiously)
+
+#### For Code Structure Issues
+- Incompatible interfaces → **Adapter**
+- Need to add features → **Decorator**
+- Complex subsystem → **Facade**
+- Control access → **Proxy**
+- Part-whole hierarchy → **Composite**
+
+#### For Behavior Issues
+- Multiple algorithms → **Strategy**
+- Event handling → **Observer**
+- Undo/redo → **Command**
+- Request handlers → **Chain of Responsibility**
+- Algorithm skeleton → **Template Method**
+
+### 6. Output Format
+
+For each recommended pattern, provide:
+
+1. **Pattern Name** and category
+2. **Problem** it solves in this specific code
+3. **Benefits** of applying it here
+4. **Before Code** (current implementation)
+5. **After Code** (with pattern applied)
+6. **Trade-offs** (complexity, performance)
+7. **Testing** considerations
+8. **When NOT to use** this pattern
+
+Generate comprehensive design pattern recommendations following this structure.
+"""

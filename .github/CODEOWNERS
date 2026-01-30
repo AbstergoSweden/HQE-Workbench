@@ -1,0 +1,21 @@
+# CODEOWNERS
+
+# Global Owner
+* @AbstergoSweden
+
+# Backend (Rust)
+/crates/ @AbstergoSweden
+/cli/ @AbstergoSweden
+Cargo.toml @AbstergoSweden
+
+# Frontend (Tauri/React)
+/apps/workbench/ @AbstergoSweden
+
+# Protocol & Docs
+/protocol/ @AbstergoSweden
+/docs/ @AbstergoSweden
+*.md @AbstergoSweden
+
+# DevOps
+/.github/ @AbstergoSweden
+/scripts/ @AbstergoSweden

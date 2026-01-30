@@ -1,0 +1,397 @@
+prompt = """
+# Create Learning Roadmap
+
+Please create a comprehensive learning roadmap for:
+
+{{args}}
+
+## Learning Roadmap Structure
+
+### 1. Current State Assessment
+
+#### Prerequisites Check
+What you should know before starting:
+- ☐ Prerequisite 1
+- ☐ Prerequisite 2
+- ☐ Prerequisite 3
+
+#### Skill Level Check
+Which level are you?
+- [ ] **Complete Beginner**: Never touched this topic
+- [ ] **Novice**: Familiar with basics
+- [ ] **Intermediate**: Can build projects
+- [ ] **Advanced**: Production experience
+- [ ] **Expert**: Deep expertise
+
+### 2. Learning Goals
+
+#### Short-term Goals (1-3 months)
+- [ ] Goal 1: Specific, measurable outcome
+- [ ] Goal 2: Specific, measurable outcome
+- [ ] Goal 3: Specific, measurable outcome
+
+#### Medium-term Goals (3-6 months)
+- [ ] Goal 1: Specific, measurable outcome
+- [ ] Goal 2: Specific, measurable outcome
+- [ ] Goal 3: Specific, measurable outcome
+
+#### Long-term Goals (6-12 months)
+- [ ] Goal 1: Specific, measurable outcome
+- [ ] Goal 2: Specific, measurable outcome
+- [ ] Goal 3: Specific, measurable outcome
+
+### 3. Complete Learning Path
+
+## Phase 1: Foundations (Weeks 1-4)
+
+### Week 1: Getting Started
+**Focus**: Core concepts and setup
+
+**Topics to Learn:**
+- [ ] Topic 1: What it is and why it matters
+- [ ] Topic 2: Core terminology
+- [ ] Topic 3: Development environment setup
+
+**Resources:**
+- 📚 [Resource 1]: Type (Article/Video/Course)
+- 📚 [Resource 2]: Type
+- 📚 [Resource 3]: Type
+
+**Practice Projects:**
+1. **Project 1**: Simple starter project
+   - Description: What you'll build
+   - Skills practiced: What you'll learn
+   - Time: Estimated hours
+
+**Milestone**: By end of week, you should be able to [specific achievement]
+
+---
+
+### Week 2: Building Blocks
+**Focus**: Core features and patterns
+
+**Topics to Learn:**
+- [ ] Topic 1
+- [ ] Topic 2
+- [ ] Topic 3
+
+**Resources:**
+- 📚 [Resource 1]
+- 📚 [Resource 2]
+
+**Practice Projects:**
+1. **Project 1**: Description
+   - Skills: What you'll practice
+   - Time: X hours
+
+**Milestone**: [Specific achievement]
+
+---
+
+### Week 3-4: First Real Project
+**Focus**: Applying fundamentals
+
+**Project**: Build [specific application]
+
+**Requirements:**
+- Feature 1
+- Feature 2
+- Feature 3
+
+**Learning Objectives:**
+- Objective 1
+- Objective 2
+- Objective 3
+
+**Resources:**
+- Tutorial: [Link]
+- Documentation: [Link]
+
+**Deliverable**: Completed project with [features]
+
+---
+
+## Phase 2: Intermediate Skills (Weeks 5-12)
+
+### Week 5-6: Advanced Concepts
+**Focus**: Deeper understanding
+
+**Topics:**
+- [ ] Advanced topic 1
+- [ ] Advanced topic 2
+- [ ] Advanced topic 3
+
+**Resources:**
+- Book: [Title] (Chapters X-Y)
+- Course: [Name] (Modules X-Y)
+- Documentation: [Official docs section]
+
+**Practice:**
+- Exercise 1
+- Exercise 2
+
+**Milestone**: [Achievement]
+
+---
+
+### Week 7-8: Best Practices
+**Focus**: Professional patterns
+
+**Topics:**
+- [ ] Code organization
+- [ ] Testing strategies
+- [ ] Performance optimization
+- [ ] Security practices
+
+**Resources:**
+- Guide: [Link]
+- Examples: [Repository]
+
+**Project**: Refactor previous project with best practices
+
+---
+
+### Week 9-12: Intermediate Project
+**Focus**: Building complete application
+
+**Project**: [Full-stack / Complex application]
+
+**Features:**
+- Feature 1 (with complexity)
+- Feature 2 (with complexity)
+- Feature 3 (with complexity)
+
+**Technologies to integrate:**
+- Technology 1
+- Technology 2
+- Technology 3
+
+**Deliverable**: Production-ready application
+
+---
+
+## Phase 3: Advanced Topics (Weeks 13-20)
+
+### Week 13-14: Performance & Optimization
+**Topics:**
+- [ ] Performance profiling
+- [ ] Optimization techniques
+- [ ] Caching strategies
+- [ ] Scaling considerations
+
+**Resources:**
+- Article: [Link]
+- Video series: [Link]
+
+**Practice:**
+- Optimize previous projects
+- Benchmark and compare
+
+---
+
+### Week 15-16: Testing & Quality
+**Topics:**
+- [ ] Unit testing
+- [ ] Integration testing
+- [ ] E2E testing
+- [ ] Test-driven development
+
+**Resources:**
+- Guide: [Link]
+- Examples: [Repository]
+
+**Practice:**
+- Add tests to previous projects
+- Achieve 80%+ coverage
+
+---
+
+### Week 17-20: Advanced Project
+**Focus**: Industry-level application
+
+**Project**: [Complex, production-grade application]
+
+**Requirements:**
+- Professional architecture
+- Comprehensive testing
+- Performance optimized
+- Security hardened
+- Fully documented
+
+**Deliverable**: Portfolio-worthy project
+
+---
+
+## Phase 4: Specialization (Weeks 21-24)
+
+### Choose Your Path:
+
+#### Path A: [Specialization 1]
+**Topics:**
+- Topic 1
+- Topic 2
+- Topic 3
+
+**Resources:**
+- Resource 1
+- Resource 2
+
+**Project**: [Specialized project]
+
+#### Path B: [Specialization 2]
+**Topics:**
+- Topic 1
+- Topic 2
+- Topic 3
+
+**Resources:**
+- Resource 1
+- Resource 2
+
+**Project**: [Specialized project]
+
+---
+
+## Phase 5: Mastery (Months 7-12)
+
+### Contributing to Open Source
+- [ ] Find project to contribute to
+- [ ] Make first contribution
+- [ ] Regular contributions
+
+### Building Portfolio
+- [ ] Personal website/portfolio
+- [ ] 3-5 polished projects
+- [ ] Blog posts about learning
+- [ ] GitHub profile showcase
+
+### Community Engagement
+- [ ] Answer questions (Stack Overflow, forums)
+- [ ] Write tutorials/articles
+- [ ] Give talks or workshops
+- [ ] Mentor others
+
+### Advanced Topics
+- [ ] Advanced topic 1
+- [ ] Advanced topic 2
+- [ ] Advanced topic 3
+
+---
+
+### 4. Daily/Weekly Schedule
+
+#### Daily Routine (2-3 hours)
+- **30 min**: Reading/watching tutorials
+- **90 min**: Hands-on coding practice
+- **30 min**: Review and reflection
+
+#### Weekly Routine
+- **Monday-Friday**: Daily practice (2-3 hrs)
+- **Saturday**: Work on project (4-6 hrs)
+- **Sunday**: Review week, plan next week (1-2 hrs)
+
+### 5. Resource Library
+
+#### Essential Books
+1. **Book 1**: Title (Best for beginners)
+2. **Book 2**: Title (Intermediate)
+3. **Book 3**: Title (Advanced)
+
+#### Online Courses
+1. **Course 1**: Platform (Duration, Level)
+2. **Course 2**: Platform (Duration, Level)
+3. **Course 3**: Platform (Duration, Level)
+
+#### Documentation
+- Official docs: [Link]
+- API reference: [Link]
+- Guides: [Link]
+
+#### Practice Platforms
+- Platform 1: [Link] (Type of exercises)
+- Platform 2: [Link] (Type of exercises)
+
+#### Community Resources
+- Forum: [Link]
+- Discord/Slack: [Link]
+- Reddit: [Link]
+- Newsletter: [Link]
+
+### 6. Project Ideas by Level
+
+#### Beginner Projects
+1. **Project 1**: Description (Skills: X, Y, Z)
+2. **Project 2**: Description (Skills: X, Y, Z)
+3. **Project 3**: Description (Skills: X, Y, Z)
+
+#### Intermediate Projects
+1. **Project 1**: Description (Skills: X, Y, Z)
+2. **Project 2**: Description (Skills: X, Y, Z)
+3. **Project 3**: Description (Skills: X, Y, Z)
+
+#### Advanced Projects
+1. **Project 1**: Description (Skills: X, Y, Z)
+2. **Project 2**: Description (Skills: X, Y, Z)
+3. **Project 3**: Description (Skills: X, Y, Z)
+
+### 7. Common Pitfalls & How to Avoid
+
+**Pitfall 1**: Tutorial Hell
+- **Problem**: Just following tutorials without building
+- **Solution**: Build projects independently after each tutorial
+
+**Pitfall 2**: Rushing Ahead
+- **Problem**: Skipping fundamentals
+- **Solution**: Master basics before advancing
+
+**Pitfall 3**: Not Practicing Enough
+- **Problem**: Too much theory, not enough coding
+- **Solution**: 70% hands-on, 30% learning
+
+**Pitfall 4**: Analysis Paralysis
+- **Problem**: Too many resources, can't decide
+- **Solution**: Pick one path and stick to it
+
+### 8. Tracking Progress
+
+#### Weekly Checklist
+- [ ] Completed learning goals
+- [ ] Finished practice exercises
+- [ ] Made project progress
+- [ ] Reviewed previous material
+- [ ] Noted challenges and questions
+
+#### Monthly Review
+- [ ] Achieved monthly milestones
+- [ ] Built planned projects
+- [ ] Updated portfolio
+- [ ] Adjusted roadmap if needed
+
+### 9. Staying Motivated
+
+#### Tips:
+- Join a community
+- Find an accountability partner
+- Celebrate small wins
+- Keep a learning journal
+- Build projects you're passionate about
+- Take breaks when needed
+
+#### When You're Stuck:
+1. Review fundamentals
+2. Ask for help in communities
+3. Take a different approach
+4. Build something simpler first
+5. Take a break and come back fresh
+
+### 10. Next Steps After Completion
+
+- [ ] Build a portfolio website
+- [ ] Apply knowledge in job/freelance
+- [ ] Contribute to open source
+- [ ] Learn complementary skills
+- [ ] Teach others what you've learned
+- [ ] Start advanced specialization
+
+Generate a detailed, actionable learning roadmap following this structure.
+"""

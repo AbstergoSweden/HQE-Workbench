@@ -1,0 +1,91 @@
+name: HQE Security Scan with Venice AI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install HQE Workbench CLI
+      run: |
+        # Install HQE CLI - this is a placeholder, actual installation would depend on availability
+        echo "Installing HQE Workbench CLI..."
+        # In a real scenario, this would install the actual HQE CLI tool
+        # For demonstration purposes, we'll create a mock script
+        echo '#!/bin/bash' > hqe_mock.sh
+        echo 'echo "Mock HQE CLI - would scan with Venice AI API"' >> hqe_mock.sh
+        echo 'echo "Repository: $1"' >> hqe_mock.sh
+        echo 'echo "Provider: Venice AI"' >> hqe_mock.sh
+        chmod +x hqe_mock.sh
+        sudo mv hqe_mock.sh /usr/local/bin/hqe
+        echo "Mock HQE CLI installed"
+
+    - name: Run HQE Security Scan with Venice AI
+      run: |
+        if command -v hqe &> /dev/null; then
+          echo "Running HQE scan with Venice AI..."
+          # In a real scenario, this would run the actual HQE scan
+          hqe scan --repo . --provider venice --model venice-medium --api-key $VENICE_API_KEY
+        else
+          echo "HQE CLI not available, running mock scan..."
+          ./run_scan.sh
+        fi
+      env:
+        VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
+        VENICE_API_BASE_URL: https://api.venice.ai/v1
+        VENICE_MODEL_NAME: venice-medium
+
+    - name: Upload scan results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: hqe-scan-results
+        path: scan-results-*/
+        retention-days: 30
+
+  validate-results:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: always()
+
+    steps:
+    - name: Download scan results
+      uses: actions/download-artifact@v4
+      with:
+        name: hqe-scan-results
+        path: ./scan-results
+
+    - name: Display scan summary
+      run: |
+        echo "Scan Results Summary:"
+        ls -la ./scan-results/
+        if [ -f "./scan-results/report.json" ]; then
+          echo "Report contents:"
+          cat ./scan-results/report.json | jq .executive_summary
+        else
+          echo "No report.json found"
+        fi

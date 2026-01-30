@@ -1,0 +1,8 @@
+[package]
+name = "hqe-vector"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Placeholder crate for future vector/embedding support
+# Dependencies will be added when features are implemented

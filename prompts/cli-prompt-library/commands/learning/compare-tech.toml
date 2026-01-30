@@ -1,0 +1,334 @@
+prompt = """
+# Compare Technologies
+
+Please provide a comprehensive comparison of the following technologies:
+
+{{args}}
+
+## Technology Comparison Framework
+
+### 1. Overview
+
+#### Technology A
+- **Name**: Full name and version
+- **Type**: Framework/Library/Language/Tool
+- **Created**: Year and creator
+- **Current Status**: Active/Mature/Legacy
+- **Purpose**: What it's designed for
+
+#### Technology B
+- **Name**: Full name and version
+- **Type**: Framework/Library/Language/Tool
+- **Created**: Year and creator
+- **Current Status**: Active/Mature/Legacy
+- **Purpose**: What it's designed for
+
+### 2. Quick Comparison Table
+
+| Feature | Technology A | Technology B | Winner |
+|---------|-------------|-------------|---------|
+| Learning Curve | Easy/Medium/Hard | Easy/Medium/Hard | |
+| Performance | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | |
+| Community Size | Large/Medium/Small | Large/Medium/Small | |
+| Job Market | High/Medium/Low | High/Medium/Low | |
+| Maturity | Mature/Growing/Young | Mature/Growing/Young | |
+| Documentation | Excellent/Good/Poor | Excellent/Good/Poor | |
+| Ecosystem | Rich/Adequate/Limited | Rich/Adequate/Limited | |
+
+### 3. Core Philosophy & Approach
+
+#### Technology A Philosophy
+- Design principles
+- Core values
+- Intended use cases
+- Target audience
+
+#### Technology B Philosophy
+- Design principles
+- Core values
+- Intended use cases
+- Target audience
+
+#### Key Philosophical Differences
+What makes them fundamentally different in approach?
+
+### 4. Syntax & Developer Experience
+
+#### Code Comparison
+
+**Technology A:**
+```javascript
+// Example implementing same feature
+```
+
+**Technology B:**
+```javascript
+// Same feature in different syntax
+```
+
+**Analysis:**
+- Which is more readable?
+- Which is more concise?
+- Which is more intuitive?
+
+### 5. Performance Comparison
+
+#### Benchmarks
+```
+Operation: [Task]
+Technology A: Xms
+Technology B: Yms
+Winner: [A/B] (Z% faster)
+
+Operation: [Task]
+Technology A: Xms
+Technology B: Yms
+Winner: [A/B] (Z% faster)
+```
+
+#### Performance Characteristics
+- **Technology A**: When it's faster and why
+- **Technology B**: When it's faster and why
+
+#### Real-World Performance
+- Bundle size
+- Startup time
+- Runtime performance
+- Memory usage
+
+### 6. Features & Capabilities
+
+#### Feature Matrix
+
+| Feature | Tech A | Tech B | Notes |
+|---------|--------|--------|-------|
+| Feature 1 | ✅ | ✅ | |
+| Feature 2 | ✅ | ❌ | Only in A |
+| Feature 3 | ❌ | ✅ | Only in B |
+| Feature 4 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Better in B |
+
+#### Unique Features
+- **Technology A Only**: What it offers exclusively
+- **Technology B Only**: What it offers exclusively
+
+### 7. Learning Curve
+
+#### Technology A
+- **Time to Basic Proficiency**: X weeks/months
+- **Time to Advanced Skills**: Y months/years
+- **Prerequisites**: What you need to know first
+- **Learning Resources**: Quality and quantity
+- **Gotchas**: Common beginner mistakes
+
+#### Technology B
+- **Time to Basic Proficiency**: X weeks/months
+- **Time to Advanced Skills**: Y months/years
+- **Prerequisites**: What you need to know first
+- **Learning Resources**: Quality and quantity
+- **Gotchas**: Common beginner mistakes
+
+### 8. Ecosystem & Community
+
+#### Technology A
+- **NPM Packages / Libraries**: Number and quality
+- **Community Size**: Developer count
+- **Stack Overflow Questions**: Activity level
+- **GitHub Stars**: Popularity metric
+- **Major Companies Using**: Example companies
+- **Community Health**: Active/Declining
+
+#### Technology B
+- **NPM Packages / Libraries**: Number and quality
+- **Community Size**: Developer count
+- **Stack Overflow Questions**: Activity level
+- **GitHub Stars**: Popularity metric
+- **Major Companies Using**: Example companies
+- **Community Health**: Active/Declining
+
+### 9. Documentation & Support
+
+#### Technology A
+- **Official Docs**: Quality rating
+- **Tutorials**: Availability
+- **Examples**: Quantity and quality
+- **Books**: Available titles
+- **Courses**: Online learning options
+- **Support Channels**: Discord, Forum, etc.
+
+#### Technology B
+- **Official Docs**: Quality rating
+- **Tutorials**: Availability
+- **Examples**: Quantity and quality
+- **Books**: Available titles
+- **Courses**: Online learning options
+- **Support Channels**: Discord, Forum, etc.
+
+### 10. Use Case Analysis
+
+#### When to Choose Technology A
+1. **Use Case 1**: Why A is better here
+2. **Use Case 2**: Why A is better here
+3. **Use Case 3**: Why A is better here
+
+#### When to Choose Technology B
+1. **Use Case 1**: Why B is better here
+2. **Use Case 2**: Why B is better here
+3. **Use Case 3**: Why B is better here
+
+### 11. Pros & Cons
+
+#### Technology A
+
+**Pros:**
+- ✅ Advantage 1
+- ✅ Advantage 2
+- ✅ Advantage 3
+
+**Cons:**
+- ❌ Disadvantage 1
+- ❌ Disadvantage 2
+- ❌ Disadvantage 3
+
+#### Technology B
+
+**Pros:**
+- ✅ Advantage 1
+- ✅ Advantage 2
+- ✅ Advantage 3
+
+**Cons:**
+- ❌ Disadvantage 1
+- ❌ Disadvantage 2
+- ❌ Disadvantage 3
+
+### 12. Migration Considerations
+
+#### From A to B
+- **Difficulty**: Easy/Medium/Hard
+- **Migration Tools**: Available automation
+- **Breaking Changes**: Major differences
+- **Estimated Time**: For typical project
+- **Worth It?**: Is migration recommended?
+
+#### From B to A
+- **Difficulty**: Easy/Medium/Hard
+- **Migration Tools**: Available automation
+- **Breaking Changes**: Major differences
+- **Estimated Time**: For typical project
+- **Worth It?**: Is migration recommended?
+
+### 13. Future Outlook
+
+#### Technology A
+- **Development Activity**: Active/Moderate/Slow
+- **Roadmap**: Upcoming features
+- **Industry Trends**: Growing/Stable/Declining
+- **Long-term Viability**: 5-year outlook
+
+#### Technology B
+- **Development Activity**: Active/Moderate/Slow
+- **Roadmap**: Upcoming features
+- **Industry Trends**: Growing/Stable/Declining
+- **Long-term Viability**: 5-year outlook
+
+### 14. Job Market
+
+#### Technology A
+- **Job Openings**: Number of positions
+- **Salary Range**: Average compensation
+- **Geographic Distribution**: Where jobs are
+- **Growth Trend**: Increasing/Stable/Decreasing
+
+#### Technology B
+- **Job Openings**: Number of positions
+- **Salary Range**: Average compensation
+- **Geographic Distribution**: Where jobs are
+- **Growth Trend**: Increasing/Stable/Decreasing
+
+### 15. Decision Matrix
+
+Help make the choice based on priorities:
+
+```
+If you prioritize:
+- Performance → Choose [A/B] because...
+- Ease of Learning → Choose [A/B] because...
+- Job Opportunities → Choose [A/B] because...
+- Ecosystem → Choose [A/B] because...
+- Modern Features → Choose [A/B] because...
+- Stability → Choose [A/B] because...
+- Community Support → Choose [A/B] because...
+```
+
+### 16. Real-World Project Comparison
+
+**Same Project Built with Both:**
+
+**Technology A Version:**
+- Lines of code
+- Development time
+- Performance metrics
+- Developer experience
+- Maintenance burden
+
+**Technology B Version:**
+- Lines of code
+- Development time
+- Performance metrics
+- Developer experience
+- Maintenance burden
+
+### 17. Expert Opinions
+
+What industry experts say:
+
+**About Technology A:**
+- Quote/opinion from expert 1
+- Quote/opinion from expert 2
+
+**About Technology B:**
+- Quote/opinion from expert 1
+- Quote/opinion from expert 2
+
+### 18. Final Recommendation
+
+#### Choose Technology A if:
+- Condition 1
+- Condition 2
+- Condition 3
+
+#### Choose Technology B if:
+- Condition 1
+- Condition 2
+- Condition 3
+
+#### Use Both if:
+- Scenario where both are appropriate
+
+#### Avoid Both if:
+- When neither is suitable
+
+### 19. Learning Path
+
+#### To Learn Technology A:
+1. Start with [resource]
+2. Then [next step]
+3. Practice by [project idea]
+
+#### To Learn Technology B:
+1. Start with [resource]
+2. Then [next step]
+3. Practice by [project idea]
+
+## Comparison Principles
+
+1. **Be Objective**: Present facts, not opinions
+2. **Be Balanced**: Show pros/cons of both fairly
+3. **Be Specific**: Use concrete examples and data
+4. **Be Current**: Use latest versions and info
+5. **Be Practical**: Focus on real-world usage
+6. **Be Honest**: Acknowledge limitations
+7. **Be Helpful**: Guide decision-making
+
+Generate a comprehensive, balanced comparison following this framework.
+"""

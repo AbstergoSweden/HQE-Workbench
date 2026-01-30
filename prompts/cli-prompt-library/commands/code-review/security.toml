@@ -1,0 +1,56 @@
+prompt = """
+# Security Code Review
+
+Please perform a comprehensive security analysis of the following code:
+
+```
+{{args}}
+```
+
+Focus on:
+
+## 1. Input Validation & Sanitization
+- Are all user inputs properly validated?
+- Is input sanitized before use in queries, commands, or rendering?
+- Are there risks of injection attacks (SQL, XSS, command injection)?
+
+## 2. Authentication & Authorization
+- Are authentication mechanisms secure?
+- Is authorization properly enforced?
+- Are credentials handled securely?
+- Is session management secure?
+
+## 3. Data Protection
+- Is sensitive data encrypted at rest and in transit?
+- Are secrets and API keys properly managed?
+- Is PII (Personally Identifiable Information) handled correctly?
+
+## 4. Common Vulnerabilities
+- Check for OWASP Top 10 vulnerabilities
+- Look for race conditions and TOCTOU issues
+- Identify potential buffer overflows or memory issues
+- Check for insecure dependencies
+
+## 5. Error Handling & Logging
+- Are errors handled without exposing sensitive information?
+- Is logging done securely without leaking secrets?
+- Are stack traces exposed in production?
+
+## 6. Access Control
+- Are file permissions appropriate?
+- Is path traversal prevented?
+- Are resources properly scoped and isolated?
+
+Provide:
+1. **Critical Issues**: Vulnerabilities that must be fixed immediately
+2. **High Priority**: Significant security concerns
+3. **Medium Priority**: Security improvements
+4. **Best Practices**: General security recommendations
+5. **Code Examples**: Show secure alternatives for each issue
+
+For each issue, explain:
+- What the vulnerability is
+- Why it's dangerous
+- How to fix it
+- Example of secure code
+"""

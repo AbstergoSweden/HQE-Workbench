@@ -1,0 +1,508 @@
+prompt = """
+# Design Database Schema
+
+Please design a comprehensive database schema for the following requirements:
+
+{{args}}
+
+## Database Design Process
+
+### 1. Requirements Analysis
+
+#### Identify Entities
+- What are the main data objects?
+- What attributes does each entity have?
+- What are the cardinalities and relationships?
+
+#### Identify Operations
+- What queries will be most frequent?
+- What data needs to be retrieved together?
+- What are the access patterns?
+
+### 2. Entity-Relationship Modeling
+
+#### Entity Identification
+```
+Users
+- id (PK)
+- email
+- name
+- created_at
+
+Posts
+- id (PK)
+- user_id (FK)
+- title
+- content
+- created_at
+
+Comments
+- id (PK)
+- post_id (FK)
+- user_id (FK)
+- content
+- created_at
+```
+
+#### Relationship Types
+
+**One-to-One (1:1)**
+```
+User ←→ Profile
+One user has one profile
+```
+
+**One-to-Many (1:N)**
+```
+User ←→ Posts
+One user has many posts
+```
+
+**Many-to-Many (M:N)**
+```
+Posts ←→ Tags (through PostTags junction table)
+Many posts can have many tags
+```
+
+### 3. Normalization
+
+#### First Normal Form (1NF)
+- Atomic values (no arrays in cells)
+- Each column has a unique name
+- Order doesn't matter
+
+**Before:**
+```
+users
+id | name  | emails
+1  | John  | john@a.com,john@b.com
+```
+
+**After:**
+```
+users
+id | name
+1  | John
+
+user_emails
+id | user_id | email
+1  | 1       | john@a.com
+2  | 1       | john@b.com
+```
+
+#### Second Normal Form (2NF)
+- Must be in 1NF
+- No partial dependencies
+
+#### Third Normal Form (3NF)
+- Must be in 2NF
+- No transitive dependencies
+
+**Before:**
+```
+orders
+id | product_name | category_name
+1  | Laptop       | Electronics
+```
+
+**After:**
+```
+products
+id | name   | category_id
+1  | Laptop | 1
+
+categories
+id | name
+1  | Electronics
+```
+
+#### When to Denormalize
+- Read-heavy workloads
+- Expensive joins
+- Aggregated data
+- Caching layer exists
+
+### 4. Table Design
+
+#### Primary Keys
+
+**Auto-incrementing Integer**
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  -- or
+  id INT AUTO_INCREMENT PRIMARY KEY
+);
+```
+
+**UUID**
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+);
+```
+
+**Composite Key**
+```sql
+CREATE TABLE post_tags (
+  post_id INT,
+  tag_id INT,
+  PRIMARY KEY (post_id, tag_id)
+);
+```
+
+#### Foreign Keys
+
+```sql
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+```
+
+**Referential Actions:**
+- `CASCADE` - Delete/update related rows
+- `SET NULL` - Set FK to NULL
+- `RESTRICT` - Prevent deletion
+- `NO ACTION` - Check at end of transaction
+
+#### Indexes
+
+**Single Column Index**
+```sql
+CREATE INDEX idx_users_email ON users(email);
+```
+
+**Composite Index**
+```sql
+CREATE INDEX idx_posts_user_date
+  ON posts(user_id, created_at DESC);
+```
+
+**Unique Index**
+```sql
+CREATE UNIQUE INDEX idx_users_email_unique ON users(email);
+```
+
+**Partial Index**
+```sql
+CREATE INDEX idx_active_users
+  ON users(email) WHERE active = true;
+```
+
+**Full-Text Search Index**
+```sql
+CREATE INDEX idx_posts_content_fulltext
+  ON posts USING GIN(to_tsvector('english', content));
+```
+
+### 5. Data Types
+
+#### Common Data Types
+
+**Integers**
+```sql
+TINYINT     -- 1 byte  (-128 to 127)
+SMALLINT    -- 2 bytes (-32K to 32K)
+INT         -- 4 bytes (-2B to 2B)
+BIGINT      -- 8 bytes (-9 quintillion to 9 quintillion)
+```
+
+**Decimals**
+```sql
+DECIMAL(10,2)  -- Exact: 10 digits, 2 after decimal
+FLOAT          -- Approximate 4 bytes
+DOUBLE         -- Approximate 8 bytes
+```
+
+**Strings**
+```sql
+CHAR(10)       -- Fixed length
+VARCHAR(255)   -- Variable length
+TEXT           -- Unlimited length
+```
+
+**Date/Time**
+```sql
+DATE           -- Date only
+TIME           -- Time only
+DATETIME       -- Date and time
+TIMESTAMP      -- Date and time with timezone
+```
+
+**Boolean**
+```sql
+BOOLEAN        -- true/false
+```
+
+**JSON**
+```sql
+JSON           -- JSON data
+JSONB          -- Binary JSON (PostgreSQL)
+```
+
+#### Choosing Data Types
+
+**Email:**
+```sql
+email VARCHAR(255) NOT NULL
+```
+
+**Password Hash:**
+```sql
+password_hash CHAR(60) NOT NULL  -- bcrypt
+```
+
+**Money:**
+```sql
+price DECIMAL(10,2) NOT NULL  -- Exact arithmetic
+```
+
+**Status/Enum:**
+```sql
+status ENUM('draft', 'published', 'archived') NOT NULL
+-- or
+status VARCHAR(20) CHECK (status IN ('draft', 'published', 'archived'))
+```
+
+### 6. Schema Patterns
+
+#### User Authentication
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash CHAR(60) NOT NULL,
+  email_verified BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id INT NOT NULL,
+  token VARCHAR(255) UNIQUE NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_sessions_token ON user_sessions(token);
+CREATE INDEX idx_sessions_user_id ON user_sessions(user_id);
+```
+
+#### Soft Deletes
+```sql
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  deleted_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_posts_deleted ON posts(deleted_at);
+```
+
+#### Audit Trail
+```sql
+CREATE TABLE audit_log (
+  id SERIAL PRIMARY KEY,
+  table_name VARCHAR(50) NOT NULL,
+  record_id INT NOT NULL,
+  action VARCHAR(10) NOT NULL,  -- INSERT, UPDATE, DELETE
+  old_data JSONB,
+  new_data JSONB,
+  user_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX idx_audit_table_record ON audit_log(table_name, record_id);
+```
+
+#### Polymorphic Associations
+```sql
+CREATE TABLE comments (
+  id SERIAL PRIMARY KEY,
+  commentable_type VARCHAR(50) NOT NULL,  -- 'Post', 'Photo', etc.
+  commentable_id INT NOT NULL,
+  content TEXT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX idx_comments_polymorphic
+  ON comments(commentable_type, commentable_id);
+```
+
+#### Hierarchical Data (Nested Sets)
+```sql
+CREATE TABLE categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  lft INT NOT NULL,
+  rgt INT NOT NULL,
+  depth INT NOT NULL
+);
+
+CREATE INDEX idx_categories_lft_rgt ON categories(lft, rgt);
+```
+
+#### Tags/Categories (Many-to-Many)
+```sql
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE tags (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL,
+  slug VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE post_tags (
+  post_id INT NOT NULL,
+  tag_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (post_id, tag_id),
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_post_tags_tag ON post_tags(tag_id);
+```
+
+### 7. Constraints
+
+#### NOT NULL
+```sql
+email VARCHAR(255) NOT NULL
+```
+
+#### UNIQUE
+```sql
+email VARCHAR(255) UNIQUE NOT NULL
+```
+
+#### CHECK
+```sql
+age INT CHECK (age >= 0 AND age <= 150)
+price DECIMAL(10,2) CHECK (price > 0)
+status VARCHAR(20) CHECK (status IN ('active', 'inactive', 'banned'))
+```
+
+#### DEFAULT
+```sql
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+is_active BOOLEAN DEFAULT TRUE
+role VARCHAR(20) DEFAULT 'user'
+```
+
+### 8. Performance Considerations
+
+#### Query Optimization
+```sql
+-- Good: Uses index on user_id
+SELECT * FROM posts WHERE user_id = 123;
+
+-- Bad: Function on indexed column prevents index usage
+SELECT * FROM users WHERE LOWER(email) = 'john@example.com';
+
+-- Good: Store lowercase email separately or use functional index
+CREATE INDEX idx_users_email_lower ON users(LOWER(email));
+```
+
+#### Covering Indexes
+```sql
+-- Query needs id, user_id, created_at
+CREATE INDEX idx_posts_covering
+  ON posts(user_id, created_at, id);
+```
+
+#### Partitioning
+```sql
+CREATE TABLE events (
+  id SERIAL,
+  user_id INT,
+  event_date DATE,
+  data JSONB
+) PARTITION BY RANGE (event_date);
+
+CREATE TABLE events_2024_01 PARTITION OF events
+  FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+```
+
+### 9. Database Schema Documentation
+
+#### Table Documentation Template
+
+```markdown
+### Table: users
+
+**Description**: Stores user account information
+
+**Columns:**
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | SERIAL | NO | AUTO | Primary key |
+| email | VARCHAR(255) | NO | - | User email (unique) |
+| name | VARCHAR(100) | NO | - | Full name |
+| password_hash | CHAR(60) | NO | - | Bcrypt hash |
+| created_at | TIMESTAMP | NO | NOW() | Creation timestamp |
+
+**Indexes:**
+- PRIMARY KEY: id
+- UNIQUE: email
+- INDEX: created_at
+
+**Foreign Keys:**
+- None
+
+**Referenced By:**
+- posts.user_id
+- comments.user_id
+
+**Constraints:**
+- email must be unique
+- email format validated at app level
+```
+
+### 10. Migration Strategy
+
+```sql
+-- Version 1: Initial schema
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Version 2: Add username
+ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE;
+
+-- Version 3: Make username required (with default for existing)
+UPDATE users SET username = email WHERE username IS NULL;
+ALTER TABLE users ALTER COLUMN username SET NOT NULL;
+```
+
+### 11. Output Format
+
+Provide:
+
+1. **ER Diagram** (text/ASCII format)
+2. **Table Definitions** (CREATE TABLE statements)
+3. **Indexes** (CREATE INDEX statements)
+4. **Relationships** (Foreign keys and descriptions)
+5. **Sample Data** (INSERT statements for testing)
+6. **Common Queries** (Optimized SELECT examples)
+7. **Migration Plan** (For evolving schema)
+8. **Performance Notes** (Index strategy, partitioning)
+9. **Data Dictionary** (Complete table/column documentation)
+
+Generate complete, production-ready database schema following best practices.
+"""

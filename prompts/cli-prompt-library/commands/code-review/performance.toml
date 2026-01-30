@@ -1,0 +1,66 @@
+prompt = """
+# Performance Code Review
+
+Please perform a comprehensive performance analysis of the following code:
+
+```
+{{args}}
+```
+
+Focus on:
+
+## 1. Algorithmic Complexity
+- Identify time complexity (Big O notation) of key operations
+- Identify space complexity issues
+- Are there more efficient algorithms or data structures?
+- Look for nested loops, redundant calculations
+
+## 2. Memory Management
+- Are there memory leaks or unnecessary allocations?
+- Can objects be reused or pooled?
+- Are large objects held in memory unnecessarily?
+- Is garbage collection pressure minimized?
+
+## 3. I/O Operations
+- Are I/O operations batched or optimized?
+- Can operations be done asynchronously?
+- Are there unnecessary file reads/writes?
+- Is caching used effectively?
+
+## 4. Database & Query Performance
+- Are queries optimized with proper indexes?
+- Is there N+1 query problem?
+- Are connections pooled?
+- Can queries be batched or consolidated?
+
+## 5. Rendering & UI Performance
+- Are unnecessary re-renders happening?
+- Is virtual scrolling used for long lists?
+- Are expensive operations memoized?
+- Is lazy loading implemented where appropriate?
+
+## 6. Network Performance
+- Are API calls optimized and batched?
+- Is data prefetching used?
+- Are responses properly cached?
+- Is compression enabled?
+
+## 7. Code Patterns
+- Are there premature optimizations?
+- Is code clarity sacrificed unnecessarily?
+- Are there blocking operations in hot paths?
+
+Provide:
+1. **Critical Issues**: Performance bottlenecks causing significant problems
+2. **High Priority**: Substantial performance improvements
+3. **Medium Priority**: Moderate optimizations
+4. **Low Priority**: Minor refinements
+5. **Code Examples**: Show optimized alternatives with performance comparisons
+
+For each issue, explain:
+- What the performance problem is
+- Why it's inefficient
+- Expected performance impact
+- How to optimize it
+- Benchmarks or measurements where relevant
+"""

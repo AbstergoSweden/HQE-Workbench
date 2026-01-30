@@ -1,0 +1,292 @@
+prompt = """
+# Generate End-to-End Tests
+
+Please create comprehensive end-to-end tests for the following application/feature:
+
+{{args}}
+
+## Test Framework Considerations
+
+Choose appropriate E2E testing framework:
+- Web: Playwright, Cypress, Selenium
+- Mobile: Appium, Detox
+- API: Supertest, REST Assured
+- Desktop: TestComplete, WinAppDriver
+
+## E2E Test Structure
+
+### 1. User Journey Tests
+
+Test complete user workflows from start to finish:
+```javascript
+test('User can complete signup and login flow', async ({ page }) => {
+  // Navigate to signup
+  await page.goto('/signup');
+
+  // Fill signup form
+  await page.fill('[name="email"]', 'user@example.com');
+  await page.fill('[name="password"]', 'SecurePass123');
+  await page.click('button[type="submit"]');
+
+  // Verify redirect to dashboard
+  await expect(page).toHaveURL('/dashboard');
+
+  // Verify welcome message
+  await expect(page.locator('.welcome')).toContainText('Welcome');
+});
+```
+
+### 2. Test Categories
+
+#### Critical User Paths
+- User registration and authentication
+- Core business workflows
+- Payment/checkout processes
+- Data submission and retrieval
+
+#### Cross-Browser/Platform
+- Test on major browsers (Chrome, Firefox, Safari, Edge)
+- Test on different devices (desktop, tablet, mobile)
+- Test on different OS (Windows, macOS, Linux)
+
+#### Integration Points
+- Third-party service integrations
+- API interactions
+- Database operations
+- External system communications
+
+### 3. Test Patterns
+
+#### Page Object Model
+```javascript
+class LoginPage {
+  constructor(page) {
+    this.page = page;
+    this.emailInput = page.locator('[name="email"]');
+    this.passwordInput = page.locator('[name="password"]');
+    this.submitButton = page.locator('button[type="submit"]');
+  }
+
+  async login(email, password) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.submitButton.click();
+  }
+}
+
+test('user can login', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await page.goto('/login');
+  await loginPage.login('user@example.com', 'password');
+  await expect(page).toHaveURL('/dashboard');
+});
+```
+
+#### Setup and Teardown
+```javascript
+test.beforeEach(async ({ page }) => {
+  // Clear cookies and local storage
+  await page.context().clearCookies();
+  await page.evaluate(() => localStorage.clear());
+
+  // Navigate to starting point
+  await page.goto('/');
+});
+
+test.afterEach(async ({ page }, testInfo) => {
+  // Screenshot on failure
+  if (testInfo.status !== 'passed') {
+    await page.screenshot({
+      path: `test-results/${testInfo.title}-failure.png`
+    });
+  }
+});
+```
+
+### 4. Test Scenarios to Cover
+
+#### Authentication & Authorization
+- User registration with valid/invalid data
+- Login with correct/incorrect credentials
+- Logout functionality
+- Password reset flow
+- Session management
+- Access control (authorized vs unauthorized users)
+
+#### CRUD Operations
+- Create new records
+- Read/view records
+- Update existing records
+- Delete records
+- List/search records
+- Pagination
+
+#### Forms & Validation
+- Submit valid forms
+- Submit invalid forms
+- Field validation messages
+- Required field enforcement
+- Format validation (email, phone, etc.)
+- File uploads
+
+#### Navigation
+- Menu navigation
+- Breadcrumb navigation
+- Back/forward browser buttons
+- Deep linking
+- Redirects
+
+#### Search & Filters
+- Search with various queries
+- Apply filters
+- Sort results
+- Pagination of results
+- Empty results handling
+
+#### Error Handling
+- Network errors
+- Server errors (500, 503)
+- Not found (404)
+- Validation errors
+- Timeout scenarios
+
+### 5. Waiting Strategies
+
+```javascript
+// Wait for element
+await page.waitForSelector('.data-loaded');
+
+// Wait for navigation
+await page.waitForNavigation();
+
+// Wait for API response
+await page.waitForResponse(response =>
+  response.url().includes('/api/data')
+);
+
+// Wait for condition
+await page.waitForFunction(() =>
+  document.querySelector('.loading') === null
+);
+
+// Custom timeout
+await page.waitForSelector('.slow-element', { timeout: 10000 });
+```
+
+### 6. Data Management
+
+#### Test Data Setup
+```javascript
+test.beforeEach(async ({ request }) => {
+  // Create test user via API
+  await request.post('/api/users', {
+    data: {
+      email: 'test@example.com',
+      name: 'Test User'
+    }
+  });
+});
+```
+
+#### Test Data Cleanup
+```javascript
+test.afterEach(async ({ request }) => {
+  // Delete test data
+  await request.delete('/api/users/test@example.com');
+});
+```
+
+### 7. Assertions
+
+```javascript
+// Element visibility
+await expect(page.locator('.success-message')).toBeVisible();
+
+// Text content
+await expect(page.locator('h1')).toHaveText('Dashboard');
+
+// URL
+await expect(page).toHaveURL('/dashboard');
+
+// Element count
+await expect(page.locator('.item')).toHaveCount(5);
+
+// Attribute
+await expect(page.locator('button')).toHaveAttribute('disabled');
+
+// Screenshot comparison
+await expect(page).toHaveScreenshot('homepage.png');
+```
+
+### 8. API Testing in E2E
+
+```javascript
+test('should create user via API and verify in UI', async ({ request, page }) => {
+  // Create via API
+  const response = await request.post('/api/users', {
+    data: { name: 'John Doe', email: 'john@example.com' }
+  });
+  expect(response.ok()).toBeTruthy();
+
+  const user = await response.json();
+
+  // Verify in UI
+  await page.goto(`/users/${user.id}`);
+  await expect(page.locator('.user-name')).toHaveText('John Doe');
+});
+```
+
+### 9. Mobile/Responsive Testing
+
+```javascript
+test('should work on mobile', async ({ page }) => {
+  // Set viewport to mobile
+  await page.setViewportSize({ width: 375, height: 667 });
+
+  await page.goto('/');
+
+  // Open mobile menu
+  await page.click('.mobile-menu-toggle');
+  await expect(page.locator('.mobile-menu')).toBeVisible();
+});
+```
+
+### 10. Performance Checks
+
+```javascript
+test('page should load within 3 seconds', async ({ page }) => {
+  const start = Date.now();
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  const loadTime = Date.now() - start;
+
+  expect(loadTime).toBeLessThan(3000);
+});
+```
+
+## Best Practices
+
+1. **Stability**: Use reliable selectors (data-testid preferred)
+2. **Independence**: Tests should not depend on each other
+3. **Cleanup**: Always clean up test data
+4. **Waits**: Use explicit waits, avoid arbitrary sleeps
+5. **Retries**: Configure retries for flaky tests
+6. **Parallelization**: Run tests in parallel when possible
+7. **Screenshots**: Capture screenshots on failure
+8. **Videos**: Record videos for debugging
+9. **Logs**: Capture console logs
+10. **Reports**: Generate comprehensive test reports
+
+## Output Format
+
+Provide:
+1. Complete E2E test suite
+2. Page Object Models (if applicable)
+3. Setup and teardown code
+4. Test data factories/fixtures
+5. Configuration suggestions
+6. Clear test descriptions
+7. Comments for complex interactions
+
+Generate a complete, production-ready E2E test suite following these best practices.
+"""

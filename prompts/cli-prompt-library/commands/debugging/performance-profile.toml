@@ -1,0 +1,447 @@
+prompt = """
+# Performance Profiling & Optimization
+
+Please perform a comprehensive performance analysis for the following:
+
+{{args}}
+
+## Performance Analysis Framework
+
+### 1. Performance Metrics Collection
+
+#### Key Metrics
+
+**Response Time Metrics**
+- Average response time
+- p50 (median)
+- p95 (95th percentile)
+- p99 (99th percentile)
+- Maximum response time
+
+**Throughput Metrics**
+- Requests per second (RPS)
+- Transactions per second (TPS)
+- Data transfer rate
+
+**Resource Utilization**
+- CPU usage (%)
+- Memory usage (MB/GB)
+- Disk I/O (IOPS)
+- Network bandwidth
+
+**Application Metrics**
+- Database query time
+- API call latency
+- Render time
+- Time to First Byte (TTFB)
+
+### 2. Profiling Tools & Techniques
+
+#### Browser Performance (Frontend)
+
+**Chrome DevTools**
+```javascript
+// Performance tab
+// - Record page load
+// - Identify long tasks
+// - Check layout shifts
+// - Measure rendering time
+
+// Coverage tab
+// - Find unused JavaScript
+// - Find unused CSS
+
+// Network tab
+// - Check waterfall
+// - Identify slow requests
+// - Check resource sizes
+```
+
+**Lighthouse Metrics**
+- First Contentful Paint (FCP)
+- Largest Contentful Paint (LCP)
+- Time to Interactive (TTI)
+- Total Blocking Time (TBT)
+- Cumulative Layout Shift (CLS)
+
+#### Backend Performance
+
+**Node.js Profiling**
+```javascript
+// CPU Profiling
+node --prof app.js
+node --prof-process isolate-*.log > processed.txt
+
+// Memory Profiling
+node --inspect app.js
+// Use Chrome DevTools Memory tab
+
+// Flame Graphs
+npm install -g clinic
+clinic doctor -- node app.js
+clinic flame -- node app.js
+```
+
+**Python Profiling**
+```python
+import cProfile
+import pstats
+
+profiler = cProfile.Profile()
+profiler.enable()
+
+# Your code here
+
+profiler.disable()
+stats = pstats.Stats(profiler)
+stats.sort_stats('cumulative')
+stats.print_stats()
+```
+
+### 3. Performance Bottleneck Identification
+
+#### Common Bottlenecks
+
+**Computational Bottlenecks**
+- Inefficient algorithms (O(n²) vs O(n log n))
+- Unnecessary calculations
+- Heavy computations in loops
+- Lack of memoization/caching
+
+**I/O Bottlenecks**
+- Synchronous file operations
+- Multiple small database queries (N+1 problem)
+- Unbatched API calls
+- Large file uploads/downloads
+
+**Network Bottlenecks**
+- Too many HTTP requests
+- Large payload sizes
+- Missing compression
+- No CDN usage
+- DNS lookup time
+
+**Rendering Bottlenecks**
+- Forced synchronous layout (layout thrashing)
+- Excessive DOM manipulation
+- Large images without optimization
+- Render-blocking resources
+- Long JavaScript execution
+
+**Database Bottlenecks**
+- Missing indexes
+- Inefficient queries
+- N+1 query problem
+- Large dataset fetches
+- Connection pool exhaustion
+
+**Memory Bottlenecks**
+- Memory leaks
+- Large objects in memory
+- Inefficient data structures
+- Excessive object creation
+
+### 4. Profiling Analysis
+
+#### CPU Profiling Analysis
+
+```
+Function Name          | Self Time | Total Time | Calls
+-----------------------|-----------|------------|-------
+processData()          | 850ms     | 1200ms     | 1
+  └─ validateItem()    | 300ms     | 350ms      | 1000
+     └─ checkFormat()  | 200ms     | 200ms      | 1000
+```
+
+**Findings:**
+- `processData()` is consuming 850ms of CPU time
+- Called `validateItem()` 1000 times
+- Opportunity: Batch validation or optimize `validateItem()`
+
+#### Memory Profiling Analysis
+
+```
+Heap Snapshot Comparison:
+
+Constructor          | Objects | Shallow Size | Retained Size
+---------------------|---------|--------------|---------------
+Array                | +5000   | +400KB       | +12MB
+String               | +2000   | +160KB       | +160KB
+Object               | +1000   | +80KB        | +2MB
+```
+
+**Findings:**
+- Array allocations growing significantly
+- Potential memory leak in array handling
+- Need to investigate why arrays are retained
+
+#### Network Profiling Analysis
+
+```
+Resource Timeline:
+
+index.html           | 50ms   | 2KB
+app.js               | 800ms  | 500KB (not compressed)
+vendor.js            | 1200ms | 800KB (not compressed)
+api/data             | 350ms  | 50KB
+image1.png           | 600ms  | 2MB (not optimized)
+```
+
+**Findings:**
+- JavaScript bundles are too large
+- Missing gzip compression
+- Images not optimized
+- Could benefit from code splitting
+
+### 5. Performance Optimization Strategies
+
+#### Algorithm Optimization
+
+**Before (O(n²)):**
+```javascript
+function findDuplicates(arr) {
+  const duplicates = [];
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      if (arr[i] === arr[j]) {
+        duplicates.push(arr[i]);
+      }
+    }
+  }
+  return duplicates;
+}
+```
+
+**After (O(n)):**
+```javascript
+function findDuplicates(arr) {
+  const seen = new Set();
+  const duplicates = new Set();
+
+  for (const item of arr) {
+    if (seen.has(item)) {
+      duplicates.add(item);
+    }
+    seen.add(item);
+  }
+
+  return Array.from(duplicates);
+}
+```
+
+**Impact**: 100x faster for 1000 items
+
+#### Caching & Memoization
+
+**Before:**
+```javascript
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+```
+
+**After:**
+```javascript
+const fibCache = new Map();
+
+function fibonacci(n) {
+  if (n <= 1) return n;
+  if (fibCache.has(n)) return fibCache.get(n);
+
+  const result = fibonacci(n - 1) + fibonacci(n - 2);
+  fibCache.set(n, result);
+  return result;
+}
+```
+
+**Impact**: Exponential time reduction
+
+#### Batching Operations
+
+**Before (N+1 Problem):**
+```javascript
+async function getUsersWithPosts() {
+  const users = await db.query('SELECT * FROM users');
+
+  for (const user of users) {
+    user.posts = await db.query(
+      'SELECT * FROM posts WHERE user_id = ?',
+      [user.id]
+    );
+  }
+
+  return users;
+}
+```
+
+**After:**
+```javascript
+async function getUsersWithPosts() {
+  const users = await db.query('SELECT * FROM users');
+  const userIds = users.map(u => u.id);
+
+  const posts = await db.query(
+    'SELECT * FROM posts WHERE user_id IN (?)',
+    [userIds]
+  );
+
+  const postsByUser = posts.reduce((acc, post) => {
+    if (!acc[post.user_id]) acc[post.user_id] = [];
+    acc[post.user_id].push(post);
+    return acc;
+  }, {});
+
+  users.forEach(user => {
+    user.posts = postsByUser[user.id] || [];
+  });
+
+  return users;
+}
+```
+
+**Impact**: N+1 queries → 2 queries
+
+#### Lazy Loading
+
+**Before:**
+```javascript
+import Chart from 'chart.js'; // 100KB
+
+function App() {
+  return <div>Homepage (chart not needed here)</div>;
+}
+```
+
+**After:**
+```javascript
+function App() {
+  const [Chart, setChart] = useState(null);
+
+  const loadChart = async () => {
+    const module = await import('chart.js');
+    setChart(module.default);
+  };
+
+  return (
+    <div>
+      <button onClick={loadChart}>Load Chart</button>
+    </div>
+  );
+}
+```
+
+**Impact**: Reduced initial bundle size by 100KB
+
+#### Virtual Scrolling
+
+**Before:**
+```javascript
+// Rendering 10,000 items
+{items.map(item => <ListItem key={item.id} {...item} />)}
+```
+
+**After:**
+```javascript
+import { FixedSizeList } from 'react-window';
+
+<FixedSizeList
+  height={600}
+  itemCount={items.length}
+  itemSize={50}
+  width="100%"
+>
+  {({ index, style }) => (
+    <div style={style}>
+      <ListItem {...items[index]} />
+    </div>
+  )}
+</FixedSizeList>
+```
+
+**Impact**: Render 20 items instead of 10,000
+
+### 6. Performance Benchmarking
+
+```javascript
+// Measure execution time
+console.time('operation');
+performOperation();
+console.timeEnd('operation');
+
+// More precise timing
+const start = performance.now();
+performOperation();
+const end = performance.now();
+console.log(`Took ${end - start}ms`);
+
+// Benchmark comparison
+function benchmark(fn, iterations = 1000) {
+  const start = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    fn();
+  }
+  const end = performance.now();
+  return (end - start) / iterations;
+}
+
+const avgTime1 = benchmark(oldImplementation);
+const avgTime2 = benchmark(newImplementation);
+console.log(`Improvement: ${((avgTime1 - avgTime2) / avgTime1 * 100).toFixed(2)}%`);
+```
+
+### 7. Performance Budget
+
+Set performance targets:
+
+```
+Metric                    | Budget  | Current | Status
+--------------------------|---------|---------|--------
+Initial Page Load         | < 3s    | 4.2s    | ❌ Over
+Time to Interactive       | < 5s    | 6.1s    | ❌ Over
+JavaScript Bundle Size    | < 200KB | 500KB   | ❌ Over
+API Response Time (p95)   | < 500ms | 350ms   | ✅ Good
+Database Query Time (p95) | < 100ms | 80ms    | ✅ Good
+Memory Usage              | < 100MB | 150MB   | ❌ Over
+```
+
+### 8. Output Format
+
+Provide:
+
+#### 1. Performance Audit Summary
+- Current performance metrics
+- Identified bottlenecks
+- Priority ranking
+
+#### 2. Detailed Analysis
+- Profiling results
+- Slowest functions/queries
+- Resource usage breakdown
+- Timeline waterfall analysis
+
+#### 3. Optimization Recommendations
+- High-impact optimizations (implement first)
+- Medium-impact optimizations
+- Low-impact optimizations
+- Code examples for each
+
+#### 4. Expected Improvements
+- Projected performance gains
+- Before/after metrics
+- ROI analysis (effort vs impact)
+
+#### 5. Implementation Plan
+- Step-by-step optimization sequence
+- Testing strategy
+- Rollback plan
+- Monitoring plan
+
+#### 6. Long-term Recommendations
+- Architecture improvements
+- Monitoring setup
+- Performance budgets
+- Regular profiling schedule
+
+Generate a complete performance analysis and optimization plan following this framework.
+"""

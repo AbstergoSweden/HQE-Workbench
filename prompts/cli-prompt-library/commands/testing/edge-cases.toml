@@ -1,0 +1,286 @@
+prompt = """
+# Identify Edge Cases
+
+Please identify comprehensive edge cases for the following code or feature:
+
+{{args}}
+
+## Edge Case Categories
+
+### 1. Boundary Values
+
+#### Numeric Boundaries
+- Zero (0)
+- Negative numbers (-1, -100)
+- Positive numbers (1, 100)
+- Maximum values (Integer.MAX_VALUE, Number.MAX_SAFE_INTEGER)
+- Minimum values (Integer.MIN_VALUE, Number.MIN_SAFE_INTEGER)
+- Infinity and -Infinity
+- NaN (Not a Number)
+- Floating point precision issues (0.1 + 0.2)
+- Very large numbers
+- Very small numbers (near zero)
+
+#### String Boundaries
+- Empty string ("")
+- Single character
+- Very long strings (1MB+)
+- Strings with special characters
+- Unicode characters and emojis
+- Null bytes (\0)
+- Strings with only whitespace
+- Leading/trailing whitespace
+
+#### Collection Boundaries
+- Empty array/list ([])
+- Single element array
+- Very large arrays (millions of elements)
+- Null or undefined collections
+- Nested empty collections
+
+#### Date/Time Boundaries
+- Epoch time (1970-01-01)
+- Very old dates (1900-01-01)
+- Future dates (2100-01-01)
+- Leap years
+- End of year/month
+- Daylight saving time transitions
+- Different time zones
+- Invalid dates (February 30)
+
+### 2. Input Validation
+
+#### Type Mismatches
+- Passing string when number expected
+- Passing null when object expected
+- Passing undefined
+- Passing array when string expected
+- Mixed types in collections
+
+#### Format Issues
+- Invalid email formats
+- Invalid phone numbers
+- Invalid URLs
+- Invalid JSON
+- Invalid XML
+- Malformed data structures
+
+#### Missing Data
+- Required fields missing
+- Null values
+- Undefined values
+- Empty objects
+- Partial data
+
+### 3. State-Related Edge Cases
+
+#### Order Dependencies
+- Operations in different order
+- Concurrent operations
+- Race conditions
+- First-time vs subsequent operations
+
+#### Lifecycle Edge Cases
+- Before initialization
+- During initialization
+- After cleanup/disposal
+- Repeated initialization
+- Multiple cleanups
+
+#### State Combinations
+- Combinations of flags/settings
+- Conflicting states
+- Invalid state transitions
+
+### 4. Concurrency Edge Cases
+
+#### Threading Issues
+- Multiple simultaneous requests
+- Race conditions
+- Deadlocks
+- Resource contention
+
+#### Timing Issues
+- Very fast operations
+- Very slow operations
+- Timeouts
+- Retries
+
+### 5. Resource Constraints
+
+#### Memory
+- Out of memory scenarios
+- Memory leaks
+- Large data structures
+- Many objects in memory
+
+#### Storage
+- Disk full
+- Read-only file system
+- File permissions
+- File locks
+
+#### Network
+- Network disconnected
+- Slow network
+- Timeout
+- Connection reset
+- Partial data received
+
+### 6. External Dependencies
+
+#### Database
+- Connection failure
+- Query timeout
+- Deadlocks
+- Duplicate keys
+- Foreign key violations
+
+#### APIs
+- API unavailable
+- Rate limiting
+- Invalid responses
+- Slow responses
+- Unexpected response format
+
+#### File System
+- File doesn't exist
+- File is locked
+- No read/write permissions
+- Path too long
+- Invalid characters in filename
+
+### 7. Security Edge Cases
+
+#### Injection Attacks
+- SQL injection
+- XSS attacks
+- Command injection
+- Path traversal
+
+#### Authentication/Authorization
+- Expired tokens
+- Invalid tokens
+- No authentication
+- Insufficient permissions
+- Privilege escalation attempts
+
+### 8. User Behavior
+
+#### Unexpected Actions
+- Back button usage
+- Refresh during operation
+- Multiple form submissions
+- Rapid clicking
+- Copy-paste of data
+- Browser auto-fill
+
+#### International Users
+- Different languages
+- RTL (right-to-left) languages
+- Special characters in names
+- Different date/number formats
+- Different currencies
+
+### 9. Browser/Platform Differences
+
+#### Cross-Browser
+- Different JavaScript engines
+- Different CSS rendering
+- Different APIs available
+- Different storage limits
+
+#### Device Differences
+- Small screens
+- Touch vs mouse
+- Slow devices
+- Limited storage
+- Poor network
+
+### 10. Business Logic Edge Cases
+
+#### Domain-Specific
+- Minimum order quantities
+- Maximum cart size
+- Discount combinations
+- Expired promotions
+- Out of stock
+- Partial fulfillment
+
+#### Workflow Edge Cases
+- Skipping steps
+- Going backwards
+- Abandoning process
+- Re-entering process
+
+## Output Format
+
+For each edge case, provide:
+
+### 1. Description
+Clear description of the edge case
+
+### 2. Input
+Specific input values that trigger it
+
+### 3. Expected Behavior
+What should happen
+
+### 4. Potential Issues
+What could go wrong if not handled
+
+### 5. Test Case
+Concrete test case to verify handling
+
+### 6. Fix/Handling
+How to properly handle this edge case
+
+## Example Output
+
+```markdown
+### Edge Case: Empty Input Array
+
+**Description**: Function receives an empty array as input
+
+**Input**: `[]`
+
+**Expected Behavior**:
+- Should return empty result
+- Should not throw error
+- Should handle gracefully
+
+**Potential Issues**:
+- Array access without length check
+- Division by zero (average of empty array)
+- Null pointer when accessing first element
+
+**Test Case**:
+```javascript
+test('should handle empty array', () => {
+  const result = processArray([]);
+  expect(result).toEqual([]);
+  expect(result).not.toThrow();
+});
+```
+
+**Fix/Handling**:
+```javascript
+function processArray(arr) {
+  if (!arr || arr.length === 0) {
+    return [];
+  }
+  // Process array
+}
+```
+```
+
+## Priority Levels
+
+Mark each edge case with priority:
+- **Critical**: Could cause system failure or data loss
+- **High**: Could cause incorrect behavior
+- **Medium**: Could cause user confusion
+- **Low**: Minor inconvenience
+
+Generate a comprehensive list of edge cases following this structure.
+"""

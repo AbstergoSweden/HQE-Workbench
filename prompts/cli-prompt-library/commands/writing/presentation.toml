@@ -1,0 +1,485 @@
+prompt = """
+# Create Presentation Outline
+
+Please create a comprehensive presentation outline for:
+
+{{args}}
+
+## Presentation Planning
+
+### 1. Audience Analysis
+
+**Who is your audience?**
+- Technical level: Beginner/Intermediate/Expert
+- Role: Developers/Managers/Executives/Mixed
+- Size: Small group / Large audience
+- Prior knowledge: What do they already know?
+- What they care about: Their interests/concerns
+
+**Audience Goals:**
+- What do they want to learn?
+- What problems are they trying to solve?
+- What decisions will they make after?
+
+### 2. Presentation Goals
+
+**Primary Objective:**
+What is the ONE main thing you want audience to take away?
+
+**Secondary Objectives:**
+- Objective 1
+- Objective 2
+- Objective 3
+
+**Success Metrics:**
+How will you know if presentation was successful?
+- Audience understands [concept]
+- Audience can [action]
+- Audience feels [emotion/confidence]
+
+### 3. Presentation Structure
+
+## Opening (5 minutes)
+
+### Slide 1: Title Slide
+**Content:**
+- Presentation Title
+- Your Name & Title
+- Date
+- Company/Conference Logo
+
+**Speaker Notes:**
+"Good [morning/afternoon], thank you for joining me today."
+
+---
+
+### Slide 2: Hook / Problem Statement
+**Content:**
+- Compelling statistic or fact
+- Relatable problem scenario
+- Provocative question
+
+**Visual:**
+- Impactful image
+- Large number/stat
+- Problem illustration
+
+**Speaker Notes:**
+"[Tell brief story or present problem that resonates]"
+
+**Example:**
+"Did you know that 70% of software projects fail due to poor architecture decisions? Today, we're going to explore how to avoid becoming part of that statistic."
+
+---
+
+### Slide 3: Agenda / What You'll Learn
+**Content:**
+"In the next [X] minutes, we'll cover:
+1. [Topic 1]
+2. [Topic 2]
+3. [Topic 3]
+4. [Topic 4]"
+
+**Visual:**
+- Simple numbered list
+- Progress bar showing sections
+- Timeline
+
+**Speaker Notes:**
+"By the end of this presentation, you'll understand [key benefit]."
+
+---
+
+## Body Section 1: [Foundation] (10 minutes)
+
+### Slide 4: Main Concept Introduction
+**Content:**
+- Clear definition
+- Why it matters
+- Key principle
+
+**Visual:**
+- Simple diagram
+- Icon + text
+- Minimal text (rule: 6 words per line, 6 lines max)
+
+**Speaker Notes:**
+[Detailed explanation you'll say verbally]
+
+---
+
+### Slide 5: Deep Dive
+**Content:**
+- Detailed breakdown
+- 3-4 key points
+
+**Visual:**
+- Diagram/illustration
+- Before/after comparison
+- Process flow
+
+**Speaker Notes:**
+"Let me break this down..."
+
+---
+
+### Slide 6: Example
+**Content:**
+- Real-world example
+- Code snippet (if technical)
+- Case study
+
+**Visual:**
+- Code with syntax highlighting
+- Screenshot
+- Real example
+
+**Speaker Notes:**
+"Here's how this works in practice..."
+
+---
+
+## Body Section 2: [Application] (10 minutes)
+
+### Slide 7: Transition
+**Content:**
+- Bridge from theory to practice
+- "Now that we understand [X], let's see how to apply it"
+
+**Visual:**
+- Simple transition graphic
+- Icon indicating shift
+
+---
+
+### Slide 8-10: Step-by-Step Process
+**Content (each slide):**
+- One step per slide
+- Clear action items
+- Visual demonstration
+
+**Visual:**
+- Numbered steps
+- Screenshots
+- Diagrams
+
+**Speaker Notes:**
+"First, you'll... Then... Finally..."
+
+---
+
+### Slide 11: Demo (if applicable)
+**Content:**
+- "Let me show you..."
+- Live demo or video
+
+**Visual:**
+- Screen sharing
+- Video recording
+- Animated GIF
+
+**Speaker Notes:**
+[Detailed demo script with what you'll show]
+
+---
+
+## Body Section 3: [Advanced Topics / Best Practices] (8 minutes)
+
+### Slide 12: Key Takeaways
+**Content:**
+- 3-5 most important points
+- Best practices
+- Do's and Don'ts
+
+**Visual:**
+- Checkmarks and X marks
+- Two column: Good vs Bad
+- Icons
+
+---
+
+### Slide 13: Common Mistakes
+**Content:**
+- Top 3 pitfalls to avoid
+- How to recognize them
+- How to fix them
+
+**Visual:**
+- Warning icons
+- Before/after examples
+
+---
+
+### Slide 14: Pro Tips
+**Content:**
+- Advanced techniques
+- Insider knowledge
+- Efficiency hacks
+
+**Visual:**
+- Lightbulb icons
+- Highlighted text
+
+---
+
+## Closing (5 minutes)
+
+### Slide 15: Summary
+**Content:**
+"Today we covered:
+1. [Key point 1]
+2. [Key point 2]
+3. [Key point 3]"
+
+**Visual:**
+- Same structure as agenda slide
+- Checkmarks showing completion
+
+**Speaker Notes:**
+"Let's quickly recap what we've learned..."
+
+---
+
+### Slide 16: Call to Action
+**Content:**
+- What to do next
+- Action steps
+- Where to learn more
+
+**Visual:**
+- Clear action button/text
+- Next steps list
+
+**Example:**
+"Your Next Steps:
+1. Try implementing [X] in your project
+2. Read the documentation at [URL]
+3. Join our community at [link]"
+
+---
+
+### Slide 17: Resources
+**Content:**
+- Links to documentation
+- Further reading
+- Contact information
+- Community links
+
+**Visual:**
+- QR codes
+- Clickable links
+- Resource icons
+
+---
+
+### Slide 18: Q&A
+**Content:**
+- "Questions?"
+- Your contact info
+- Social media handles
+
+**Visual:**
+- Large question mark
+- Friendly image
+- Contact details
+
+**Speaker Notes:**
+"I'll be happy to answer any questions."
+
+---
+
+### Slide 19: Thank You
+**Content:**
+- "Thank You!"
+- Your name
+- Email/Twitter/LinkedIn
+- Where to find slides
+
+**Visual:**
+- Professional photo
+- Contact info
+- Company/event logo
+
+---
+
+## Presentation Best Practices
+
+### Slide Design
+
+**Visual Principles:**
+- **One idea per slide**
+- **Minimal text**: 6x6 rule (6 words per line, 6 lines max)
+- **High contrast**: Dark text on light background or vice versa
+- **Large fonts**: Minimum 24pt, prefer 32pt+
+- **Quality images**: High resolution, relevant
+- **Consistent design**: Same fonts, colors throughout
+- **White space**: Don't crowd slides
+
+**Color Guidelines:**
+- Use brand colors or professional palette
+- Maximum 3-4 colors
+- Ensure accessibility (color blind friendly)
+- High contrast for readability
+
+**Fonts:**
+- Sans-serif for body (Arial, Helvetica, Calibri)
+- Maximum 2 font families
+- Size hierarchy: Title (40-44pt), Heading (32-36pt), Body (24-28pt)
+
+### Content Guidelines
+
+**Text:**
+- Bullet points, not paragraphs
+- Active voice
+- Action-oriented language
+- Avoid jargon (or explain it)
+
+**Visuals:**
+- Use diagrams over text when possible
+- Arrows to show flow/relationships
+- Icons to represent concepts
+- Charts/graphs for data
+
+**Code (if technical):**
+- Syntax highlighting
+- Large font (18-20pt minimum)
+- Focus on key lines
+- Remove boilerplate
+- Add comments for clarity
+
+### Delivery Tips
+
+**Preparation:**
+- Rehearse 3-5 times
+- Time yourself
+- Practice transitions
+- Prepare for technical issues
+- Have backup plan (offline slides)
+
+**During Presentation:**
+- Make eye contact
+- Use natural gestures
+- Speak clearly and pace yourself
+- Pause for emphasis
+- Engage audience with questions
+- Tell stories and examples
+- Show enthusiasm
+
+**Handling Questions:**
+- Listen fully before answering
+- Repeat question for audience
+- Be honest if you don't know
+- Offer to follow up
+- Keep answers concise
+
+### Timing Guide
+
+For 30-minute presentation:
+- Opening: 5 minutes (15%)
+- Body section 1: 8 minutes (25%)
+- Body section 2: 8 minutes (25%)
+- Body section 3: 5 minutes (15%)
+- Conclusion: 4 minutes (10%)
+- Q&A: 10 minutes (30%)
+
+**Buffer:** Plan for 80% of allotted time, leaving 20% buffer
+
+### Technical Checklist
+
+**Before Presentation:**
+- [ ] Test equipment (projector, mic, clicker)
+- [ ] Check internet connection
+- [ ] Test demos/videos
+- [ ] Have backup of slides (USB, email, cloud)
+- [ ] Arrive early to set up
+- [ ] Test from presenter mode
+- [ ] Check display resolution
+- [ ] Silence phone
+- [ ] Have water available
+
+**Slide Deck Checklist:**
+- [ ] No typos or grammar errors
+- [ ] All images load properly
+- [ ] Videos embedded or linked
+- [ ] Fonts embedded (or using system fonts)
+- [ ] Links work
+- [ ] Consistent formatting
+- [ ] Speaker notes complete
+- [ ] Timing practiced
+- [ ] Exported to PDF (backup)
+
+### Audience Engagement
+
+**Techniques:**
+- Ask questions
+- Show of hands polls
+- Quick exercises
+- Group discussions
+- Real-time demos
+- Share relatable stories
+- Use humor (appropriately)
+- Reference current events
+
+**Interactive Elements:**
+- Live polls (Mentimeter, Slido)
+- Q&A throughout (not just end)
+- Chat for questions
+- Breakout discussions
+- Hands-on exercises
+
+## Specialized Presentation Types
+
+### Technical Deep Dive
+- More code examples
+- Detailed diagrams
+- Architecture views
+- Performance metrics
+- Technical trade-offs
+
+### Executive Presentation
+- Focus on business value
+- ROI and metrics
+- Strategic implications
+- Less technical detail
+- More business context
+
+### Workshop/Tutorial
+- Heavy on demos
+- Step-by-step guides
+- Hands-on exercises
+- Code repositories
+- Follow-along format
+
+### Conference Talk
+- Entertaining
+- Storytelling
+- Big picture ideas
+- Memorable takeaways
+- Social media friendly
+
+## Slide Note Example
+
+**Slide 5: "Why This Matters"**
+
+**Content on Slide:**
+- Reduces bugs by 40%
+- Saves 10 hours/week
+- Improves team collaboration
+
+**Visual:**
+- Three icons with stats
+- Bar chart showing improvements
+
+**Speaker Notes:**
+"Now you might be wondering, why should you care about this? Let me give you three compelling reasons.
+
+First, teams using this approach report 40% fewer bugs in production. That's almost half the bugs you're dealing with right now.
+
+Second, developers save an average of 10 hours per week. That's time you can spend building features instead of fixing issues.
+
+And third, this dramatically improves team collaboration because everyone's on the same page about code quality.
+
+Let me share a quick story about how one team implemented this..."
+
+Generate a complete presentation outline following this structure.
+"""

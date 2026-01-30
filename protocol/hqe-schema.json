@@ -1,0 +1,875 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hqe-protocol.dev/schemas/v3.1.0/hqe-schema.json",
+  "x_hqe_schema_version": "3.1.0",
+  "title": "HQE Engineer Protocol Schema v3.1.0",
+  "description": "JSON Schema for validating HQE Engineer v3.1.0 definitions. Provides comprehensive validation for AI-driven codebase health auditing and technical leadership workflows.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "protocol_version",
+    "role",
+    "output_structure",
+    "hard_constraints",
+    "phases"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the schema",
+      "examples": ["3.1.0"]
+    },
+    "protocol_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the protocol",
+      "examples": ["3.1.0"]
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date of last update"
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier",
+      "examples": ["MIT", "Apache-2.0", "CC0-1.0"]
+    },
+    "maintainer": {
+      "type": "string",
+      "description": "Protocol maintainer"
+    },
+    "contact": {
+      "type": "string",
+      "format": "email",
+      "description": "Contact email for the maintainer"
+    },
+    "definitions": {
+      "type": "object",
+      "description": "Optional YAML anchor definitions for token efficiency",
+      "additionalProperties": true
+    },
+    "role": {
+      "$ref": "#/$defs/Role"
+    },
+    "output_structure": {
+      "$ref": "#/$defs/OutputStructure"
+    },
+    "hard_constraints": {
+      "$ref": "#/$defs/HardConstraints"
+    },
+    "no_stall_rule": {
+      "$ref": "#/$defs/NoStallRule"
+    },
+    "change_budget": {
+      "$ref": "#/$defs/ChangeBudget"
+    },
+    "anti_regression_rule": {
+      "$ref": "#/$defs/AntiRegressionRule"
+    },
+    "verification_honesty_policy": {
+      "$ref": "#/$defs/VerificationHonestyPolicy"
+    },
+    "stop_the_line_criteria": {
+      "$ref": "#/$defs/StopTheLineCriteria"
+    },
+    "definition_of_done": {
+      "$ref": "#/$defs/DefinitionOfDone"
+    },
+    "operating_principles": {
+      "$ref": "#/$defs/OperatingPrinciples"
+    },
+    "health_score_rubric": {
+      "$ref": "#/$defs/HealthScoreRubric"
+    },
+    "evidence_requirements": {
+      "$ref": "#/$defs/EvidenceRequirements"
+    },
+    "phases": {
+      "$ref": "#/$defs/Phases"
+    },
+    "session_log": {
+      "$ref": "#/$defs/SessionLog"
+    },
+    "quality_gates": {
+      "$ref": "#/$defs/QualityGates"
+    },
+    "escape_hatches": {
+      "$ref": "#/$defs/EscapeHatches"
+    },
+    "anti_patterns": {
+      "$ref": "#/$defs/AntiPatterns"
+    },
+    "invocation_examples": {
+      "$ref": "#/$defs/InvocationExamples"
+    },
+    "entry_point": {
+      "$ref": "#/$defs/EntryPoint"
+    },
+    "changelog": {
+      "$ref": "#/$defs/Changelog"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Role": {
+      "type": "object",
+      "required": ["title", "mandate"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Role title"
+        },
+        "mandate": {
+          "type": "string",
+          "description": "Role mandate and responsibilities"
+        },
+        "personas": {
+          "type": "object",
+          "description": "Switchable role modes for specialized audits",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "examples": [{
+            "default": "Principal Engineer",
+            "security": "Penetration Tester for security-focused audits",
+            "performance": "Performance Optimizer for perf-related scans"
+          }]
+        }
+      },
+      "additionalProperties": false
+    },
+    "OutputStructure": {
+      "type": "object",
+      "required": ["order"],
+      "properties": {
+        "order": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/OutputSection"
+          }
+        },
+        "format_instructions": {
+          "type": "object",
+          "description": "Machine-readable output format specifications",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "OutputSection": {
+      "type": "object",
+      "required": ["id", "title", "content", "required"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "condition": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "HardConstraints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/HardConstraint"
+      }
+    },
+    "HardConstraint": {
+      "type": "object",
+      "required": ["id", "rule", "description"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NoStallRule": {
+      "type": "object",
+      "required": ["description", "requirements", "enforcement"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "enforcement": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ChangeBudget": {
+      "type": "object",
+      "required": ["description", "rules"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "AntiRegressionRule": {
+      "type": "object",
+      "required": ["description", "requirements"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "VerificationHonestyPolicy": {
+      "type": "object",
+      "required": ["rules"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "language_guidance": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StopTheLineCriteria": {
+      "type": "object",
+      "required": ["description", "criteria", "flag_format"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "flag_format": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DefinitionOfDone": {
+      "type": "object",
+      "required": ["description", "checklist"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChecklistItem"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ChecklistItem": {
+      "type": "object",
+      "required": ["item", "required"],
+      "properties": {
+        "item": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OperatingPrinciples": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/OperatingPrinciple"
+      }
+    },
+    "OperatingPrinciple": {
+      "type": "object",
+      "required": ["principle", "meaning"],
+      "properties": {
+        "principle": {
+          "type": "string"
+        },
+        "meaning": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "HealthScoreRubric": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-9]+-[0-9]+$|^[0-9]+$": {
+          "type": "object",
+          "properties": {
+            "meaning": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "EvidenceRequirements": {
+      "type": "object",
+      "required": ["acceptable_formats"],
+      "properties": {
+        "acceptable_formats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "not_acceptable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Phases": {
+      "type": "object",
+      "required": [
+        "phase_minus_one",
+        "phase_zero",
+        "phase_one",
+        "phase_two",
+        "phase_three",
+        "phase_four",
+        "phase_five"
+      ],
+      "properties": {
+        "phase_minus_one": {
+          "$ref": "#/$defs/PhaseMinusOne"
+        },
+        "phase_zero": {
+          "$ref": "#/$defs/PhaseZero"
+        },
+        "phase_one": {
+          "$ref": "#/$defs/PhaseOne"
+        },
+        "phase_two": {
+          "$ref": "#/$defs/PhaseTwo"
+        },
+        "phase_three": {
+          "$ref": "#/$defs/PhaseThree"
+        },
+        "phase_four": {
+          "$ref": "#/$defs/PhaseFour"
+        },
+        "phase_five": {
+          "$ref": "#/$defs/PhaseFive"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseMinusOne": {
+      "type": "object",
+      "required": ["id", "name", "condition", "process"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string"
+        },
+        "inventory_schema": {
+          "type": "object"
+        },
+        "process": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProcessStep"
+          }
+        },
+        "conflict_resolution_format": {
+          "type": "object"
+        },
+        "reasoning_guidance": {
+          "type": "string",
+          "description": "Step-by-step reasoning instructions for this phase"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProcessStep": {
+      "type": "object",
+      "required": ["step", "action"],
+      "properties": {
+        "step": {
+          "type": "integer"
+        },
+        "action": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sub_steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseZero": {
+      "type": "object",
+      "required": ["id", "name", "description", "sections"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PhaseZeroSection"
+          }
+        },
+        "reasoning_guidance": {
+          "type": "string",
+          "description": "Step-by-step reasoning instructions for this phase"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseZeroSection": {
+      "type": "object",
+      "required": ["name", "checklist"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "object" }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseOne": {
+      "type": "object",
+      "required": ["id", "name", "id_prefix", "mandate"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "id_prefix": {
+          "type": "string"
+        },
+        "mandate": {
+          "type": "string"
+        },
+        "required_investigation": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "object" }
+            ]
+          }
+        },
+        "required_instrumentation": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "boot_reliability_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output_format": {
+          "type": "object"
+        },
+        "reasoning_guidance": {
+          "type": "string",
+          "description": "Step-by-step reasoning instructions for this phase"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseTwo": {
+      "type": "object",
+      "required": ["id", "name", "finding_format", "sections"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "finding_format": {
+          "type": "object"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PhaseTwoSection"
+          }
+        },
+        "reasoning_guidance": {
+          "type": "string",
+          "description": "Step-by-step reasoning instructions for this phase"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseTwoSection": {
+      "type": "object",
+      "required": ["id", "name", "checklist"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseThree": {
+      "type": "object",
+      "required": ["id", "name", "schema", "severity_definitions", "risk_definitions", "id_prefixes"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "example_rows": {
+          "type": "array"
+        },
+        "severity_definitions": {
+          "type": "object"
+        },
+        "risk_definitions": {
+          "type": "object"
+        },
+        "id_prefixes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseFour": {
+      "type": "object",
+      "required": ["id", "name", "phases"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ImplementationPhase"
+          }
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ImplementationPhase": {
+      "type": "object",
+      "required": ["name", "items"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PhaseFive": {
+      "type": "object",
+      "required": ["id", "name", "patch_packaging", "execution_rules"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "patch_packaging": {
+          "type": "object"
+        },
+        "diff_template": {
+          "type": "object"
+        },
+        "execution_rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "SessionLog": {
+      "type": "object",
+      "required": ["required", "format"],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "format": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "QualityGates": {
+      "type": "object",
+      "required": ["description", "checklist"],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "EscapeHatches": {
+      "type": "object",
+      "properties": {
+        "insufficient_context": {
+          "type": "object"
+        },
+        "scope_too_large": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AntiPatterns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AntiPattern"
+      }
+    },
+    "AntiPattern": {
+      "type": "object",
+      "required": ["dont", "do_instead"],
+      "properties": {
+        "dont": {
+          "type": "string"
+        },
+        "do_instead": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "InvocationExamples": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/InvocationExample"
+      }
+    },
+    "InvocationExample": {
+      "type": "object",
+      "required": ["context", "prompt"],
+      "properties": {
+        "context": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EntryPoint": {
+      "type": "object",
+      "properties": {
+        "instruction": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Changelog": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ChangelogEntry"
+      }
+    },
+    "ChangelogEntry": {
+      "type": "object",
+      "required": ["version", "date", "additions"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "additions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChangelogAddition"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ChangelogAddition": {
+      "type": "object",
+      "required": ["item", "purpose"],
+      "properties": {
+        "item": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Metadata": {
+      "type": "object",
+      "properties": {
+        "designed_by": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        },
+        "copyrights": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

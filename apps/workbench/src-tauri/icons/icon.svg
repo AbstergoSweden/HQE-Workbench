@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- HQE Workbench Icon - Placeholder -->
+  <rect width="512" height="512" rx="64" fill="#1a1a2e"/>
+  <rect x="96" y="160" width="320" height="24" rx="4" fill="#4a9eff"/>
+  <rect x="96" y="224" width="240" height="24" rx="4" fill="#7ee787"/>
+  <rect x="96" y="288" width="280" height="24" rx="4" fill="#ffd93d"/>
+  <rect x="96" y="352" width="160" height="24" rx="4" fill="#ff6b6b"/>
+  <circle cx="400" cy="364" r="32" fill="#4a9eff"/>
+  <text x="400" y="372" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white">Q</text>
+</svg>

@@ -1,0 +1,534 @@
+prompt = """
+# Prompt Engineering Best Practices
+
+Please provide best practices and tips for prompt engineering related to:
+
+{{args}}
+
+## Core Prompt Engineering Principles
+
+### 1. Clarity and Specificity
+
+#### Be Explicit
+**Bad:**
+```
+Write code
+```
+
+**Good:**
+```
+Write a Python function that:
+- Takes a list of integers as input
+- Returns the sum of even numbers
+- Handles empty lists
+- Includes type hints
+- Has docstring documentation
+```
+
+**Why:** AI models perform better with clear, specific instructions.
+
+---
+
+#### Define the Role
+**Bad:**
+```
+Explain databases
+```
+
+**Good:**
+```
+You are a database expert teaching beginners. Explain what databases are using simple language and everyday analogies.
+```
+
+**Why:** Role-setting provides context and adjusts the response style.
+
+---
+
+#### Specify Output Format
+**Bad:**
+```
+Tell me about error handling
+```
+
+**Good:**
+```
+Explain error handling in the following format:
+1. Definition (2-3 sentences)
+2. Why it matters (1 paragraph)
+3. Code example with comments
+4. Common mistakes to avoid (3-5 bullet points)
+```
+
+**Why:** Structured outputs are more useful and consistent.
+
+---
+
+### 2. Context and Background
+
+#### Provide Sufficient Context
+**Bad:**
+```
+Fix this code: [code snippet]
+```
+
+**Good:**
+```
+Context: I'm building a React application for e-commerce.
+Problem: This checkout component crashes when users have empty carts.
+Expected: Should display "Cart is empty" message instead.
+
+Code to fix:
+[code snippet]
+```
+
+**Why:** Context helps the AI understand the problem domain and constraints.
+
+---
+
+#### Include Constraints
+**Bad:**
+```
+Design a database schema
+```
+
+**Good:**
+```
+Design a database schema for a blog with these constraints:
+- Must support PostgreSQL
+- Expected 1M users, 10M posts
+- Need to query posts by author quickly
+- Must support tags (many-to-many)
+- Follow 3NF normalization
+```
+
+**Why:** Constraints guide the solution toward practical, feasible answers.
+
+---
+
+### 3. Examples and Demonstrations
+
+#### Use Few-Shot Learning
+**Pattern:**
+```
+Here are examples of what I want:
+
+Input: [example 1 input]
+Output: [example 1 output]
+
+Input: [example 2 input]
+Output: [example 2 output]
+
+Now do the same for:
+Input: [your actual input]
+```
+
+**Why:** Examples teach the AI the pattern you want.
+
+---
+
+#### Show Good and Bad Examples
+```
+Good example:
+✅ [Show correct approach]
+
+Bad example:
+❌ [Show wrong approach]
+
+Now apply this to: [your case]
+```
+
+**Why:** Contrasts clarify expectations.
+
+---
+
+### 4. Step-by-Step Decomposition
+
+#### Break Complex Tasks
+**Bad:**
+```
+Build a full authentication system
+```
+
+**Good:**
+```
+Let's build an authentication system step by step:
+
+Step 1: Design the user schema
+- What fields do we need?
+- What constraints?
+
+Step 2: Implement registration
+- Input validation
+- Password hashing
+- Database storage
+
+Step 3: Implement login
+- Credential verification
+- JWT generation
+- Error handling
+
+Let's start with Step 1.
+```
+
+**Why:** Complex tasks are easier to handle in pieces.
+
+---
+
+#### Chain of Thought
+```
+Think through this problem step by step:
+
+1. First, identify the inputs and outputs
+2. Then, consider edge cases
+3. Next, outline the algorithm
+4. Finally, write the code
+
+Show your reasoning for each step.
+```
+
+**Why:** Encourages logical, thorough responses.
+
+---
+
+### 5. Output Quality Control
+
+#### Request Self-Critique
+```
+[Your prompt]
+
+After providing your answer, critique it by identifying:
+1. Potential issues or edge cases missed
+2. Alternative approaches
+3. Improvements that could be made
+```
+
+**Why:** Prompts self-reflection leading to better answers.
+
+---
+
+#### Ask for Multiple Options
+```
+Provide 3 different approaches to solve this problem:
+1. Approach A: [optimized for performance]
+2. Approach B: [optimized for readability]
+3. Approach C: [optimized for maintainability]
+
+For each, explain pros and cons.
+```
+
+**Why:** Comparison helps you choose the best solution.
+
+---
+
+### 6. Constraints and Boundaries
+
+#### Set Scope Limits
+```
+Limit your response to:
+- Maximum 200 lines of code
+- Only use standard library (no external dependencies)
+- Must work in Python 3.8+
+- Response should be under 500 words
+```
+
+**Why:** Prevents overly complex or lengthy responses.
+
+---
+
+#### Specify What to Avoid
+```
+Requirements:
+- Do NOT use deprecated APIs
+- Do NOT include comments explaining every line
+- Do NOT make assumptions about user input
+- Do NOT use global variables
+```
+
+**Why:** Explicitly ruling out unwanted approaches.
+
+---
+
+### 7. Iterative Refinement
+
+#### Version 1: Basic Prompt
+```
+Explain async/await in JavaScript
+```
+
+**Response:** Too basic or too complex
+
+---
+
+#### Version 2: Add Context
+```
+Explain async/await in JavaScript to an intermediate developer who understands callbacks and promises.
+```
+
+**Response:** Better but still generic
+
+---
+
+#### Version 3: Add Structure
+```
+Explain async/await in JavaScript to an intermediate developer:
+
+1. Quick definition (2-3 sentences)
+2. How it relates to promises
+3. Code example showing conversion from promises to async/await
+4. Common pitfalls
+5. When to use vs when not to use
+```
+
+**Response:** Much more targeted and useful
+
+---
+
+### 8. Prompt Patterns
+
+#### The Template Pattern
+```
+You are a [role].
+Your task is to [objective].
+
+Given:
+{{input}}
+
+Requirements:
+- [requirement 1]
+- [requirement 2]
+
+Output format:
+[specify structure]
+```
+
+---
+
+#### The Persona Pattern
+```
+Act as a [expert type] with [years] of experience in [domain].
+You are known for [characteristics].
+Your communication style is [style].
+
+[Rest of prompt]
+```
+
+---
+
+#### The Refinement Pattern
+```
+[Initial prompt]
+
+Please refine your answer by:
+1. Adding more specific examples
+2. Addressing edge case X
+3. Explaining assumption Y
+```
+
+---
+
+#### The Comparison Pattern
+```
+Compare and contrast [A] vs [B] in the following dimensions:
+- Performance
+- Ease of use
+- Scalability
+- Cost
+- Maintenance
+
+Provide specific examples for each dimension.
+```
+
+---
+
+#### The Constraint Pattern
+```
+Given these constraints:
+- Constraint 1
+- Constraint 2
+- Constraint 3
+
+[Task description]
+
+If any constraint cannot be satisfied, explain why and suggest alternatives.
+```
+
+---
+
+### 9. Common Prompt Mistakes
+
+#### Mistake 1: Too Vague
+❌ "Make it better"
+✅ "Improve performance by reducing time complexity from O(n²) to O(n log n)"
+
+#### Mistake 2: Assuming Context
+❌ "Add validation to the form"
+✅ "Add email validation to the registration form, checking for: valid format, not already registered, and not from blacklisted domains"
+
+#### Mistake 3: Multiple Unrelated Tasks
+❌ "Build a login system, write tests, create documentation, and deploy it"
+✅ "First, let's build the login system. We'll handle tests, docs, and deployment in separate steps."
+
+#### Mistake 4: No Success Criteria
+❌ "Optimize this function"
+✅ "Optimize this function to run in under 100ms for inputs up to 10,000 elements"
+
+#### Mistake 5: Ambiguous Pronouns
+❌ "It should connect to it using that"
+✅ "The client should connect to the database using connection pooling"
+
+---
+
+### 10. Domain-Specific Best Practices
+
+#### For Code Generation
+```
+Generate [language] code that:
+- Function/class name and purpose
+- Input parameters with types
+- Return type
+- Error handling approach
+- Edge cases to handle
+- Performance requirements
+- Code style preferences
+```
+
+#### For Code Review
+```
+Review this [language] code for:
+1. Security vulnerabilities
+2. Performance issues
+3. Code quality and maintainability
+4. Best practices violations
+5. Edge cases not handled
+
+For each issue found, provide:
+- Severity (Critical/High/Medium/Low)
+- Explanation
+- Fix recommendation
+- Example of corrected code
+```
+
+#### For Explanations
+```
+Explain [concept] with:
+1. Simple analogy (ELI5 level)
+2. Technical definition
+3. Real-world use case
+4. Code example
+5. Common misconceptions
+6. Related concepts
+
+Assume audience: [skill level]
+```
+
+#### For Documentation
+```
+Create documentation for [code/feature] including:
+- Overview (what it does, why it exists)
+- Prerequisites
+- Installation/setup steps
+- Usage examples (basic and advanced)
+- API reference
+- Common issues and solutions
+- Best practices
+```
+
+---
+
+### 11. Testing Your Prompts
+
+#### Quality Checklist
+- [ ] Is the objective clear?
+- [ ] Is the role/context defined?
+- [ ] Are constraints specified?
+- [ ] Is output format defined?
+- [ ] Are examples provided?
+- [ ] Are edge cases mentioned?
+- [ ] Is success criteria clear?
+
+#### Test Cases
+1. **Minimal input**: Does it work with bare minimum?
+2. **Complex input**: Does it handle complexity?
+3. **Edge cases**: Does it handle unusual inputs?
+4. **Ambiguity**: Could it be misinterpreted?
+
+---
+
+### 12. Advanced Techniques
+
+#### Meta-Prompting
+```
+Before answering, ask yourself:
+- What information is missing?
+- What assumptions am I making?
+- What edge cases exist?
+
+Then provide your answer addressing these points.
+```
+
+#### Prompt Chaining
+```
+Prompt 1: Analyze the requirements
+Prompt 2: Based on the analysis, design the solution
+Prompt 3: Based on the design, implement the code
+Prompt 4: Based on the code, write tests
+```
+
+#### Self-Consistency
+```
+Solve this problem 3 different ways, then:
+1. Compare the solutions
+2. Identify the best approach
+3. Explain why it's best
+```
+
+---
+
+### 13. Optimization Tips
+
+#### For Conciseness
+- Use bullet points instead of paragraphs for requirements
+- Reference examples instead of repeating them
+- Use abbreviations consistently (define once)
+
+#### For Accuracy
+- Specify versions (Python 3.10, React 18)
+- Include units (milliseconds, MB, percentage)
+- Define technical terms
+- Provide examples of correct output
+
+#### For Consistency
+- Use templates for similar tasks
+- Maintain same structure across prompts
+- Define terms consistently
+- Use same variable naming
+
+---
+
+### 14. Prompt Engineering Workflow
+
+1. **Define Goal**: What do you want to achieve?
+2. **Draft Initial Prompt**: Write first version
+3. **Test**: Try it out
+4. **Analyze Results**: What's good? What's missing?
+5. **Refine**: Add specificity, examples, constraints
+6. **Re-test**: Try refined version
+7. **Iterate**: Repeat until satisfactory
+8. **Document**: Save successful prompts for reuse
+
+---
+
+### 15. Resources and Further Learning
+
+#### Key Principles to Remember
+1. **Clarity over brevity**: Be detailed, not terse
+2. **Show, don't just tell**: Use examples
+3. **Structure matters**: Format output explicitly
+4. **Context is king**: Provide background
+5. **Iterate and refine**: First drafts rarely perfect
+6. **Test edge cases**: Think about what could go wrong
+7. **Be specific**: Vague prompts = vague answers
+8. **Set boundaries**: Define what you don't want
+
+Generate comprehensive prompt engineering guidance following these best practices.
+"""

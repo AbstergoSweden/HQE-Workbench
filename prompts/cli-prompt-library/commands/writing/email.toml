@@ -1,0 +1,380 @@
+prompt = """
+# Draft Professional Email
+
+Please help draft a professional email for:
+
+{{args}}
+
+## Email Structure
+
+### 1. Subject Line
+
+Create a clear, specific subject line:
+- Concise (5-7 words)
+- Action-oriented when needed
+- Descriptive of content
+- Professional tone
+
+**Good Examples:**
+- "Meeting Request: Project Timeline Discussion"
+- "Update: Q4 Feature Release Schedule"
+- "Question about API Documentation"
+- "Follow-up: Yesterday's Design Review"
+
+**Bad Examples:**
+- "Hey" (too casual)
+- "Important!" (vague)
+- "Read this" (demanding)
+
+### 2. Greeting
+
+Choose appropriate salutation:
+
+**Formal:**
+- Dear [First Name] [Last Name],
+- Dear Mr./Ms./Dr. [Last Name],
+- Dear Hiring Manager,
+
+**Professional:**
+- Hi [First Name],
+- Hello [First Name],
+
+**Team/Group:**
+- Hi team,
+- Hello everyone,
+- Dear colleagues,
+
+**No Name Known:**
+- Hello,
+- Greetings,
+
+### 3. Opening Line
+
+Start with purpose or context:
+
+**For First Contact:**
+- "I hope this email finds you well."
+- "I'm reaching out regarding [topic]."
+- "My name is [name], and I'm [role] at [company]."
+
+**For Follow-up:**
+- "Following up on our conversation about [topic]..."
+- "Thank you for your time yesterday discussing [topic]."
+- "I wanted to check in about [previous topic]."
+
+**For Request:**
+- "I'm writing to request [specific thing]."
+- "I'd like to ask for your help with [topic]."
+
+**For Update:**
+- "I wanted to update you on [topic]."
+- "Quick update about [project/topic]."
+
+### 4. Body
+
+#### Paragraph 1: Purpose
+State main reason clearly (1-2 sentences):
+- "The purpose of this email is to [objective]."
+- What you need/want
+- Why you're writing
+
+#### Paragraph 2: Details
+Provide necessary context:
+- Background information
+- Relevant details
+- Supporting information
+- Use bullet points for clarity:
+  - Point 1
+  - Point 2
+  - Point 3
+
+#### Paragraph 3: Action Items (if applicable)
+Clear next steps:
+- What you need from recipient
+- Deadlines if applicable
+- Specific requests
+
+### 5. Closing
+
+**Call to Action:**
+- "Please let me know if this works for you."
+- "I'd appreciate your feedback by [date]."
+- "Could you please review and approve by [date]?"
+- "Let me know if you have any questions."
+
+**Polite Sign-off:**
+- "Thank you for your time and consideration."
+- "I appreciate your help with this."
+- "Looking forward to your response."
+- "Thanks in advance for your assistance."
+
+### 6. Signature
+
+**Professional Format:**
+```
+Best regards,
+[Your Name]
+[Your Title]
+[Company Name]
+[Email]
+[Phone] (optional)
+[LinkedIn] (optional)
+```
+
+**Sign-offs by Context:**
+- **Formal**: Sincerely, Respectfully,
+- **Professional**: Best regards, Kind regards,
+- **Friendly**: Thanks, Cheers, Warm regards,
+- **Casual**: Best, Thanks again,
+
+## Email Templates by Type
+
+### Template 1: Meeting Request
+
+```
+Subject: Meeting Request: [Topic] Discussion
+
+Hi [Name],
+
+I hope this email finds you well. I'd like to schedule a meeting to discuss [specific topic].
+
+I believe it would be beneficial to align on:
+- Point 1
+- Point 2
+- Point 3
+
+Would you be available for a [duration]-minute meeting next week? I'm flexible with timing and happy to work around your schedule. Here are some options:
+- [Date/Time option 1]
+- [Date/Time option 2]
+- [Date/Time option 3]
+
+Please let me know what works best for you, or suggest an alternative time.
+
+Thank you,
+[Your Name]
+```
+
+### Template 2: Following Up
+
+```
+Subject: Follow-up: [Previous Topic]
+
+Hi [Name],
+
+I wanted to follow up on my email from [date] regarding [topic].
+
+To recap, I was hoping to [restate request/question]. I understand you're busy, but this would help us [benefit/reason].
+
+If you need any additional information from me, please don't hesitate to ask.
+
+I'd appreciate an update when you have a moment.
+
+Thanks again,
+[Your Name]
+```
+
+### Template 3: Requesting Information
+
+```
+Subject: Question about [Topic]
+
+Hi [Name],
+
+I have a question about [specific topic] and thought you might be able to help.
+
+[Provide context in 1-2 sentences]
+
+Specifically, I'm wondering:
+- Question 1
+- Question 2
+
+Any guidance you can provide would be greatly appreciated. There's no rush, but if possible, having this information by [date] would be helpful for [reason].
+
+Thank you for your time,
+[Your Name]
+```
+
+### Template 4: Sharing Update
+
+```
+Subject: Update: [Project/Topic]
+
+Hi [Name/Team],
+
+I wanted to share a quick update on [project/topic].
+
+**Progress:**
+- Completed item 1
+- Completed item 2
+
+**In Progress:**
+- Item 3 (expected completion: [date])
+- Item 4 (expected completion: [date])
+
+**Upcoming:**
+- Item 5 (starting: [date])
+
+**Blockers:**
+- Issue 1: [brief description and needed help]
+
+Please let me know if you have any questions or concerns.
+
+Best regards,
+[Your Name]
+```
+
+### Template 5: Asking for Feedback
+
+```
+Subject: Feedback Request: [Topic/Document]
+
+Hi [Name],
+
+I hope you're doing well. I've completed [document/project/work] and would greatly appreciate your feedback.
+
+[Provide brief context about what you're sharing]
+
+I've attached [document] / shared the link: [URL]
+
+Specifically, I'm looking for feedback on:
+- Area 1
+- Area 2
+- Area 3
+
+If possible, could you review by [date]? I want to ensure we have time to incorporate your suggestions before [deadline/reason].
+
+Thank you for your time and expertise.
+
+Best regards,
+[Your Name]
+```
+
+### Template 6: Thank You
+
+```
+Subject: Thank You for [Specific Thing]
+
+Hi [Name],
+
+I wanted to take a moment to thank you for [specific action/help].
+
+[Explain impact or how it helped you]
+
+Your [expertise/time/guidance] was invaluable, and I really appreciate you taking the time to [what they did].
+
+Thanks again for your support.
+
+Best regards,
+[Your Name]
+```
+
+### Template 7: Declining Politely
+
+```
+Subject: Re: [Original Subject]
+
+Hi [Name],
+
+Thank you for thinking of me for [opportunity/request].
+
+Unfortunately, I won't be able to [take on project/attend meeting/etc.] due to [brief, professional reason - current commitments/schedule conflicts/etc.].
+
+[If appropriate] I'd be happy to [offer alternative/suggest someone else/help in different way].
+
+I appreciate your understanding.
+
+Best regards,
+[Your Name]
+```
+
+### Template 8: Apology/Error Correction
+
+```
+Subject: Correction: [Topic]
+
+Hi [Name],
+
+I realized there was an error in my previous email about [topic].
+
+[Clearly state the mistake]
+
+The correct information is:
+[Provide correct details]
+
+I apologize for any confusion this may have caused. Please let me know if you have any questions.
+
+Thank you for your understanding.
+
+Best regards,
+[Your Name]
+```
+
+## Email Best Practices
+
+### Do's ✅
+- **Be Clear**: State purpose in first paragraph
+- **Be Concise**: Respect recipient's time
+- **Be Specific**: Include dates, times, details
+- **Be Polite**: Use please and thank you
+- **Be Professional**: Proper grammar and spelling
+- **Use Paragraphs**: Break up text for readability
+- **Proofread**: Check before sending
+- **Include Context**: If continuing conversation
+- **Use Bullet Points**: For lists or multiple points
+- **Set Clear Expectations**: Deadlines, next steps
+
+### Don'ts ❌
+- **Don't Use All Caps**: LOOKS LIKE SHOUTING
+- **Don't Over-Explain**: Keep it focused
+- **Don't Use Emojis**: Unless very casual context
+- **Don't Send When Emotional**: Wait and revise
+- **Don't Forget Attachments**: Mention if included
+- **Don't Use Unclear Pronouns**: Be specific
+- **Don't Write Novels**: Keep it brief
+- **Don't Be Vague**: Be specific about requests
+- **Don't Assume Tone Conveys**: Be explicit
+- **Don't Overuse Exclamation Points**: Unprofessional
+
+## Tone Guidelines
+
+### Formal (Senior executives, clients, first contact)
+- Use complete sentences
+- Avoid contractions
+- Use formal salutations
+- Professional language
+- Structured format
+
+### Professional (Colleagues, regular contacts)
+- Friendly but respectful
+- Can use contractions
+- Clear and direct
+- Appropriate warmth
+- Professional tone
+
+### Casual (Close colleagues, internal team)
+- Conversational
+- Friendly tone
+- Brief and direct
+- Can be less formal
+- Still professional
+
+## Email Checklist
+
+Before sending, verify:
+
+- [ ] Subject line is clear and relevant
+- [ ] Recipient email is correct
+- [ ] Greeting is appropriate
+- [ ] Purpose stated clearly in opening
+- [ ] All necessary information included
+- [ ] Action items are clear
+- [ ] Deadlines specified if applicable
+- [ ] Tone is appropriate for recipient
+- [ ] Grammar and spelling checked
+- [ ] Attachments included if mentioned
+- [ ] Signature is complete
+- [ ] Reply all used appropriately
+- [ ] Sent at appropriate time
+
+Generate a complete, professional email following these guidelines.
+"""

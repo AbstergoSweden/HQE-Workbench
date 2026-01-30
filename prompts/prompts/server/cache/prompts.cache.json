@@ -1,0 +1,738 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-01-29T03:16:48.094Z",
+  "source": "/Users/super_user/.gemini/extensions/gemini-prompts/server/resources",
+  "prompts": {
+    "create_gate": {
+      "id": "create_gate",
+      "name": "Create Gate",
+      "category": "gate-authoring",
+      "description": "Guided quality gate creation with examples and validation. Outputs structured JSON for resource_manager.",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "Gate name (e.g., \"API Documentation\", \"Test Coverage\")"
+        },
+        {
+          "name": "purpose",
+          "type": "string",
+          "required": false,
+          "description": "Core purpose in 1-2 sentences"
+        },
+        {
+          "name": "gate_type",
+          "type": "string",
+          "required": false,
+          "description": "validation (pass/fail) or guidance (advisory)"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "required": false,
+          "description": "Lowercase-hyphenated identifier (e.g., 'api-docs', 'test-coverage')"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "required": false,
+          "description": "'validation' or 'guidance'"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": false,
+          "description": "Brief description of what the gate validates"
+        },
+        {
+          "name": "guidanceFile",
+          "type": "string",
+          "required": false,
+          "description": "Path to guidance.md file (default creates inline guidance)"
+        },
+        {
+          "name": "guidance",
+          "type": "string",
+          "required": false,
+          "description": "Inline guidance content (alternative to guidanceFile)"
+        },
+        {
+          "name": "pass_criteria",
+          "type": "array",
+          "required": false,
+          "description": "Array of pass criteria objects"
+        },
+        {
+          "name": "retry_config",
+          "type": "object",
+          "required": false,
+          "description": "Retry configuration object"
+        },
+        {
+          "name": "activation",
+          "type": "object",
+          "required": false,
+          "description": "Activation rules object"
+        },
+        {
+          "name": "severity",
+          "type": "string",
+          "required": false,
+          "description": "critical | high | medium | low"
+        },
+        {
+          "name": "enforcementMode",
+          "type": "string",
+          "required": false,
+          "description": "blocking | advisory | informational"
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "create",
+        "gate",
+        "guided",
+        "quality",
+        "creation",
+        "examples",
+        "validation",
+        "outputs",
+        "structured",
+        "json"
+      ]
+    },
+    "create_methodology": {
+      "id": "create_methodology",
+      "name": "Create Methodology",
+      "category": "framework-authoring",
+      "description": "Guided framework creation with examples from CAGEERF, ReACT. Outputs structured JSON for resource_manager.",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "Framework name (e.g., \"CRISP\", \"FOCUS\", \"ITERATE\")"
+        },
+        {
+          "name": "concept",
+          "type": "string",
+          "required": false,
+          "description": "Core concept/approach in 1-2 sentences"
+        },
+        {
+          "name": "phase_count",
+          "type": "number",
+          "required": false,
+          "description": "Number of phases (default 5-7, range 3-10)"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "required": false,
+          "description": "Lowercase-hyphenated identifier (e.g., 'focus', 'iterate')"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "required": false,
+          "description": "Framework type identifier in UPPERCASE (e.g., 'CAGEERF', 'ITERATE')"
+        },
+        {
+          "name": "version",
+          "type": "string",
+          "required": false,
+          "description": "Semantic version (e.g., '1.0.0')"
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "required": false,
+          "description": "Whether the methodology is enabled (set to true)"
+        },
+        {
+          "name": "system_prompt_guidance",
+          "type": "string",
+          "required": false,
+          "description": "Multiline guidance with **Phase**: format for injection"
+        },
+        {
+          "name": "phases",
+          "type": "array",
+          "required": false,
+          "description": "Array of phase objects [{id, name, description}]"
+        },
+        {
+          "name": "methodology_gates",
+          "type": "array",
+          "required": false,
+          "description": "Quality gates with validationCriteria"
+        },
+        {
+          "name": "processing_steps",
+          "type": "array",
+          "required": false,
+          "description": "Ordered processing steps"
+        },
+        {
+          "name": "execution_steps",
+          "type": "array",
+          "required": false,
+          "description": "Execution steps with dependencies"
+        },
+        {
+          "name": "template_enhancements",
+          "type": "object",
+          "required": false,
+          "description": "Template enhancement configuration"
+        },
+        {
+          "name": "execution_flow",
+          "type": "object",
+          "required": false,
+          "description": "Pre/post processing hooks"
+        },
+        {
+          "name": "quality_indicators",
+          "type": "object",
+          "required": false,
+          "description": "Keywords/patterns for quality detection per phase"
+        },
+        {
+          "name": "gates",
+          "type": "object",
+          "required": false,
+          "description": "Gate configuration {include, exclude}"
+        },
+        {
+          "name": "judge_prompt",
+          "type": "string",
+          "required": false,
+          "description": "Custom judge prompt content for %judge modifier"
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "create",
+        "methodology",
+        "guided",
+        "framework",
+        "creation",
+        "examples",
+        "cageerf",
+        "react",
+        "outputs",
+        "structured",
+        "json"
+      ]
+    },
+    "create_prompt": {
+      "id": "create_prompt",
+      "name": "Create Prompt",
+      "category": "prompt-authoring",
+      "description": "Guided prompt/chain creation with examples and validation. Outputs structured JSON for resource_manager.",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "Prompt name (e.g., \"Code Review\", \"Research Summary\")"
+        },
+        {
+          "name": "purpose",
+          "type": "string",
+          "required": false,
+          "description": "Core purpose in 1-2 sentences"
+        },
+        {
+          "name": "prompt_type",
+          "type": "string",
+          "required": false,
+          "description": "'single' for one-shot or 'chain' for multi-step"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "required": false,
+          "description": "Lowercase-underscored identifier (e.g., 'code_review', 'research_summary')"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Prompt category (e.g., 'development', 'analysis', 'documentation')"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": false,
+          "description": "Brief description of what the prompt does"
+        },
+        {
+          "name": "systemMessage",
+          "type": "string",
+          "required": false,
+          "description": "System message content (inline)"
+        },
+        {
+          "name": "systemMessageFile",
+          "type": "string",
+          "required": false,
+          "description": "Path to system-message.md file"
+        },
+        {
+          "name": "userMessageTemplate",
+          "type": "string",
+          "required": false,
+          "description": "User message template with {{variable}} placeholders"
+        },
+        {
+          "name": "userMessageTemplateFile",
+          "type": "string",
+          "required": false,
+          "description": "Path to user-message.md file"
+        },
+        {
+          "name": "arguments",
+          "type": "array",
+          "required": false,
+          "description": "Argument definitions array"
+        },
+        {
+          "name": "gateConfiguration",
+          "type": "object",
+          "required": false,
+          "description": "Gate configuration object"
+        },
+        {
+          "name": "chainSteps",
+          "type": "array",
+          "required": false,
+          "description": "Chain step definitions (for chain prompts)"
+        },
+        {
+          "name": "registerWithMcp",
+          "type": "boolean",
+          "required": false,
+          "description": "Register as MCP tool (default false)"
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "create",
+        "prompt",
+        "guided",
+        "chain",
+        "creation",
+        "examples",
+        "validation",
+        "outputs",
+        "structured",
+        "json"
+      ]
+    },
+    "deep_dive": {
+      "id": "deep_dive",
+      "name": "Deep Dive",
+      "category": "examples",
+      "description": "Thorough investigation of key themes",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "deep",
+        "dive",
+        "thorough",
+        "investigation",
+        "key",
+        "themes"
+      ]
+    },
+    "initial_scan": {
+      "id": "initial_scan",
+      "name": "Initial Scan",
+      "category": "examples",
+      "description": "Broad overview and key themes identification",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "initial",
+        "scan",
+        "broad",
+        "overview",
+        "key",
+        "themes",
+        "identification"
+      ]
+    },
+    "notepage": {
+      "id": "notepage",
+      "name": "Notepage",
+      "category": "examples",
+      "description": "Structured reference note for future use",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "notepage",
+        "structured",
+        "reference",
+        "note",
+        "future",
+        "use"
+      ]
+    },
+    "deep_analysis": {
+      "id": "deep_analysis",
+      "name": "Deep Analysis Chain",
+      "category": "examples",
+      "description": "Progressive analysis workflow for thorough research. Scans the topic, deep dives into key areas, synthesizes findings, and produces a structured notepage for reference.",
+      "is_chain": true,
+      "chain_steps": 4,
+      "arguments": [
+        {
+          "name": "topic",
+          "type": "string",
+          "required": true,
+          "description": "The topic or subject to analyze"
+        },
+        {
+          "name": "focus_areas",
+          "type": "string",
+          "required": false,
+          "description": "Specific areas to emphasize in the analysis"
+        },
+        {
+          "name": "context",
+          "type": "string",
+          "required": false,
+          "description": "Background context or prior knowledge to consider"
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "deep",
+        "analysis",
+        "chain",
+        "progressive",
+        "workflow",
+        "thorough",
+        "research",
+        "scans",
+        "topic",
+        "dives",
+        "key",
+        "areas",
+        "synthesizes",
+        "findings",
+        "produces"
+      ]
+    },
+    "synthesis": {
+      "id": "synthesis",
+      "name": "Synthesis",
+      "category": "examples",
+      "description": "Integrate findings into coherent understanding",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "synthesis",
+        "integrate",
+        "findings",
+        "coherent",
+        "understanding"
+      ]
+    },
+    "identify_options": {
+      "id": "identify_options",
+      "name": "Identify Options",
+      "category": "examples",
+      "description": "Identify 3-5 viable options for the decision",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "identify",
+        "options",
+        "viable",
+        "decision"
+      ]
+    },
+    "quick_decision": {
+      "id": "quick_decision",
+      "name": "Quick Decision Chain",
+      "category": "examples",
+      "description": "Fast decision-making workflow with concise prompts. Identifies options, weighs tradeoffs, and provides a recommendation.",
+      "is_chain": true,
+      "chain_steps": 3,
+      "arguments": [
+        {
+          "name": "topic",
+          "type": "string",
+          "required": true,
+          "description": "The decision topic or question to analyze"
+        },
+        {
+          "name": "constraints",
+          "type": "string",
+          "required": false,
+          "description": "Any constraints or requirements to consider"
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "quick",
+        "decision",
+        "chain",
+        "fast",
+        "making",
+        "workflow",
+        "concise",
+        "prompts",
+        "identifies",
+        "options",
+        "weighs",
+        "tradeoffs",
+        "provides",
+        "recommendation"
+      ]
+    },
+    "recommend": {
+      "id": "recommend",
+      "name": "Recommendation",
+      "category": "examples",
+      "description": "Provide final recommendation with rationale",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "recommendation",
+        "provide",
+        "final",
+        "rationale"
+      ]
+    },
+    "weigh_tradeoffs": {
+      "id": "weigh_tradeoffs",
+      "name": "Weigh Tradeoffs",
+      "category": "examples",
+      "description": "Analyze pros/cons of each option",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "weigh",
+        "tradeoffs",
+        "analyze",
+        "pros",
+        "cons",
+        "option"
+      ]
+    },
+    "reference_demo": {
+      "id": "reference_demo",
+      "name": "Reference Syntax Demo",
+      "category": "examples",
+      "description": "Demonstrates template reference features - {{ref:id}} for prompt inclusion and {{script:id}} for inline script execution",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [
+        {
+          "name": "text",
+          "type": "string",
+          "required": true,
+          "description": "The text to analyze with the word_count script tool"
+        },
+        {
+          "name": "topic",
+          "type": "string",
+          "required": false,
+          "description": "Optional topic name for the introduction (demonstrates reference feature)"
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "reference",
+        "syntax",
+        "demo",
+        "demonstrates",
+        "template",
+        "features",
+        "ref",
+        "prompt",
+        "inclusion",
+        "script",
+        "inline",
+        "execution"
+      ]
+    },
+    "shared_intro": {
+      "id": "shared_intro",
+      "name": "Shared Introduction Template",
+      "category": "examples",
+      "description": "A reusable introduction block demonstrating the {{ref:id}} prompt reference syntax. Reference this prompt from other templates using {{ref:shared_intro}}",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [
+        {
+          "name": "topic",
+          "type": "string",
+          "required": false,
+          "description": "The topic for the introduction"
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "shared",
+        "introduction",
+        "template",
+        "reusable",
+        "block",
+        "demonstrating",
+        "ref",
+        "prompt",
+        "reference",
+        "syntax",
+        "templates",
+        "using"
+      ]
+    },
+    "test_default": {
+      "id": "test_default",
+      "name": "Test Default Value",
+      "category": "examples",
+      "description": "Tests defaultValue rendering",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [
+        {
+          "name": "count",
+          "type": "number",
+          "required": false,
+          "description": "Number of items",
+          "default": 42
+        }
+      ],
+      "gates": [],
+      "keywords": [
+        "test",
+        "default",
+        "value",
+        "tests",
+        "defaultvalue",
+        "rendering"
+      ]
+    },
+    "analytical": {
+      "id": "analytical",
+      "name": "Analytical Framework",
+      "category": "guidance",
+      "description": "Systematic analysis framework guidance",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "analytical",
+        "framework",
+        "systematic",
+        "analysis",
+        "guidance"
+      ]
+    },
+    "creative": {
+      "id": "creative",
+      "name": "Creative Framework",
+      "category": "guidance",
+      "description": "Creative thinking framework guidance",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "creative",
+        "framework",
+        "thinking",
+        "guidance"
+      ]
+    },
+    "procedural": {
+      "id": "procedural",
+      "name": "Procedural Framework",
+      "category": "guidance",
+      "description": "Step-by-step procedural guidance",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "procedural",
+        "framework",
+        "step",
+        "guidance"
+      ]
+    },
+    "reasoning": {
+      "id": "reasoning",
+      "name": "Reasoning Structure",
+      "category": "guidance",
+      "description": "Step-by-step reasoning structure",
+      "is_chain": false,
+      "chain_steps": 0,
+      "arguments": [],
+      "gates": [],
+      "keywords": [
+        "reasoning",
+        "structure",
+        "step"
+      ]
+    }
+  },
+  "categories": {
+    "gate-authoring": [
+      "create_gate"
+    ],
+    "framework-authoring": [
+      "create_methodology"
+    ],
+    "prompt-authoring": [
+      "create_prompt"
+    ],
+    "examples": [
+      "deep_dive",
+      "initial_scan",
+      "notepage",
+      "deep_analysis",
+      "synthesis",
+      "identify_options",
+      "quick_decision",
+      "recommend",
+      "weigh_tradeoffs",
+      "reference_demo",
+      "shared_intro",
+      "test_default"
+    ],
+    "guidance": [
+      "analytical",
+      "creative",
+      "procedural",
+      "reasoning"
+    ]
+  },
+  "count": 19
+}

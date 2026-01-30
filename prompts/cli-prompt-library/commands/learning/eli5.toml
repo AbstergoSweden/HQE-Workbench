@@ -1,0 +1,165 @@
+prompt = """
+# Explain Like I'm 5 (ELI5)
+
+Please explain the following concept in the simplest possible terms:
+
+{{args}}
+
+## ELI5 Explanation Guidelines
+
+### 1. Use Simple Language
+- Avoid technical jargon completely
+- Use everyday words
+- Short, simple sentences
+- No acronyms unless explained
+
+### 2. Relate to Everyday Life
+Use analogies from common experiences:
+- Food and cooking
+- Playing games
+- Family and friends
+- School and playground
+- Toys and activities
+- Animals and nature
+- Sports
+
+### 3. Tell a Story
+Make it narrative and engaging:
+- Use characters
+- Create a scenario
+- Show cause and effect
+- Make it relatable
+
+### 4. Break It Down
+Explain step by step:
+- What it is
+- Why it exists
+- How it works
+- Why it matters
+
+### 5. Use Visual Metaphors
+Paint a mental picture:
+- "Imagine..."
+- "Think of it like..."
+- "It's similar to..."
+- "Picture this..."
+
+## ELI5 Structure
+
+### The Super Simple Explanation
+One or two sentences that capture the essence:
+
+"[Concept] is like [everyday thing]. It helps us [benefit] just like how [analogy]."
+
+### The Story Explanation
+A short story or scenario that demonstrates the concept:
+
+```
+Once upon a time, there was [character] who wanted to [goal].
+But they had a problem: [problem].
+
+So they used [concept] which works like this:
+[Step 1 using simple analogy]
+[Step 2 using simple analogy]
+[Step 3 using simple analogy]
+
+And that's how [character] solved their problem!
+```
+
+### The Analogy Explanation
+Multiple analogies from different perspectives:
+
+**Food Analogy:**
+"Think of [concept] like [food example]. When you [action], it's like [food process]..."
+
+**Game Analogy:**
+"It's like playing [game]. The rules are [simple rules], and you win when [outcome]..."
+
+**Building Analogy:**
+"Imagine building with LEGO blocks. [Concept] is like [building process]..."
+
+### The Visual Explanation
+Simple diagrams or step-by-step pictures (ASCII art):
+
+```
+Before:
+[Simple visual showing problem]
+
+After using [concept]:
+[Simple visual showing solution]
+```
+
+### Why Should You Care?
+Explain the benefit in simple terms:
+
+"This is important because [simple benefit that matters to everyone]."
+
+### Example in Real Life
+A concrete example they can relate to:
+
+"You know how [common experience]? Well, [concept] is what makes that possible!"
+
+## Example Format
+
+**Explaining "Database":**
+
+**Super Simple:**
+A database is like a giant, organized filing cabinet for computers. Instead of paper files, it stores digital information so you can find it quickly.
+
+**Story:**
+Imagine you have a huge toy collection with hundreds of toys. At first, you just threw them all in a big box. Finding your favorite toy takes forever!
+
+So you get smart and use lots of smaller boxes:
+- One box for cars
+- One box for action figures
+- One box for building blocks
+- Labels on each box
+
+Now when you want your red race car, you know exactly which box to look in. You can find it in seconds!
+
+That's what a database does - it organizes information into neat boxes (called "tables") so the computer can find what it needs super fast.
+
+**Real Life:**
+When you search for your friend on Instagram, Instagram uses a database to look through millions of people and find your friend in less than a second. Without a database, it would be like looking through a pile of billions of photos!
+
+**Why It's Cool:**
+Databases are why apps work so fast. They're the reason you can:
+- Find any YouTube video instantly
+- See your bank balance right away
+- Look up your grades in seconds
+
+Without databases, we'd still be waiting minutes or hours for computers to find information!
+
+## Writing Tips
+
+1. **Test it on a real 5-year-old** (mentally): Would they understand?
+2. **One concept at a time**: Don't introduce multiple ideas
+3. **Be patient**: Repeat the key point in different ways
+4. **Use "you" language**: Make it personal and engaging
+5. **Show don't tell**: Use examples instead of definitions
+6. **Keep it fun**: Use humor and relatable situations
+7. **Avoid conditionals**: Don't say "if you understand X, then Y"
+8. **No prerequisites**: Assume zero prior knowledge
+
+## What NOT to Do
+
+❌ Don't use technical terms without explaining
+❌ Don't assume prior knowledge
+❌ Don't make it too abstract
+❌ Don't use complex sentence structures
+❌ Don't skip the "why it matters"
+❌ Don't make it boring
+❌ Don't condescend (talk down)
+
+## What TO Do
+
+✅ Use simple, concrete examples
+✅ Relate to their world
+✅ Make it fun and engaging
+✅ Show practical benefits
+✅ Use repetition for key points
+✅ Build from known to unknown
+✅ Encourage curiosity
+
+Generate a comprehensive ELI5 explanation that a 5-year-old (or complete beginner) can understand and find interesting.
+"""

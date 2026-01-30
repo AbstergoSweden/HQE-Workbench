@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "enabledAt": "2026-01-13T07:56:06.061Z",
+  "enableReason": "System initialization (default enabled)",
+  "validationMetrics": {
+    "totalValidations": 0,
+    "successfulValidations": 0,
+    "averageValidationTime": 0,
+    "lastValidationTime": null
+  },
+  "savedAt": "2026-01-13T07:56:06.063Z"
+}

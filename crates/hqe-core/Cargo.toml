@@ -1,0 +1,41 @@
+[package]
+name = "hqe-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Core HQE Engine - scan pipeline, redaction, and models"
+
+[dependencies]
+# Core
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+
+# Async
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Filesystem
+walkdir = { workspace = true }
+tempfile = { workspace = true }
+
+# Security
+regex = { workspace = true }
+secrecy = { workspace = true }
+
+# HQE internal
+hqe-protocol = { path = "../hqe-protocol" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+pretty_assertions = { workspace = true }
+tempfile = { workspace = true }

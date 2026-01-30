@@ -1,0 +1,155 @@
+prompt = """
+# Generate API Documentation
+
+Please create comprehensive API documentation for the following code:
+
+{{args}}
+
+## Structure
+
+Your API documentation should include:
+
+### 1. Overview
+- API purpose and capabilities
+- Base URL / endpoint
+- Authentication method
+- Rate limits
+- API version
+
+### 2. Authentication
+- How to authenticate
+- API key / token management
+- Example authentication requests
+- Security considerations
+
+### 3. Endpoints
+
+For each endpoint, provide:
+
+#### Endpoint Name
+**Method**: GET/POST/PUT/DELETE/PATCH
+**Path**: `/api/v1/resource`
+**Description**: Clear description of what this endpoint does
+
+**Authentication Required**: Yes/No
+
+**Request Parameters**:
+| Parameter | Type | Required | Description | Example |
+|-----------|------|----------|-------------|---------|
+| name | string | Yes | User's name | "John Doe" |
+
+**Query Parameters** (if applicable):
+| Parameter | Type | Required | Description | Default |
+|-----------|------|----------|-------------|---------|
+| limit | integer | No | Max results | 10 |
+
+**Request Body** (if applicable):
+```json
+{
+  "field": "value",
+  "nested": {
+    "field": "value"
+  }
+}
+```
+
+**Response**:
+- Status Code: 200 OK
+```json
+{
+  "data": {},
+  "message": "Success"
+}
+```
+
+**Error Responses**:
+- 400 Bad Request: Invalid input
+- 401 Unauthorized: Missing/invalid token
+- 404 Not Found: Resource doesn't exist
+- 500 Internal Server Error: Server error
+
+**Example Request**:
+```bash
+curl -X POST https://api.example.com/v1/resource \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"key": "value"}'
+```
+
+**Example Response**:
+```json
+{
+  "status": "success",
+  "data": {}
+}
+```
+
+### 4. Data Models / Schemas
+Document all data structures:
+
+```typescript
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: Date;
+}
+```
+
+### 5. Error Handling
+- Error response format
+- Error codes and meanings
+- How to handle specific errors
+
+### 6. Code Examples
+Provide examples in multiple languages:
+- JavaScript/TypeScript
+- Python
+- cURL
+- Other relevant languages
+
+### 7. Pagination
+- How pagination works
+- Parameters (page, limit, offset)
+- Response metadata
+
+### 8. Filtering & Sorting
+- Available filters
+- Sort parameters
+- Search functionality
+
+### 9. Rate Limiting
+- Rate limit rules
+- Headers returned
+- How to handle rate limit errors
+
+### 10. Webhooks (if applicable)
+- How to register webhooks
+- Event types
+- Payload structure
+- Retry logic
+
+### 11. SDKs & Libraries
+- Available client libraries
+- Installation instructions
+- Quick start with SDK
+
+### 12. Changelog
+- API version history
+- Breaking changes
+- Deprecation notices
+
+## Best Practices
+
+- Use consistent formatting
+- Provide complete, working examples
+- Include all possible parameters
+- Document all possible responses
+- Use realistic example data
+- Keep it up-to-date
+- Include common error scenarios
+- Make it scannable with clear headings
+- Link related endpoints
+
+Generate complete, professional API documentation following these guidelines.
+"""

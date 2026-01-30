@@ -1,0 +1,105 @@
+prompt = """
+# Generate Comprehensive README
+
+Please create a comprehensive README.md file for the following project:
+
+{{args}}
+
+## Structure
+
+Your README should include:
+
+### 1. Project Title & Badges
+- Clear, descriptive title
+- Relevant badges (build status, version, license, etc.)
+- One-line description
+
+### 2. Description
+- What the project does
+- Why it exists (problem it solves)
+- Key features (3-5 bullet points)
+- What makes it unique
+
+### 3. Table of Contents
+(For longer READMEs)
+
+### 4. Installation
+- Prerequisites
+- Step-by-step installation instructions
+- Platform-specific notes if needed
+- Verification steps
+
+### 5. Quick Start / Usage
+- Minimal working example
+- Common use cases
+- Code examples with explanations
+- Expected output
+
+### 6. API Documentation (if applicable)
+- Key functions/methods
+- Parameters and return values
+- Usage examples
+
+### 7. Configuration
+- Configuration options
+- Environment variables
+- Config file examples
+
+### 8. Examples
+- Real-world usage scenarios
+- Screenshots or GIFs if relevant
+- Links to example projects
+
+### 9. Development
+- How to set up development environment
+- How to run tests
+- How to build the project
+- Contributing guidelines link
+
+### 10. Roadmap (optional)
+- Planned features
+- Known issues
+- Future directions
+
+### 11. Contributing
+- How to contribute
+- Code of conduct link
+- Pull request process
+
+### 12. Testing
+- How to run tests
+- Test coverage
+- Types of tests
+
+### 13. License
+- License type
+- Copyright notice
+
+### 14. Authors & Acknowledgments
+- Main contributors
+- Credits and thanks
+- Inspiration or related projects
+
+### 15. Support & Contact
+- Where to get help
+- Issue tracker link
+- Community channels (Discord, Slack, etc.)
+
+## Best Practices
+
+- Use clear, concise language
+- Include working code examples
+- Add visual elements where helpful
+- Use proper Markdown formatting
+- Keep it up-to-date and accurate
+- Make it beginner-friendly
+- Include troubleshooting section if needed
+
+## Tone
+- Professional but approachable
+- Assume basic technical knowledge
+- Be enthusiastic but not hyperbolic
+- Focus on clarity over cleverness
+
+Generate a complete, production-ready README following these guidelines.
+"""
