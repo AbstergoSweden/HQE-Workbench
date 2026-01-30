@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: HQE-Workbench
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - name: AbstergoSweden
+    website: https://gravatar.com/swingstoccata3h
+repository-code: https://github.com/AbstergoSweden/hqe-workbench
+url: https://github.com/AbstergoSweden/hqe-workbench
+license: MIT
+version: 0.1.0
+date-released: 2026-01-30
+keywords:
+  - code-quality
+  - security-scanning
+  - rust
+  - python
+  - typescript
+  - developer-tools

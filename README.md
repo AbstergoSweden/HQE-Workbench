@@ -1,105 +1,192 @@
-# HQE Workbench
+# HQE-Workbench
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Build Status](https://img.shields.io/github/actions/workflow/status/AbstergoSweden/hqe-workbench/ci.yml?branch=main)
-![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)
-![Tauri Version](https://img.shields.io/badge/tauri-2.0.0-blue.svg)
+[![CI Status](https://github.com/AbstergoSweden/hqe-workbench/workflows/CI/badge.svg)](https://github.com/AbstergoSweden/hqe-workbench/actions/workflows/ci.yml)
+[![Security](https://github.com/AbstergoSweden/hqe-workbench/workflows/Security/badge.svg)](https://github.com/AbstergoSweden/hqe-workbench/actions/workflows/security.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AbstergoSweden/hqe-workbench/badge)](https://securityscorecards.dev/viewer/?uri=github.com/AbstergoSweden/hqe-workbench)
 
-**HQE Workbench** is a macOS desktop application and CLI tool for running the **High Quality Engineering (HQE)** protocol. It automates codebase health auditing, security scanning, and technical leadership tasks using a combination of local heuristics and LLM-powered analysis.
+A local-first macOS desktop application and CLI tool for running the HQE (High Quality Engineering) Engineer Protocol. Automates codebase health auditing, security scanning, and technical leadership tasks using a combination of local heuristics and LLM-powered analysis.
 
-## Features
+## Table of Contents
 
-- **Hybrid Architecture**: High-performance Rust backend with a modern React/Tauri v2 frontend.
-- **Local-First Security**: API keys stored in macOS Keychain; analysis performed locally where possible.
-- **Protocol Automation**: Automated execution of HQE auditing and reporting protocols.
-- **Monorepo Design**: Integrated workspace for Core logic, CLI tools, and UI applications.
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Usage](#usage)
+- [Development](#development)
+  - [Building from Source](#building-from-source)
+  - [Running Tests](#running-tests)
+  - [Code Quality](#code-quality)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
+- [Community](#community)
 
-## Installation
+## Overview
+
+HQE Workbench is a hybrid Rust/Python/TypeScript application that provides:
+
+- **Repository Scanning**: Automated codebase health auditing
+- **Secret Redaction**: Intelligent detection and removal of sensitive data
+- **Local-Only Mode**: Privacy-first operation without external API calls
+- **Report Generation**: Comprehensive Markdown and JSON reports
+- **Multi-Runtime Support**: Python 3.11-3.13, Node 20/22
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph "HQE Workbench"
+        CLI[CLI Entry Point<br/>Rust]
+        Core[hqe-core<br/>Scan Pipeline]
+        Git[hqe-git<br/>Git Operations]
+        OpenAI[hqe-openai<br/>LLM Client]
+        Artifacts[hqe-artifacts<br/>Report Generation]
+        UI[Tauri Desktop App<br/>React + TypeScript]
+    end
+    
+    User[User] -->|Commands| CLI
+    User -->|GUI| UI
+    CLI --> Core
+    UI --> Core
+    Core --> Git
+    Core --> OpenAI
+    Core --> Artifacts
+    Git -->|Repository Data| Core
+    OpenAI -->|Analysis| Core
+    Artifacts -->|Reports| User
+    
+    style Core fill:#4a9eff
+    style CLI fill:#ff6b6b
+    style UI fill:#51cf66
+```
+
+## Quick Start
 
 ### Prerequisites
 
-- macOS 12.0+ (Monterey)
-- Rust 1.75+
-- Node.js 20+
+- **macOS**: 12.0+ (Monterey)
+- **Rust**: 1.75+
+- **Python**: 3.11, 3.12, or 3.13
+- **Node.js**: 20 or 22
 
-### Bootstrap
-
-Run the setup script to initialize your environment:
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/AbstergoSweden/hqe-workbench.git
+cd hqe-workbench
+
+# Bootstrap the environment (macOS)
 ./scripts/bootstrap_macos.sh
+
+# Build the CLI
+cargo build --release -p hqe
+
+# The binary will be available at target/release/hqe
 ```
 
-## Usage
-
-### Desktop Application (Dev Mode)
-
-Start the Tauri development server:
+### Usage
 
 ```bash
-./scripts/dev.sh
-```
+# Run a local-only scan
+./target/release/hqe scan --repo /path/to/repo --local-only
 
-OR
+# Generate a report
+./target/release/hqe report --format markdown --output report.md
 
-```bash
+# Start the desktop application (development mode)
 cd apps/workbench
 npm run tauri:dev
 ```
 
-### CLI Tool
-
-Build and run the CLI:
-
-```bash
-cargo run -p hqe -- --help
-```
-
-### Building for Release
-
-Create a universal macOS binary and DMG:
-
-```bash
-./scripts/build_dmg.sh
-```
-
-Artifacts will be output to `target/release/bundle/dmg/`.
-
 ## Development
 
-This project is a **Rust Workspace** containing:
+### Building from Source
 
-- `crates/`: Shared libraries (`hqe-core`, `hqe-openai`, etc.)
-- `cli/`: CLI entry point (`hqe`)
-- `apps/workbench`: Tauri frontend application
+```bash
+# Build all Rust crates
+cargo build --workspace
 
-### Testing
+# Build the desktop app
+cd apps/workbench
+npm install
+npm run build
 
-Run the full test suite (Rust + JS):
+# Build Python components (if applicable)
+cd python
+pip install -e .
+```
+
+### Running Tests
 
 ```bash
 # Rust tests
 cargo test --workspace
 
-# Frontend tests
-cd apps/workbench && npm test
+# TypeScript tests
+cd apps/workbench
+npm test
+
+# Python tests (if applicable)
+pytest
 ```
 
-### Linting & Formatting
+### Code Quality
 
 ```bash
-# Rust
-cargo fmt -- --check
-cargo clippy --workspace -- -D warnings
+# Format code
+cargo fmt --all
+black .
+npm run format
 
-# TypeScript
-cd apps/workbench && npm run lint
+# Lint code
+cargo clippy --workspace -- -D warnings
+ruff check .
+npm run lint
+
+# Run all quality checks
+npm run preflight  # If using the existing preflight script
 ```
 
-## contributing
+## Documentation
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+- [Architecture Documentation](docs/ARCHITECTURE.md)
+- [Development Guide](docs/DEVELOPMENT.md)
+- [API Reference](docs/API.md)
+- [HQE Protocol v3](protocol/README.md)
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+
+- Reporting bugs and requesting features
+- Development setup and workflow
+- Code style and testing requirements
+- Pull request process
+
+Please note that this project is released with a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to abide by its terms.
+
+## Security
+
+Security is a top priority for HQE Workbench. Please see our [Security Policy](SECURITY.md) for:
+
+- Supported versions
+- Vulnerability reporting process
+- Security best practices
+
+**To report a security vulnerability**, please email: <2-craze-headmen@icloud.com>
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Community
+
+- **Maintainer**: AbstergoSweden
+- **Community Profile**: <https://gravatar.com/swingstoccata3h>
+- **Issues**: [GitHub Issues](https://github.com/AbstergoSweden/hqe-workbench/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/AbstergoSweden/hqe-workbench/discussions)
