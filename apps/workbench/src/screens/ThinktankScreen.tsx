@@ -36,7 +36,7 @@ export const ThinktankScreen: FC = () => {
     try {
       const loaded = await invoke<PromptTool[]>('get_available_prompts')
       setPrompts(loaded)
-      
+
       // Check if we have incoming state
       if (location.state?.promptName) {
         const target = loaded.find(p => p.name === location.state.promptName || `prompts__${p.name}` === location.state.promptName)
@@ -56,7 +56,7 @@ export const ThinktankScreen: FC = () => {
     setSelectedPrompt(prompt)
     setResult('')
     setError(null)
-    
+
     // Initialize args from schema
     const newArgs: Record<string, string> = {}
     const properties = prompt.input_schema?.properties || {}
@@ -68,7 +68,7 @@ export const ThinktankScreen: FC = () => {
 
   const handleExecute = async () => {
     if (!selectedPrompt) return
-    
+
     setExecuting(true)
     setError(null)
     try {
@@ -88,8 +88,8 @@ export const ThinktankScreen: FC = () => {
     }
   }
 
-  const filteredPrompts = prompts.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredPrompts = prompts.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.description.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -102,8 +102,8 @@ export const ThinktankScreen: FC = () => {
             <span className="font-bold flex items-center gap-2 text-emerald-50">
               <span role="img" aria-label="library">📚</span> Library
             </span>
-            <button 
-              onClick={loadPrompts} 
+            <button
+              onClick={loadPrompts}
               className="text-xs hover:bg-emerald-500/10 p-1.5 rounded transition-colors text-emerald-200/60"
               disabled={loading}
               title="Refresh Library"
@@ -111,7 +111,7 @@ export const ThinktankScreen: FC = () => {
               {loading ? <span role="img" aria-label="loading">⏳</span> : <span role="img" aria-label="refresh">🔃</span>}
             </button>
           </div>
-          <input 
+          <input
             type="text"
             placeholder="Search prompts..."
             value={searchQuery}
@@ -119,7 +119,7 @@ export const ThinktankScreen: FC = () => {
             className="w-full p-2 text-sm rounded bg-black/20 border border-emerald-500/10 focus:border-emerald-500/50 outline-none transition-colors text-emerald-50"
           />
         </div>
-        
+
         <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="p-4 space-y-4">
@@ -135,11 +135,10 @@ export const ThinktankScreen: FC = () => {
                 <button
                   key={p.name}
                   onClick={() => handleSelectPrompt(p)}
-                  className={`p-4 text-left text-sm border-b border-emerald-500/10 transition-all hover:bg-emerald-500/5 ${
-                    selectedPrompt?.name === p.name 
-                      ? 'bg-emerald-500/10 border-l-4 border-l-emerald-500 pl-[1.25rem]' 
-                      : 'border-l-4 border-l-transparent'
-                  }`}
+                  className={`p-4 text-left text-sm border-b border-emerald-500/10 transition-all hover:bg-emerald-500/5 ${selectedPrompt?.name === p.name
+                    ? 'bg-emerald-500/10 border-l-4 border-l-emerald-500 pl-[1.25rem]'
+                    : 'border-l-4 border-l-transparent'
+                    }`}
                 >
                   <div className="font-bold mb-1 truncate flex items-center gap-2 text-emerald-50">
                     {p.name.replace(/_/g, ' ')}
@@ -173,7 +172,7 @@ export const ThinktankScreen: FC = () => {
                 <span className="text-xs font-normal text-emerald-200/40">({selectedPrompt.name})</span>
               </h2>
               <p className="text-sm mb-6 text-emerald-200/80">{selectedPrompt.description}</p>
-              
+
               <div className="flex flex-col gap-4">
                 {Object.entries(selectedPrompt.input_schema?.properties || {}).map(([key, schema]: [string, any]) => (
                   <div key={key} className="flex flex-col gap-1">
@@ -196,7 +195,7 @@ export const ThinktankScreen: FC = () => {
                     )}
                   </div>
                 ))}
-                
+
                 <div className="flex justify-end mt-2">
                   <button
                     onClick={handleExecute}
@@ -224,7 +223,7 @@ export const ThinktankScreen: FC = () => {
                 <div className="p-3 border-b border-emerald-500/10 text-xs font-bold uppercase tracking-widest flex justify-between items-center bg-black/5 text-emerald-200/60">
                   <span>Results</span>
                   {result && (
-                    <button 
+                    <button
                       onClick={() => navigator.clipboard.writeText(result)}
                       className="hover:text-emerald-500 transition-colors"
                     >
@@ -232,7 +231,7 @@ export const ThinktankScreen: FC = () => {
                     </button>
                   )}
                 </div>
-                
+
                 <div className="flex-1 p-6 overflow-auto bg-black/20">
                   {error ? (
                     <div className="p-4 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
@@ -247,10 +246,10 @@ export const ThinktankScreen: FC = () => {
                     </div>
                   ) : (
                     <div className="prose prose-invert max-w-none prose-sm">
-                      <ReactMarkdown 
+                      <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
-                          code({node, inline, className, children, ...props}: any) {
+                          code({ inline, className, children, ...props }: any) {
                             const match = /language-(\w+)/.exec(className || '')
                             return !inline && match ? (
                               <SyntaxHighlighter

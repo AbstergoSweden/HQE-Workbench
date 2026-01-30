@@ -4,13 +4,13 @@
 
 #![warn(missing_docs)]
 
-/// Server registry and tool management
-pub mod registry;
 /// File-based prompt loader
 pub mod loader;
+/// Server registry and tool management
+pub mod registry;
 
-pub use registry::*;
 pub use loader::*;
+pub use registry::*;
 
 /// Initialize the MCP subsystem
 pub fn init() {

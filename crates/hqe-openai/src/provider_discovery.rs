@@ -139,7 +139,10 @@ impl ProviderDiscoveryClient {
         info!(%provider_kind, %base_url, "Detected provider kind");
 
         let mut headers = HeaderMap::new();
-        let headers_hash: HashMap<String, String> = headers_raw.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+        let headers_hash: HashMap<String, String> = headers_raw
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
         for (k, v) in sanitize_headers(&headers_hash)?.into_iter() {
             let name = HeaderName::from_bytes(k.as_bytes())
                 .map_err(|_| DiscoveryError::InvalidHeaders(format!("bad header name: {k}")))?;

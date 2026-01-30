@@ -75,7 +75,8 @@ jobs:
       - name: Test CLI commands
         run: |
           ./target/release/hqe --version
-          ./target/release/hqe validate-protocol || true
+          ./target/release/hqe --version
+          ./target/release/hqe validate-protocol
 
   lint-js:
     runs-on: ubuntu-latest
@@ -95,7 +96,7 @@ jobs:
 
       - name: Run ESLint
         working-directory: apps/workbench
-        run: npm run lint || true
+        run: npm run lint
 
   build-macos:
     runs-on: macos-latest

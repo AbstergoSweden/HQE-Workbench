@@ -5,9 +5,9 @@ use console::style;
 use hqe_core::models::*;
 use hqe_core::scan::ScanPipeline;
 use indicatif::{ProgressBar, ProgressStyle};
+use serde_json::json;
 use std::path::PathBuf;
 use tracing::Level;
-use serde_json::json;
 
 #[derive(Parser)]
 #[command(name = "hqe")]
@@ -176,7 +176,12 @@ async fn handle_prompt(
     args_json: String,
     profile_name: Option<String>,
 ) -> anyhow::Result<()> {
-    println!("{}", style(format!("🤖 Executing Prompt: {}", tool_name)).bold().cyan());
+    println!(
+        "{}",
+        style(format!("🤖 Executing Prompt: {}", tool_name))
+            .bold()
+            .cyan()
+    );
 
     // 1. Initialize OpenAI Client
     let config_dir = dirs::data_local_dir()
@@ -187,7 +192,7 @@ async fn handle_prompt(
     let client = if profiles_path.exists() {
         let content = tokio::fs::read_to_string(&profiles_path).await?;
         let profiles: Vec<hqe_openai::ProviderProfile> = serde_json::from_str(&content)?;
-        
+
         let profile = if let Some(p_name) = &profile_name {
             profiles.iter().find(|p| &p.name == p_name)
         } else {
@@ -198,7 +203,7 @@ async fn handle_prompt(
             println!("  Using Profile: {}", profile.name);
             let entry = keyring::Entry::new("hqe-workbench", &profile.api_key_id)?;
             let api_key = entry.get_password()?;
-            
+
             let config = hqe_openai::ClientConfig {
                 base_url: profile.base_url.clone(),
                 api_key: secrecy::SecretString::new(api_key),
@@ -215,13 +220,18 @@ async fn handle_prompt(
         None
     };
 
-    let client = client.ok_or_else(|| anyhow::anyhow!("No provider profile found. Use 'hqe config add' to configure one."))?;
+    let client = client.ok_or_else(|| {
+        anyhow::anyhow!("No provider profile found. Use 'hqe config add' to configure one.")
+    })?;
     let client = std::sync::Arc::new(client);
 
     // 2. Locate Prompts Directory
     let mut prompts_dir = PathBuf::from("./prompts");
     if !prompts_dir.exists() {
-        if let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf())) {
+        if let Some(exe_dir) = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        {
             let try_path = exe_dir.join("prompts");
             if try_path.exists() {
                 prompts_dir = try_path;
@@ -233,7 +243,7 @@ async fn handle_prompt(
             }
         }
     }
-    
+
     if !prompts_dir.exists() {
         return Err(anyhow::anyhow!("Could not locate 'prompts' directory."));
     }
@@ -247,36 +257,41 @@ async fn handle_prompt(
     for tool in loaded_tools {
         let template = tool.template.clone();
         let client_clone = client.clone();
-        
+
         // Create async execution handler
-        let handler = Box::new(move |args: serde_json::Value| -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<serde_json::Value>> + Send>> {
-            let template = template.clone();
-            let client_clone = client_clone.clone();
-            
-            Box::pin(async move {
-                let prompt_text = substitute_template(&template, &args);
-                
-                let response = client_clone
-                    .chat(hqe_openai::ChatRequest {
-                        model: client_clone.default_model().to_string(),
-                        messages: vec![
-                            hqe_openai::Message {
+        let handler = Box::new(
+            move |args: serde_json::Value| -> std::pin::Pin<
+                Box<dyn std::future::Future<Output = anyhow::Result<serde_json::Value>> + Send>,
+            > {
+                let template = template.clone();
+                let client_clone = client_clone.clone();
+
+                Box::pin(async move {
+                    let prompt_text = substitute_template(&template, &args);
+
+                    let response = client_clone
+                        .chat(hqe_openai::ChatRequest {
+                            model: client_clone.default_model().to_string(),
+                            messages: vec![hqe_openai::Message {
                                 role: hqe_openai::Role::User,
                                 content: prompt_text,
-                            }
-                        ],
-                        temperature: Some(0.2),
-                        max_tokens: None,
-                        response_format: None,
-                    })
-                    .await?;
-                
-                Ok(json!({ "result": response.choices[0].message.content }))
-            })
-        });
+                            }],
+                            temperature: Some(0.2),
+                            max_tokens: None,
+                            response_format: None,
+                        })
+                        .await?;
+
+                    Ok(json!({ "result": response.choices[0].message.content }))
+                })
+            },
+        );
 
         let tool_name = tool.definition.name.clone();
-        if let Err(e) = registry.register_tool("prompts", tool.definition, handler).await {
+        if let Err(e) = registry
+            .register_tool("prompts", tool.definition, handler)
+            .await
+        {
             tracing::warn!("Failed to register tool '{}': {}", tool_name, e);
         }
     }
@@ -287,7 +302,7 @@ async fn handle_prompt(
 
     // The registry expects tool names like "topic__name" or just "name" if loaded that way.
     // Our loader registers them under topic "prompts", so the key is "prompts__tool_name".
-    // We should try both or standardized format. 
+    // We should try both or standardized format.
     // Registry implementation: key = format!("{}__{}", topic_id, def.name);
     let lookup_name = if tool_name.contains("__") {
         tool_name
@@ -310,15 +325,18 @@ async fn handle_prompt(
 
 fn substitute_template(template: &str, args: &serde_json::Value) -> String {
     let mut result = template.to_string();
-    
+
     if let Some(obj) = args.as_object() {
         for (k, v) in obj {
             let key = format!("{{{{{}}}}}", k); // {{key}}
-            let val = v.as_str().map(|s| s.to_string()).unwrap_or_else(|| v.to_string());
+            let val = v
+                .as_str()
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| v.to_string());
             result = result.replace(&key, &val);
         }
     }
-    
+
     result
 }
 
@@ -668,8 +686,7 @@ async fn handle_config(command: ConfigCommands) -> anyhow::Result<()> {
             };
 
             // Add or update profile using builder pattern
-            let profile = hqe_openai::ProviderProfile::new(name.clone(), url)
-                .with_model(model);
+            let profile = hqe_openai::ProviderProfile::new(name.clone(), url).with_model(model);
 
             profiles.retain(|p| p.name != name);
             profiles.push(profile);

@@ -103,7 +103,9 @@ pub async fn get_repo_info(repo_path: String) -> Result<RepoInfo, String> {
 
     // Get git info if available
     let (remote, commit) = if is_git {
-        let repo = hqe_git::GitRepo::open(&path).await.map_err(|e| e.to_string())?;
+        let repo = hqe_git::GitRepo::open(&path)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let remote = repo.remote_url("origin").await.ok().flatten();
         let commit = repo.current_commit().await.ok();
@@ -309,9 +311,7 @@ pub async fn test_provider_connection(profile_name: String) -> Result<bool, Stri
     let config = hqe_openai::ClientConfig {
         base_url: profile.base_url.clone(),
         api_key,
-        default_model: profile
-            .default_model
-            .clone(),
+        default_model: profile.default_model.clone(),
         timeout_seconds: profile.timeout_s,
         max_retries: 1,
         rate_limit_config: None,
@@ -324,8 +324,6 @@ pub async fn test_provider_connection(profile_name: String) -> Result<bool, Stri
 /// Detect provider kind from a URL
 #[command]
 pub async fn detect_provider_kind(url: String) -> Result<String, String> {
-    use hqe_openai::provider_discovery::ProviderKind;
-
     let url = Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
     let kind = hqe_openai::provider_discovery::ProviderKind::detect(&url);
     Ok(kind.to_string())

@@ -267,7 +267,7 @@ impl ScanPipeline {
             + (high_count * 5) as f32
             + (medium_count * 2) as f32
             + (low_count as f32 * 0.5);
-        
+
         // Scale penalty to 0-10 range (capping at 100 weighted points for 0 score)
         let penalty_scaled = (weighted_penalty / 10.0).min(10.0);
         let health_score = (10.0 - penalty_scaled).max(0.0) as u8;

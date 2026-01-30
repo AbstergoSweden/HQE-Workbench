@@ -148,10 +148,8 @@ impl RateLimiter {
     pub fn new(config: RateLimitConfig) -> Self {
         // Convert RPM to tokens per second
         let request_refill_rate = config.requests_per_minute as f64 / 60.0;
-        let request_bucket = TokenBucket::new(
-            config.requests_per_minute as f64,
-            request_refill_rate,
-        );
+        let request_bucket =
+            TokenBucket::new(config.requests_per_minute as f64, request_refill_rate);
 
         // Optional token bucket for TPM limiting
         let token_bucket = config.tokens_per_minute.map(|tpm| {
@@ -178,21 +176,20 @@ impl RateLimiter {
     /// # async fn example() {
     /// # use hqe_openai::rate_limiter::{RateLimiter, RateLimitConfig};
     /// let limiter = RateLimiter::new(RateLimitConfig::default());
-    /// 
+    ///
     /// // Acquire permission for a request
     /// limiter.acquire(None).await;
-    /// 
+    ///
     /// // Make your API call here
-    /// 
+    ///
     /// // Or with token count for TPM limiting
     /// limiter.acquire(Some(1000)).await;
     /// # }
     /// ```
     pub async fn acquire(&self, token_count: Option<u32>) {
         let mut request_bucket = self.request_bucket.lock().await;
-        
-        loop {
 
+        loop {
             // Try to consume a request token
             if request_bucket.try_consume(1.0) {
                 // If we have token-based limiting and a token count was provided
@@ -209,7 +206,7 @@ impl RateLimiter {
                     return; // Success!
                 }
             }
-            
+
             let wait_time = request_bucket.time_until_available(1.0);
             drop(request_bucket);
 
@@ -261,11 +258,11 @@ mod tests {
     #[test]
     fn test_token_bucket_refill() {
         let mut bucket = TokenBucket::new(10.0, 1.0); // 1 token per second
-        
+
         // Consume all tokens
         assert!(bucket.try_consume(10.0));
         assert!(!bucket.try_consume(1.0));
-        
+
         // Wait for refill
         std::thread::sleep(Duration::from_millis(1100));
         assert!(bucket.try_consume(1.0));

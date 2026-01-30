@@ -5,7 +5,11 @@
 //! - Secure API key storage via macOS Keychain
 //! - Persistent profile storage in ~/.local/share/hqe-workbench/
 
-use std::{collections::{BTreeMap, HashMap}, fs, path::PathBuf};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fs,
+    path::PathBuf,
+};
 
 use secrecy::SecretString;
 use thiserror::Error;
@@ -158,20 +162,18 @@ impl ProfilesStore for MemoryProfilesStore {
     }
 
     fn load_profiles(&self) -> Result<Vec<ProviderProfile>, ProfileError> {
-        let profiles = self.profiles.lock()
-            .map_err(|_| ProfileError::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Mutex poisoned"
-            )))?;
+        let profiles = self
+            .profiles
+            .lock()
+            .map_err(|_| ProfileError::Io(std::io::Error::other("Mutex poisoned")))?;
         Ok(profiles.clone())
     }
 
     fn save_profiles(&self, profiles: &[ProviderProfile]) -> Result<(), ProfileError> {
-        let mut stored = self.profiles.lock()
-            .map_err(|_| ProfileError::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Mutex poisoned"
-            )))?;
+        let mut stored = self
+            .profiles
+            .lock()
+            .map_err(|_| ProfileError::Io(std::io::Error::other("Mutex poisoned")))?;
         *stored = profiles.to_vec();
         Ok(())
     }
@@ -289,20 +291,26 @@ pub struct MemoryKeyStore {
 
 impl ApiKeyStore for MemoryKeyStore {
     fn get_api_key(&self, profile_name: &str) -> Result<Option<SecretString>, KeyStoreError> {
-        let keys = self.keys.lock()
+        let keys = self
+            .keys
+            .lock()
             .map_err(|_| KeyStoreError::Keyring("Mutex poisoned".to_string()))?;
         Ok(keys.get(profile_name).cloned())
     }
 
     fn set_api_key(&self, profile_name: &str, api_key: &str) -> Result<(), KeyStoreError> {
-        let mut keys = self.keys.lock()
+        let mut keys = self
+            .keys
+            .lock()
             .map_err(|_| KeyStoreError::Keyring("Mutex poisoned".to_string()))?;
         keys.insert(profile_name.to_string(), SecretString::new(api_key.into()));
         Ok(())
     }
 
     fn delete_api_key(&self, profile_name: &str) -> Result<(), KeyStoreError> {
-        let mut keys = self.keys.lock()
+        let mut keys = self
+            .keys
+            .lock()
             .map_err(|_| KeyStoreError::Keyring("Mutex poisoned".to_string()))?;
         keys.remove(profile_name);
         Ok(())
@@ -403,7 +411,10 @@ mod tests {
         assert_eq!(profile.name, "test");
         assert_eq!(profile.base_url, "https://api.openai.com");
         assert_eq!(profile.default_model, "gpt-4o");
-        assert_eq!(profile.headers.as_ref().and_then(|h| h.get("X-Custom")), Some(&"value".to_string()));
+        assert_eq!(
+            profile.headers.as_ref().and_then(|h| h.get("X-Custom")),
+            Some(&"value".to_string())
+        );
         assert_eq!(profile.timeout_s, 30);
     }
 

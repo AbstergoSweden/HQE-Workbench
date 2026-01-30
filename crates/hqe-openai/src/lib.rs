@@ -20,8 +20,6 @@ use std::time::Duration;
 use tracing::{debug, error, info, instrument};
 use url::Url;
 
-
-
 pub mod profile;
 pub mod prompts;
 pub mod provider_discovery;
@@ -198,7 +196,7 @@ pub struct ErrorDetail {
 }
 
 // Re-export ProviderProfile from hqe-protocol for backward compatibility
-pub use hqe_protocol::models::{ProviderProfile, ProviderKind};
+pub use hqe_protocol::models::{ProviderKind, ProviderProfile};
 
 impl OpenAIClient {
     /// Create a new client
@@ -241,8 +239,9 @@ impl OpenAIClient {
     fn build_headers(&self) -> anyhow::Result<HeaderMap> {
         let mut headers = HeaderMap::new();
 
-        let api_key_val = HeaderValue::from_str(&format!("Bearer {}", self.api_key.expose_secret()))
-            .map_err(|e| anyhow::anyhow!("Invalid API key characters: {}", e))?;
+        let api_key_val =
+            HeaderValue::from_str(&format!("Bearer {}", self.api_key.expose_secret()))
+                .map_err(|e| anyhow::anyhow!("Invalid API key characters: {}", e))?;
 
         headers.insert(header::AUTHORIZATION, api_key_val);
 
@@ -260,7 +259,7 @@ impl OpenAIClient {
         // Apply rate limiting before making the request
         if let Some(limiter) = &self.rate_limiter {
             // Estimate tokens: max_tokens + rough estimate of input size
-            let estimated_tokens = request.max_tokens.map(|t| t as u32);
+            let estimated_tokens = request.max_tokens;
             limiter.acquire(estimated_tokens).await;
         }
 
@@ -399,7 +398,7 @@ fn sanitize_error_message(message: &str) -> String {
     ];
 
     let mut sanitized = message.to_string();
-    
+
     for (pattern, replacement) in patterns {
         if let Ok(re) = regex::Regex::new(pattern) {
             sanitized = re.replace_all(&sanitized, replacement).to_string();

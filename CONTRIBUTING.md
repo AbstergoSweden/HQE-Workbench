@@ -1,62 +1,68 @@
 # Contributing to HQE Workbench
 
-Thank you for your interest in contributing! This project follows the **High Quality Engineering (HQE)** protocol.
+Thank you for your interest in contributing! We are building the future of autonomous engineering tools, and we'd love your help.
 
 ## Development Setup
 
-1. **Fork and Clone**:
+1. **Fork & Clone**:
 
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/hqe-workbench.git
-   cd hqe-workbench
-   ```
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/hqe-workbench.git
+    cd hqe-workbench
+    ```
 
-2. **Install Dependencies**:
+2. **Bootstrap**:
 
-   ```bash
-   ./scripts/bootstrap_macos.sh
-   # OR manually:
-   # rustup update stable
-   # npm install -g yarn
-   # cd apps/workbench && npm ci
-   ```
+    ```bash
+    ./scripts/bootstrap_macos.sh
+    ```
 
-3. **Create Branch**:
+3. **Branching**:
+    - Use `feat/` for new features.
+    - Use `fix/` for bug fixes.
+    - Use `docs/` for documentation updates.
 
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+## Pull Request Process
 
-## Workflow
+1. **Ensure Quality**: Run the full preflight check before pushing.
 
-1. **Make Changes**:
-   - Backend logic goes in `crates/`.
-   - CLI commands go in `cli/hqe/src/commands/`.
-   - UI components go in `apps/workbench/src/components/`.
+    ```bash
+    npm run preflight
+    ```
 
-2. **Verify Changes**:
-   - **Test**: `cargo test --workspace` AND `cd apps/workbench && npm test`
-   - **Lint**: `cargo clippy` AND `npm run lint` (in frontend)
-   - **Format**: `cargo fmt` AND `npm run format` (if available)
+    This runs:
+    - Rust tests & formatting (`cargo test`, `cargo fmt`)
+    - TypeScript linting & testing (`npm run lint`, `npm test`)
+    - Security audits (`cargo audit`)
 
-3. **Commit**:
-   We follow [Conventional Commits](https://www.conventionalcommits.org/):
-   - `feat(core): add new scanner`
-   - `fix(ui): resolve button alignment`
-   - `docs: update readme`
+2. **Commit Messages**: We follow [Conventional Commits](https://www.conventionalcommits.org/):
+    - `feat(core): add new scanner`
+    - `fix(ui): resolve button alignment`
+    - `docs: update readme`
 
-4. **Push and PR**:
-   - Push to your fork.
-   - Open a Pull Request against `main`.
-   - Ensure CI checks pass.
+3. **Open PR**:
+    - Target the `main` branch.
+    - Fill out the PR template completely.
+    - Link related issues (e.g., "Fixes #123").
 
-## Code Standards
+## Style Guide
 
-- **Rust**: Follow standard Rust idioms (clippy is your friend).
-- **TypeScript**: Strict mode enabled. No `any`.
-- **Testing**: New features generally require unit tests.
-- **Security**: No hardcoded secrets. Use the `secrecy` crate for sensitive data.
+### Rust
 
-## License
+- **Errors**: Use `thiserror` for libraries, `anyhow` for CLI/binaries.
+- **Async**: Prefer `tokio` for async runtime.
+- **Docs**: All public functions must have doc comments (`///`).
+
+### TypeScript / React
+
+- **Functional Components**: Use `React.FC` or simple functions.
+- **State**: Use `zustand` for global state.
+- **Styling**: Use Tailwind CSS (via `index.css`).
+- **No `any`**: TypeScript strict mode is enabled.
+
+## Community & Support
+
+- **Issues**: Report bugs/features on GitHub.
+- **Discussions**: Join our GitHub Discussions for deeper topics.
 
 By contributing, you agree that your contributions will be licensed under the project's MIT License.

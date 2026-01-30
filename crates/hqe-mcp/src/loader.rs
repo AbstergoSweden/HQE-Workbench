@@ -1,10 +1,10 @@
-use std::path::{Path, PathBuf};
-use thiserror::Error;
 use hqe_protocol::models::MCPToolDefinition;
 use serde::Deserialize;
+use serde_json::json;
+use std::path::{Path, PathBuf};
+use thiserror::Error;
 use tracing::{info, warn};
 use walkdir::WalkDir;
-use serde_json::json;
 
 /// Errors that can occur during prompt loading
 #[derive(Debug, Error)]
@@ -122,11 +122,20 @@ impl PromptLoader {
 
     fn load_prompt_file(&self, path: &Path) -> Result<LoadedPromptTool, LoaderError> {
         // Security: Validate the file is within the root directory (prevent path traversal)
-        let canonical_path = path.canonicalize()
-            .map_err(|e| LoaderError::Canonicalization { path: path.to_path_buf(), source: e })?;
-        let canonical_root = self.root_path.canonicalize()
-            .map_err(|e| LoaderError::Canonicalization { path: self.root_path.clone(), source: e })?;
-        
+        let canonical_path = path
+            .canonicalize()
+            .map_err(|e| LoaderError::Canonicalization {
+                path: path.to_path_buf(),
+                source: e,
+            })?;
+        let canonical_root =
+            self.root_path
+                .canonicalize()
+                .map_err(|e| LoaderError::Canonicalization {
+                    path: self.root_path.clone(),
+                    source: e,
+                })?;
+
         if !canonical_path.starts_with(&canonical_root) {
             return Err(LoaderError::PathTraversal(path.to_path_buf()));
         }
@@ -134,11 +143,15 @@ impl PromptLoader {
         let content = std::fs::read_to_string(&canonical_path)?;
 
         let prompt_file: PromptFile = if canonical_path.extension().is_some_and(|e| e == "toml") {
-            toml::from_str(&content)
-                .map_err(|e| LoaderError::ParseToml { path: canonical_path.clone(), source: e })?
+            toml::from_str(&content).map_err(|e| LoaderError::ParseToml {
+                path: canonical_path.clone(),
+                source: e,
+            })?
         } else {
-            serde_yaml::from_str(&content)
-                .map_err(|e| LoaderError::ParseYaml { path: canonical_path.clone(), source: e })?
+            serde_yaml::from_str(&content).map_err(|e| LoaderError::ParseYaml {
+                path: canonical_path.clone(),
+                source: e,
+            })?
         };
 
         // Determine tool name from file path relative to root
@@ -180,11 +193,11 @@ impl PromptLoader {
                     required.push(arg.name.clone());
                 }
             }
-        } 
-        
+        }
+
         // Add implicit "args" if template uses {{args}} and it wasn't defined
         if prompt_file.prompt.contains("{{args}}") && !properties.contains_key("args") {
-             properties.insert(
+            properties.insert(
                 "args".to_string(),
                 json!({
                     "type": "string",
@@ -203,7 +216,9 @@ impl PromptLoader {
         Ok(LoadedPromptTool {
             definition: MCPToolDefinition {
                 name,
-                description: prompt_file.description.unwrap_or_else(|| "Prompt template".to_string()),
+                description: prompt_file
+                    .description
+                    .unwrap_or_else(|| "Prompt template".to_string()),
                 input_schema,
             },
             template: prompt_file.prompt,

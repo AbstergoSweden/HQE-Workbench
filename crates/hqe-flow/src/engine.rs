@@ -1,10 +1,10 @@
+use anyhow::{anyhow, Result};
+use hqe_mcp::ToolRegistry;
+use hqe_protocol::models::{WorkflowDefinition, WorkflowStep};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use anyhow::{Result, anyhow};
-use serde_json::Value;
-use hqe_protocol::models::{WorkflowDefinition, WorkflowStep};
-use hqe_mcp::ToolRegistry;
 use tracing::{info, instrument};
 
 /// Engine for managing and executing workflows
@@ -41,14 +41,15 @@ impl FlowEngine {
     pub async fn execute_flow(&self, flow_id: &str, input: Value) -> Result<Value> {
         let flow = {
             let flows = self.flows.read().await;
-            flows.get(flow_id)
+            flows
+                .get(flow_id)
                 .ok_or_else(|| anyhow!("Flow not found: {}", flow_id))?
                 .clone()
         };
 
         info!("Starting flow execution: {}", flow.name);
-        
-        let mut context = input; 
+
+        let mut context = input;
 
         for step in &flow.steps {
             context = self.execute_step(step, context).await?;
@@ -60,14 +61,19 @@ impl FlowEngine {
     async fn execute_step(&self, step: &WorkflowStep, _input: Value) -> Result<Value> {
         match step.action.as_str() {
             "call_tool" => {
-                let tool_name = step.params.get("tool")
+                let tool_name = step
+                    .params
+                    .get("tool")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Step {} missing 'tool' param", step.id))?;
-                
-                let args = step.params.clone(); 
-                
+
+                let args = step.params.clone();
+
                 info!("Step {}: Calling tool {}", step.id, tool_name);
-                self.tool_registry.call_tool(tool_name, args).await.map_err(|e| anyhow!(e))
+                self.tool_registry
+                    .call_tool(tool_name, args)
+                    .await
+                    .map_err(|e| anyhow!(e))
             }
             _ => Err(anyhow!("Unknown action: {}", step.action)),
         }

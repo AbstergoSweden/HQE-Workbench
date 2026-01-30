@@ -23,7 +23,7 @@ impl RepoScanner {
         Self {
             root_path: root_path.as_ref().to_path_buf(),
             max_file_size: 1_000_000, // 1MB default
-            max_depth: 10, // Default max depth
+            max_depth: 10,            // Default max depth
         }
     }
 
@@ -51,7 +51,8 @@ impl RepoScanner {
         {
             let entry = entry.map_err(|e| crate::HqeError::Scan(e.to_string()))?;
             let path = entry.path();
-            let relative_path = path.strip_prefix(&self.root_path)
+            let relative_path = path
+                .strip_prefix(&self.root_path)
                 .map_err(|e| crate::HqeError::Scan(format!("Failed to strip prefix: {}", e)))?;
             let path_str = relative_path.to_string_lossy().to_string();
 
@@ -406,11 +407,7 @@ impl RepoScanner {
         // PERF-001: Compile regexes once before iterating files
         let compiled_patterns: Vec<(&str, regex::Regex)> = secret_patterns
             .iter()
-            .filter_map(|(name, pattern)| {
-                regex::Regex::new(pattern)
-                    .ok()
-                    .map(|re| (*name, re))
-            })
+            .filter_map(|(name, pattern)| regex::Regex::new(pattern).ok().map(|re| (*name, re)))
             .collect();
 
         for file in &scanned.files {
@@ -440,7 +437,10 @@ impl RepoScanner {
                 .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("");
-            if test_patterns.iter().any(|p| file_name.to_lowercase().contains(p)) {
+            if test_patterns
+                .iter()
+                .any(|p| file_name.to_lowercase().contains(p))
+            {
                 continue;
             }
 
@@ -468,8 +468,7 @@ impl RepoScanner {
                                 line_number: Some(idx + 1),
                                 snippet: Some(line.trim().to_string()),
                                 recommendation: Some(
-                                    "Use environment variables or a secrets manager"
-                                        .to_string(),
+                                    "Use environment variables or a secrets manager".to_string(),
                                 ),
                             });
                             break; // Only report first occurrence per pattern per file
@@ -494,7 +493,7 @@ impl RepoScanner {
                     let line_lower = trimmed.to_lowercase();
 
                     // Skip comment lines
-                    if trimmed.starts_with("//") 
+                    if trimmed.starts_with("//")
                         || trimmed.starts_with("#")
                         || trimmed.starts_with("(*")
                         || trimmed.starts_with("/*")
@@ -506,27 +505,29 @@ impl RepoScanner {
 
                     // SQL injection risk detection
                     // Check for SQL keywords that are actually SQL (not substrings)
-                    let sql_keywords = ["select ", "insert ", "update ", "delete ", "drop ", "from ", "where "];
+                    let sql_keywords = [
+                        "select ", "insert ", "update ", "delete ", "drop ", "from ", "where ",
+                    ];
                     let has_sql_keyword = sql_keywords.iter().any(|kw| line_lower.contains(kw));
-                    
+
                     // Check for string interpolation patterns that could inject user input
-                    let has_formatting = line_lower.contains("format!(") 
+                    let has_formatting = line_lower.contains("format!(")
                         || line_lower.contains("format(")
                         || (line.contains("$") && line.contains("{"));
-                    
+
                     // Check for string concatenation patterns
                     let has_concat = line.contains("+ ") || line.contains(" +");
-                    
+
                     // Only flag if we have SQL keywords AND dynamic string construction
                     if has_sql_keyword && (has_formatting || has_concat) {
                         // Additional check: exclude common false positives
                         // - Variable names like "selected_item" or "updated_at"
                         // - Comments that weren't caught by the simple check above
-                        let is_false_positive = 
-                            line_lower.contains("selected_") && !line_lower.contains("select ") ||
-                            line_lower.contains("updated_") && !line_lower.contains("update ") ||
-                            line_lower.contains("inserted_") && !line_lower.contains("insert ");
-                        
+                        let is_false_positive = line_lower.contains("selected_")
+                            && !line_lower.contains("select ")
+                            || line_lower.contains("updated_") && !line_lower.contains("update ")
+                            || line_lower.contains("inserted_") && !line_lower.contains("insert ");
+
                         if !is_false_positive {
                             findings.push(LocalFinding {
                                 finding_type: "SQL_INJECTION_RISK".to_string(),
@@ -776,13 +777,8 @@ impl RepoScanner {
         let full_path = self.root_path.join(relative_path);
 
         // Canonicalize both paths to resolve any '..' components and verify the file is within the allowed directory
-        let canonical_full_path = full_path.canonicalize().map_err(|e| {
-            crate::HqeError::Io(e)
-        })?;
-        let canonical_root = self
-            .root_path
-            .canonicalize()
-            .map_err(|e| crate::HqeError::Io(e))?;
+        let canonical_full_path = full_path.canonicalize().map_err(crate::HqeError::Io)?;
+        let canonical_root = self.root_path.canonicalize().map_err(crate::HqeError::Io)?;
 
         if !canonical_full_path.starts_with(&canonical_root) {
             warn!("Path traversal attempt detected: {}", relative_path);

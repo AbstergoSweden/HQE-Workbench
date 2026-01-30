@@ -1,6 +1,6 @@
-use std::path::Path;
 use anyhow::{Context, Result};
 use hqe_protocol::models::TopicManifest;
+use std::path::Path;
 use tokio::fs;
 
 /// Helper for loading topic manifests
@@ -22,14 +22,18 @@ impl TopicLoader {
         };
 
         if !manifest_path.exists() {
-            return Err(anyhow::anyhow!("Manifest file not found at {:?}", manifest_path));
+            return Err(anyhow::anyhow!(
+                "Manifest file not found at {:?}",
+                manifest_path
+            ));
         }
 
         let content = fs::read_to_string(&manifest_path)
             .await
             .with_context(|| format!("Failed to read manifest file at {:?}", manifest_path))?;
 
-        let manifest: TopicManifest = if manifest_path.extension().is_some_and(|ext| ext == "json") {
+        let manifest: TopicManifest = if manifest_path.extension().is_some_and(|ext| ext == "json")
+        {
             serde_json::from_str(&content)?
         } else {
             serde_yaml::from_str(&content)?

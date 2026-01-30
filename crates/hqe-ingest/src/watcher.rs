@@ -1,10 +1,10 @@
+use anyhow::Result;
+use notify::{Event, RecursiveMode, Watcher};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
-use notify::{Watcher, RecursiveMode, Event};
-use anyhow::Result;
-use tracing::{info, error, warn};
+use tracing::{error, info, warn};
 
 use crate::loader::TopicLoader;
 use hqe_protocol::models::TopicManifest;
@@ -30,8 +30,8 @@ pub struct IngestEngine {
 impl IngestEngine {
     /// Create a new ingestion engine
     pub fn new(root_path: PathBuf, event_tx: mpsc::Sender<IngestEvent>) -> Self {
-        Self { 
-            root_path, 
+        Self {
+            root_path,
             event_tx,
             topic_map: Arc::new(RwLock::new(HashMap::new())),
         }
@@ -44,16 +44,15 @@ impl IngestEngine {
         let tx_clone = tx.clone();
 
         // Bridge notify (sync) to tokio channel
-        let mut watcher = notify::recommended_watcher(move |res: Result<Event, notify::Error>| {
-            match res {
+        let mut watcher =
+            notify::recommended_watcher(move |res: Result<Event, notify::Error>| match res {
                 Ok(event) => {
                     let _ = tx_clone.blocking_send(event);
                 }
                 Err(e) => {
                     error!("Watch error: {:?}", e);
                 }
-            }
-        })?;
+            })?;
 
         watcher.watch(&self.root_path, RecursiveMode::Recursive)?;
         info!("Ingestion Engine watching: {:?}", self.root_path);
@@ -113,13 +112,13 @@ impl IngestEngine {
                 } else {
                     path.to_path_buf()
                 };
-                
+
                 // Track the topic_id for this manifest path
                 {
                     let mut map = self.topic_map.write().await;
                     map.insert(manifest_path, topic_id.clone());
                 }
-                
+
                 info!("Loaded topic: {} ({})", manifest.name, topic_id);
                 if let Err(e) = self.event_tx.send(IngestEvent::TopicLoaded(manifest)).await {
                     error!("Failed to send topic loaded event: {:?}", e);
@@ -134,16 +133,20 @@ impl IngestEngine {
 
     async fn process_manifest_removal(&self, path: &Path) {
         info!("Processing manifest removal at: {:?}", path);
-        
+
         // Look up the topic_id for this manifest path
         let topic_id = {
             let mut map = self.topic_map.write().await;
             map.remove(path)
         };
-        
+
         if let Some(topic_id) = topic_id {
             info!("Topic removed: {}", topic_id);
-            if let Err(e) = self.event_tx.send(IngestEvent::TopicRemoved(topic_id)).await {
+            if let Err(e) = self
+                .event_tx
+                .send(IngestEvent::TopicRemoved(topic_id))
+                .await
+            {
                 error!("Failed to send topic removed event: {:?}", e);
             }
         } else {

@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use schemars::JsonSchema;
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 
 /// Provider kind enumeration for supported LLM providers
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -33,7 +33,7 @@ impl std::fmt::Display for ProviderKind {
 }
 
 /// Unified Provider Profile definition
-/// 
+///
 /// This is the single source of truth for provider configuration across all crates.
 /// Stored in: `~/.local/share/hqe-workbench/profiles.json`
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -92,7 +92,8 @@ impl ProviderProfile {
 
     /// Set a custom header for this profile
     pub fn with_header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.headers.get_or_insert_with(HashMap::new)
+        self.headers
+            .get_or_insert_with(HashMap::new)
             .insert(key.into(), value.into());
         self
     }

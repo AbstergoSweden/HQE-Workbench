@@ -103,8 +103,13 @@ impl GitRepo {
     /// Open a git repository at the given path
     pub async fn open(path: impl AsRef<Path>) -> Result<Self, GitError> {
         let path = path.as_ref().to_path_buf();
-        let canonical_path = tokio::fs::canonicalize(&path).await
-            .map_err(|e| GitError::PathCanonicalization { path: path.clone(), source: e })?;
+        let canonical_path =
+            tokio::fs::canonicalize(&path)
+                .await
+                .map_err(|e| GitError::PathCanonicalization {
+                    path: path.clone(),
+                    source: e,
+                })?;
 
         // Verify it's a git repo
         let git_dir = canonical_path.join(".git");
@@ -112,7 +117,9 @@ impl GitRepo {
             return Err(GitError::NotARepository(canonical_path));
         }
 
-        Ok(Self { path: canonical_path })
+        Ok(Self {
+            path: canonical_path,
+        })
     }
 
     /// Check if a path is inside a git repository
@@ -265,7 +272,9 @@ impl GitRepo {
     pub async fn apply_patch(&self, patch: &str, dry_run: bool) -> Result<(), GitError> {
         if dry_run {
             // Only do dry-run check
-            let output = self.run_git_with_stdin(&["apply", "--check", "-"], patch).await?;
+            let output = self
+                .run_git_with_stdin(&["apply", "--check", "-"], patch)
+                .await?;
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr).to_string();
                 return Err(GitError::OperationFailed {
@@ -276,7 +285,9 @@ impl GitRepo {
             info!("Patch dry-run successful");
         } else {
             // First do dry-run check
-            let check_output = self.run_git_with_stdin(&["apply", "--check", "-"], patch).await?;
+            let check_output = self
+                .run_git_with_stdin(&["apply", "--check", "-"], patch)
+                .await?;
             if !check_output.status.success() {
                 let stderr = String::from_utf8_lossy(&check_output.stderr).to_string();
                 return Err(GitError::OperationFailed {
@@ -301,7 +312,11 @@ impl GitRepo {
     }
 
     /// Run a git command with input from stdin
-    async fn run_git_with_stdin(&self, args: &[&str], stdin_input: &str) -> Result<std::process::Output, GitError> {
+    async fn run_git_with_stdin(
+        &self,
+        args: &[&str],
+        stdin_input: &str,
+    ) -> Result<std::process::Output, GitError> {
         let mut cmd = Command::new("git");
         cmd.current_dir(&self.path)
             .args(args)
