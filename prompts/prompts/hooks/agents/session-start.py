@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Gemini Adapter: SessionStart Hook
+Agent Adapter: SessionStart Hook
 Wraps dev-sync logic.
 """
 import sys

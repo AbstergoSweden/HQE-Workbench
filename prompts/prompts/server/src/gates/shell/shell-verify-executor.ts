@@ -3,7 +3,7 @@
  * Shell Verification Executor
  *
  * Executes shell commands for verification gates, enabling "Ralph Wiggum"
- * style autonomous loops where Claude's work is validated by real command
+ * style autonomous loops where the Agent's work is validated by real command
  * execution (ground truth) rather than LLM self-evaluation.
  *
  * Reuses patterns from scripts/execution/script-executor.ts:

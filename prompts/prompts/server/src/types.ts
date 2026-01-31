@@ -35,7 +35,7 @@ export interface ServerConfig {
 
 /**
  * Transport mode options
- * - 'stdio': Standard I/O transport for Claude Desktop/CLI (default)
+ * - 'stdio': Standard I/O transport for Agent Desktop/CLI (default)
  * - 'sse': Server-sent events over HTTP for web clients (deprecated, use streamable-http)
  * - 'streamable-http': Streamable HTTP transport (MCP standard since 2025-03-26)
  * - 'both': Run both STDIO and SSE transports simultaneously
@@ -175,7 +175,7 @@ export interface Config {
   chainSessions?: ChainSessionConfig;
   /**
    * Transport mode: 'stdio' (default), 'sse', or 'both'
-   * STDIO is used by Claude Desktop/CLI, SSE for web clients
+   * STDIO is used by Agent Desktop/CLI, SSE for web clients
    */
   transport?: TransportMode;
   /** Logging configuration */

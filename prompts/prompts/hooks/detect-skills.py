@@ -21,18 +21,18 @@ def get_skills_index_path() -> Path:
 
     Priority:
       1. MCP_WORKSPACE/skills/_index.json
-      2. CLAUDE_PLUGIN_ROOT/skills/_index.json
-      3. ~/.claude/skills/_index.json (user fallback)
+      2. AGENT_PLUGIN_ROOT/skills/_index.json
+      3. ~/.agents/skills/_index.json (user fallback)
     """
     # Check workspace-based skills dir first
-    user_fallback = Path.home() / ".claude" / "skills"
+    user_fallback = Path.home() / ".agents" / "skills"
     skills_dir = get_skills_dir(user_fallback)
     skills_index = skills_dir / "_index.json"
 
     if skills_index.exists():
         return skills_index
 
-    # Fall back to user's ~/.claude/skills
+    # Fall back to user's ~/.agents/skills
     return user_fallback / "_index.json"
 
 

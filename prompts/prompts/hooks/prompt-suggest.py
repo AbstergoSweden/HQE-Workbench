@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-UserPromptSubmit hook: Context injection for claude-prompts-mcp.
+UserPromptSubmit hook: Context injection for agent-prompts-mcp.
 
 Detects and provides guidance for:
 - `>>prompt_id` - Prompt invocation with args, types, tool call
 - `>>a --> >>b` - Chain syntax with step info
-- `:: 'criteria'` - Inline gate syntax (reminds Claude of responsibility)
+- `:: 'criteria'` - Inline gate syntax (reminds Agent of responsibility)
 - Active chain state - Shows current step, pending gates
 
-Output: Rich context injected for Claude to act on.
+Output: Rich context injected for Agent to act on.
 """
 
 import json
@@ -29,7 +29,7 @@ from session_state import load_session_state, format_chain_reminder
 
 
 def parse_hook_input() -> dict:
-    """Parse JSON input from Claude Code hook system."""
+    """Parse JSON input from Agent hook system."""
     try:
         return json.load(sys.stdin)
     except json.JSONDecodeError:
@@ -237,14 +237,14 @@ def main():
 
     # Use JSON format for proper hook protocol
     # - systemMessage: shown to user
-    # - additionalContext: injected to Claude
+    # - additionalContext: injected to Agent
     if output_lines:
         output = "\n".join(output_lines)
         hook_response = {
             "systemMessage": output,  # Visible to user
             "hookSpecificOutput": {
                 "hookEventName": "UserPromptSubmit",
-                "additionalContext": output  # Context for Claude
+                "additionalContext": output  # Context for Agent
             }
         }
         print(json.dumps(hook_response))

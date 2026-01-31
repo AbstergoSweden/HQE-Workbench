@@ -40,7 +40,7 @@ export class PromptExecutionPipeline {
     private readonly sessionStage: PipelineStage,
     private readonly frameworkInjectionControlStage: PipelineStage,
     private readonly responseCaptureStage: PipelineStage,
-    private readonly shellVerificationStage: PipelineStage | null, // 08b - Shell verification (Ralph Wiggum)
+    private readonly shellVerificationStage: PipelineStage | null, // 08b - Shell verification (Agent Loop)
     private readonly executionStage: PipelineStage,
     private readonly gateReviewStage: PipelineStage,
     private readonly callToActionStage: PipelineStage,
@@ -218,7 +218,7 @@ export class PromptExecutionPipeline {
       this.promptGuidanceStage, // NOW AFTER: Uses injection decisions from state.injection
       this.responseCaptureStage,
       // 08b: Shell verification (optional) - runs after response capture, before execution
-      // Enables Ralph Wiggum loops where shell commands validate Claude's work
+      // Enables Agent Loops where shell commands validate Agent's work
       ...(this.shellVerificationStage ? [this.shellVerificationStage] : []),
       this.executionStage,
       this.gateReviewStage,

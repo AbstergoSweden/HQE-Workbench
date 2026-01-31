@@ -1,6 +1,6 @@
-# Claude Prompts Hooks
+# Agent Prompts Hooks
 
-Hooks that guide Claude's behavior when using the prompt engine. These solve common issues where models miss `>>` syntax, forget to continue chains, or skip gate reviews.
+Hooks that guide the Agent's behavior when using the prompt engine. These solve common issues where models miss `>>` syntax, forget to continue chains, or skip gate reviews.
 
 ## Why Hooks?
 
@@ -18,6 +18,7 @@ Hooks that guide Claude's behavior when using the prompt engine. These solve com
 Triggers on every user message. Detects `>>prompt` syntax and injects a system message suggesting the correct `prompt_engine` call with available arguments.
 
 **Example output:**
+
 ```
 [MCP] >>diagnose (general)
   Args: scope:string, focus:string, symptoms:string
@@ -29,6 +30,7 @@ Triggers on every user message. Detects `>>prompt` syntax and injects a system m
 Triggers after `prompt_engine` calls. Parses the response to track chain state and pending gates, then injects reminders.
 
 **Example outputs:**
+
 ```
 [Chain] Step 2/5 - call prompt_engine to continue
 [Gate] code-quality
@@ -50,6 +52,7 @@ Triggers on session start. Uses **quick-check mode** to minimize startup delay:
 | First run / marker missing | 2-5s | Full sync + create marker |
 
 **How it works:**
+
 1. Compares source file timestamps against `.dev-sync-marker` in cache
 2. If no changes detected, exits immediately (no sync)
 3. If changes detected, performs full sync and updates marker
@@ -60,14 +63,14 @@ Triggers on session start. Uses **quick-check mode** to minimize startup delay:
 
 ## Installation
 
-These hooks are included when you install via the Claude Code plugin:
+These hooks are included when you install via the Agent plugin:
 
 ```bash
 # First time: add the marketplace
 /plugin marketplace add minipuft/minipuft-plugins
 
 # Install the plugin (includes hooks)
-/plugin install claude-prompts@minipuft
+/plugin install agent-prompts@minipuft
 ```
 
 ## Architecture
@@ -98,14 +101,14 @@ Hooks are configured in `hooks.json`:
       "matcher": "*",
       "hooks": [{
         "type": "command",
-        "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/prompt-suggest.py"
+        "command": "python3 ${AGENT_PLUGIN_ROOT}/hooks/prompt-suggest.py"
       }]
     }],
     "PostToolUse": [{
       "matcher": "*prompt_engine*",
       "hooks": [{
         "type": "command",
-        "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/post-prompt-engine.py"
+        "command": "python3 ${AGENT_PLUGIN_ROOT}/hooks/post-prompt-engine.py"
       }]
     }]
   }

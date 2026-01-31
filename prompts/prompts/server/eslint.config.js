@@ -4,7 +4,9 @@ import tsparser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
-import claudePlugin from './eslint-rules/claude-plugin.js';
+import agentPlugin from './eslint-rules/agent-plugin.js';
+
+
 
 const lifecycleAnnotationTargets = [
   'src/gates/**/*.ts',
@@ -27,7 +29,7 @@ const lifecycleAnnotationTargets = [
   'src/types.ts',
 ];
 
-export default [
+const baseConfig = [
   // Base ESLint recommended rules
   eslint.configs.recommended,
 
@@ -54,7 +56,7 @@ export default [
       '@typescript-eslint': tseslint,
       import: importPlugin,
       prettier: prettierPlugin,
-      claude: claudePlugin,
+      agent: agentPlugin,
     },
     rules: {
       // TypeScript strict rules
@@ -141,7 +143,7 @@ export default [
       'no-undef': 'off',
 
       // Lifecycle guardrails - deprecated import paths
-      'claude/no-legacy-imports': [
+      'agent/no-legacy-imports': [
         'error',
         {
           patterns: [
@@ -205,7 +207,7 @@ export default [
       '@typescript-eslint': tseslint,
       import: importPlugin,
       prettier: prettierPlugin,
-      claude: claudePlugin,
+      agent: agentPlugin,
     },
     rules: {
       // Use same rules as source files
@@ -285,7 +287,7 @@ export default [
       'no-undef': 'off',
 
       // Lifecycle guardrails - deprecated import paths (same as source files)
-      'claude/no-legacy-imports': [
+      'agent/no-legacy-imports': [
         'error',
         {
           patterns: [
@@ -335,10 +337,10 @@ export default [
   {
     files: lifecycleAnnotationTargets,
     plugins: {
-      claude: claudePlugin,
+      agent: agentPlugin,
     },
     rules: {
-      'claude/require-file-lifecycle': [
+      'agent/require-file-lifecycle': [
         'error',
         {
           allowedStatuses: ['canonical', 'migrating'],
@@ -382,3 +384,5 @@ export default [
     ],
   },
 ];
+
+export default baseConfig;

@@ -389,7 +389,7 @@ export class GateDefinitionLoader {
       try {
         if (existsSync(pkgPath)) {
           const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-          if (pkg.name === 'claude-prompts') {
+          if (pkg.name === 'agent-prompts') {
             // Check resources/gates first (new structure)
             const resourcesGatesPath = join(dir, 'resources', 'gates');
             if (existsSync(resourcesGatesPath) && this.hasYamlFiles(resourcesGatesPath)) {

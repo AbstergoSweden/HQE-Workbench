@@ -1,75 +1,79 @@
-# Claude Prompts MCP Server
+# Agent Prompts MCP Server
 
-[![npm version](https://img.shields.io/npm/v/claude-prompts.svg)](https://www.npmjs.com/package/claude-prompts)
+[![npm version](https://img.shields.io/npm/v/agent-prompts.svg)](https://www.npmjs.com/package/agent-prompts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.18-brightgreen.svg)](https://nodejs.org/)
 
-MCP server for prompt management, thinking frameworks, and quality gates. Hot-reloads prompts, injects structured reasoning, enforces output validation—all through MCP tools Claude can call directly.
+MCP server for prompt management, thinking frameworks, and quality gates. Hot-reloads prompts, injects structured reasoning, enforces output validation—all through MCP tools the Agent can call directly.
 
-## Quick Start
+### Quick Start
 
-| Method | Command | Best For |
-|--------|---------|----------|
-| **Desktop Extension** | Drag `.mcpb` into Settings | End users |
-| **NPX** | `npx -y claude-prompts` | Auto-updates |
-| **Local Dev** | `npm run start:stdio` | Contributors |
+| Feature | Agent Prompts | Default Prompts |
+| :--- | :--- | :--- |
+| **Hot Reload** | ✅ Yes (Instant) | ❌ No (Restart required) |
+| **Type Safety** | ✅ Yes (Full validation) | ❌ Partial |
+| **Testing** | ✅ Built-in framework | ❌ Manual only |
+| **Versioning** | ✅ Git-integrated | ❌ Manual |
 
-**Desktop Extension** — [Download `.mcpb`](https://github.com/minipuft/claude-prompts-mcp/releases), drag into Claude Desktop Settings. Done.
+**Desktop Extension** — [Download `.mcpb`](https://github.com/minipuft/agent-prompts-mcp/releases), drag into Agent Desktop Settings. Done.
 
-**NPX** — Add to `claude_desktop_config.json`:
+**NPX** — Add to `agent_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
-    "claude-prompts": { "command": "npx", "args": ["-y", "claude-prompts@latest"] }
+    "agent-prompts": { "command": "npx", "args": ["-y", "agent-prompts@latest"] }
   }
 }
 ```
 
 Restart Claude Desktop. Verify:
-```
+
+```bash
 resource_manager(resource_type: "prompt", action: "list")
 ```
+
 → Returns available prompts. Now try `>>analyze` or `>>research_chain`.
 
 ---
 
 ## What You Get
 
-### 🔥 Hot Reload — Let Claude iterate on prompts for you
+### 🔥 Hot Reload — Let the Agent iterate on prompts for you
 
 **Problem**: Prompt engineering is slow. Edit → restart → test → repeat. And you're debugging prompt issues manually.
 
-**Solution**: Just ask Claude to fix it. Describe the problem, Claude updates the prompt via `resource_manager`, you test immediately. No manual editing, no restart.
+**Solution**: Just ask the Agent to fix it. Describe the problem, the Agent updates the prompt via `resource_manager`, you test immediately. No manual editing, no restart.
 
 ```text
 User: "The code_review prompt is too verbose"
-Claude: resource_manager(resource_type:"prompt", action:"update", id:"code_review", ...)
+Agent: resource_manager(resource_type:"prompt", action:"update", id:"code_review", ...)
 User: "Test it"
-Claude: prompt_engine(command:">>code_review")  # Updated version runs instantly
+Agent: prompt_engine(command:">>code_review")  # Updated version runs instantly
 ```
 
 ---
 
 ### 🧠 Frameworks — Consistent structured reasoning
 
-**Problem**: Claude's reasoning varies. Sometimes thorough, sometimes it skips steps. You want methodical thinking every time.
+**Problem**: The Agent's reasoning varies. Sometimes thorough, sometimes it skips steps. You want methodical thinking every time.
 
-**Solution**: Frameworks inject a thinking methodology into the system prompt. Claude follows defined reasoning phases. Each framework auto-applies quality gates for its phases.
+**Solution**: Frameworks inject a thinking methodology into the system prompt. The Agent follows defined reasoning phases. Each framework auto-applies quality gates for its phases.
 
 ```text
 prompt_engine(command: "@CAGEERF Review this architecture")
 prompt_engine(command: "@ReACT Debug this error")
 ```
 
-**Expect**: Claude's response follows labeled phases. The framework's gates validate each phase completed properly.
+**Expect**: The Agent's response follows labeled phases. The framework's gates validate each phase completed properly.
 
 ---
 
-### 🛡️ Gates — Claude self-validates outputs
+### 🛡️ Gates — Agent self-validates outputs
 
-**Problem**: Claude returns plausible outputs, but you need specific criteria met—and you want Claude to verify, not you.
+**Problem**: The Agent returns plausible outputs, but you need specific criteria met—and you want the Agent to verify, not you.
 
-**Solution**: Gates inject quality criteria. Claude self-evaluates and reports PASS/FAIL. Failed gates trigger retries or pause for your decision.
+**Solution**: Gates inject quality criteria. The Agent self-evaluates and reports PASS/FAIL. Failed gates trigger retries or pause for your decision.
 
 ```text
 prompt_engine(command: "Summarize this :: 'under 200 words' :: 'include statistics'")
@@ -97,7 +101,7 @@ resource_manager(resource_type:"prompt", action:"rollback", id:"code_review", ve
 
 ## MCP Tools
 
-Three consolidated tools Claude can call:
+Three consolidated tools the Agent can call:
 
 ### `prompt_engine` — Execute prompts and chains
 
@@ -137,11 +141,18 @@ system_control(action: "analytics")
 
 ## Syntax Reference
 
+### Core Components
+
 | Symbol | Name          | What It Does                    |
 | :----: | :------------ | :------------------------------ |
 |  `>>`  | **Prompt**    | Execute template by ID          |
 | `-->`  | **Chain**     | Pipe output to next step        |
 |  `@`   | **Framework** | Inject methodology + auto-gates |
+
+### Features
+
+| Symbol | Name          | What It Does                    |
+| :----: | :------------ | :------------------------------ |
 |  `::`  | **Gate**      | Add quality criteria            |
 |  `%`   | **Modifier**  | Control execution mode          |
 
@@ -158,7 +169,7 @@ The package includes example prompts, but the real power comes from **your own p
 - **Project-specific templates** — Code review prompts tailored to your stack
 - **Team workflows** — Standardized analysis chains your whole team uses
 - **Domain expertise** — Prompts encoding your specific domain knowledge
-- **Persistent iteration** — Claude improves your prompts via `resource_manager`, and they persist
+- **Persistent iteration** — The Agent improves your prompts via `resource_manager`, and they persist
 
 ---
 
@@ -167,21 +178,21 @@ The package includes example prompts, but the real power comes from **your own p
 **1. Initialize a workspace with starter prompts:**
 
 ```bash
-npx claude-prompts --init=~/my-prompts
+npx agent-prompts --init=~/my-prompts
 ```
 
 This creates `~/my-prompts/prompts/` with starter prompts (`prompt.yaml` + templates).
 
-**2. Point Claude Desktop to your workspace:**
+**2. Point your MCP Client (e.g. Claude Desktop) to your workspace:**
 
 Edit `~/.config/claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "claude-prompts": {
+    "agent-prompts": {
       "command": "npx",
-      "args": ["-y", "claude-prompts@latest"],
+      "args": ["-y", "agent-prompts@latest"],
       "env": {
         "MCP_WORKSPACE": "/home/YOUR_USERNAME/my-prompts"
       }
@@ -192,25 +203,28 @@ Edit `~/.config/claude/claude_desktop_config.json`:
 
 **3. Restart Claude Desktop and test:**
 
-```
+```bash
 resource_manager(resource_type:"prompt", action:"list")
+```
+
+```text
 prompt_engine(command: ">>quick_review code:'function add(a,b) { return a + b }'")
 ```
 
-**4. Let Claude iterate on your prompts:**
+**4. Let the Agent iterate on your prompts:**
 
 ```text
 User: "Make the quick_review prompt also check for performance issues"
-Claude: resource_manager(resource_type:"prompt", action:"update", id:"quick_review", ...)
+Agent: resource_manager(resource_type:"prompt", action:"update", id:"quick_review", ...)
 ```
 
-Changes apply instantly—no restart needed. This is the recommended workflow: **describe what you want, let Claude implement it.**
+Changes apply instantly—no restart needed. This is the recommended workflow: **describe what you want, let the Agent implement it.**
 
 ---
 
 ### Workspace Structure
 
-```
+```json
 my-workspace/
 ├── prompts/
 │   └── <category>/<id>/      # Prompt directories (required)
@@ -236,16 +250,20 @@ Script tools enable validation scripts that auto-trigger on schema match. See [S
 
 This repo uses a Release PR flow to ensure the npm package version and changelog are committed before publishing.
 
+### Release Process
+
 - Changelog: `server/CHANGELOG.md`
 - Package version: `server/package.json#version`
-- Tag format: `claude-prompts-vX.Y.Z` (created by release-please)
+- Tag format: `agent-prompts-vX.Y.Z` (created by release-please)
 
 **One-time GitHub setup**
+
 - Add repo secret `RELEASE_PLEASE_TOKEN` (PAT) so release tags/releases can trigger workflows.
-- Add repo secret `NPM_TOKEN` (npm automation token for `claude-prompts`).
+- Add repo secret `NPM_TOKEN` (npm automation token for `agent-prompts`).
 - (Recommended) Create GitHub Environment `npm` with required reviewers to gate publishing.
 
 **Release steps**
+
 1. Merge normal work into `main`.
 2. Release Please opens a Release PR; review the version bump + `server/CHANGELOG.md`.
 3. Merge the Release PR.
@@ -253,27 +271,31 @@ This repo uses a Release PR flow to ensure the npm package version and changelog
 
 ---
 
+## Feature Highlights
+
 ### Claude Desktop Configurations
 
 **Basic — Use package defaults (good for trying it out):**
+
 ```json
 {
   "mcpServers": {
-    "claude-prompts": {
+    "agent-prompts": {
       "command": "npx",
-      "args": ["-y", "claude-prompts@latest"]
+      "args": ["-y", "agent-prompts@latest"]
     }
   }
 }
 ```
 
 **Recommended — Your own workspace:**
+
 ```json
 {
   "mcpServers": {
-    "claude-prompts": {
+    "agent-prompts": {
       "command": "npx",
-      "args": ["-y", "claude-prompts@latest"],
+      "args": ["-y", "agent-prompts@latest"],
       "env": {
         "MCP_WORKSPACE": "/home/user/my-mcp-workspace"
       }
@@ -283,13 +305,16 @@ This repo uses a Release PR flow to ensure the npm package version and changelog
 ```
 
 **Advanced — Per-project prompts:**
+
 ```json
 {
   "mcpServers": {
-    "claude-prompts": {
+    "agent-prompts": {
       "command": "npx",
-      "args": ["-y", "claude-prompts@latest"],
+      "args": ["-y", "agent-prompts@latest"],
       "env": {
+        "ANTHROPIC_API_KEY": "sk-...",
+        "OPENAI_API_KEY": "sk-...",
         "MCP_PROMPTS_PATH": "/home/user/projects/my-app/prompts"
       }
     }
@@ -301,14 +326,14 @@ This repo uses a Release PR flow to ensure the npm package version and changelog
 
 ### Environment Variables
 
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `MCP_WORKSPACE` | Base directory containing prompts/, config.json | `/home/user/my-prompts` |
-| `MCP_PROMPTS_PATH` | Direct path to a prompts directory | `/path/to/prompts` |
-| `MCP_METHODOLOGIES_PATH` | Custom methodologies directory | `/path/to/methodologies` |
-| `MCP_GATES_PATH` | Custom gates directory | `/path/to/gates` |
-| `MCP_CONFIG_PATH` | Custom server config.json | `/path/to/config.json` |
-| `LOG_LEVEL` | Logging verbosity | `debug`, `info`, `warn`, `error` |
+| Variable                   | Purpose                                       | Example                      |
+| :------------------------- | :-------------------------------------------- | :--------------------------- |
+| `MCP_WORKSPACE`            | Base directory containing prompts/, config.json | `/home/user/my-prompts`      |
+| `MCP_PROMPTS_PATH`         | Direct path to a prompts directory            | `/path/to/prompts`           |
+| `MCP_METHODOLOGIES_PATH` | Custom methodologies directory                | `/path/to/methodologies`     |
+| `MCP_GATES_PATH`         | Custom gates directory                        | `/path/to/gates`             |
+| `MCP_CONFIG_PATH`        | Custom server config.json                     | `/path/to/config.json`       |
+| `LOG_LEVEL`              | Logging verbosity                             | `debug`, `info`, `warn`, `error` |
 
 **Resolution priority:** CLI flags > Environment variables > Workspace subdirectory > Package defaults
 
@@ -318,45 +343,49 @@ This repo uses a Release PR flow to ensure the npm package version and changelog
 
 ```bash
 # Use a workspace
-npx claude-prompts --workspace=/path/to/workspace
+npx agent-prompts --workspace=/path/to/workspace
 
 # Override specific paths
-npx claude-prompts --prompts=/path/to/prompts
+npx agent-prompts --prompts=/path/to/prompts
 
 # Debugging
-npx claude-prompts --verbose
-npx claude-prompts --debug-startup
+npx agent-prompts --verbose
+npx agent-prompts --debug-startup
 
 # Validate setup without running
-npx claude-prompts --startup-test --verbose
+npx agent-prompts --startup-test --verbose
 ```
 
-| Flag | Purpose |
-|------|---------|
-| `--workspace=/path` | Base directory for all user assets |
-| `--prompts=/path` | Direct path to a prompts directory |
+| Flag                 | Purpose                                   |
+| :------------------- | :---------------------------------------- |
+| `--workspace=/path`  | Base directory for all user assets        |
+| `--prompts=/path`    | Direct path to a prompts directory        |
 | `--methodologies=/path` | Custom methodologies directory |
-| `--gates=/path` | Custom gates directory |
-| `--config=/path` | Custom server config.json |
-| `--verbose` | Detailed logging |
-| `--startup-test` | Validate and exit (good for testing setup) |
+| `--gates=/path`         | Custom gates directory |
+| `--config=/path`        | Custom server config.json |
+| `--verbose`             | Detailed logging |
+| `--startup-test`        | Validate and exit (good for testing setup) |
 
 ---
 
 ### Troubleshooting
 
 **"No prompts found"**
+
 - Check `MCP_WORKSPACE` points to a directory containing `prompts/`
-- Run `npx claude-prompts --startup-test --verbose` to see resolved paths
+- Run `npx agent-prompts --startup-test --verbose` to see resolved paths
 
 **"Methodology not found"**
+
 - Custom methodologies need `methodology.yaml` in each subdirectory
 - Use `MCP_METHODOLOGIES_PATH` to point to your methodologies folder
 
 **"Permission denied"**
+
 - Ensure the user running Claude Desktop can read your workspace directory
 
 **Changes not appearing**
+
 - Confirm you're editing files under your configured `MCP_WORKSPACE` / `MCP_PROMPTS_PATH`
 - If needed, restart Claude Desktop (most clients restart MCP servers on reconnect)
 
@@ -364,21 +393,21 @@ npx claude-prompts --startup-test --verbose
 
 ## Documentation
 
-Full guides in the [main repository](https://github.com/minipuft/claude-prompts-mcp):
+Full guides in the [main repository](https://github.com/minipuft/agent-prompts-mcp):
 
-- [Architecture](https://github.com/minipuft/claude-prompts-mcp/blob/main/docs/architecture/overview.md) — System design
-- [MCP Tooling](https://github.com/minipuft/claude-prompts-mcp/blob/main/docs/reference/mcp-tools.md) — Complete tool reference
-- [Prompt Authoring](https://github.com/minipuft/claude-prompts-mcp/blob/main/docs/guides/prompt-authoring-guide.md) — Template structure
-- [Chains](https://github.com/minipuft/claude-prompts-mcp/blob/main/docs/guides/chains.md) — Multi-step patterns
-- [Gates](https://github.com/minipuft/claude-prompts-mcp/blob/main/docs/guides/gates.md) — Quality validation
+- [Architecture](https://github.com/minipuft/agent-prompts-mcp/blob/main/docs/architecture/overview.md) — System design
+- [MCP Tooling](https://github.com/minipuft/agent-prompts-mcp/blob/main/docs/reference/mcp-tools.md) — Complete tool reference
+- [Prompt Authoring](https://github.com/minipuft/agent-prompts-mcp/blob/main/docs/guides/prompt-authoring-guide.md) — Template structure
+- [Chains](https://github.com/minipuft/agent-prompts-mcp/blob/main/docs/guides/chains.md) — Multi-step patterns
+- [Gates](https://github.com/minipuft/agent-prompts-mcp/blob/main/docs/guides/gates.md) — Quality validation
 
 ---
 
 ## Development
 
 ```bash
-git clone https://github.com/minipuft/claude-prompts-mcp.git
-cd claude-prompts-mcp/server
+git clone https://github.com/minipuft/agent-prompts-mcp.git
+cd agent-prompts-mcp/server
 npm install && npm run build
 npm run start:stdio
 ```

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Gemini Adapter: BeforeAgent Hook
-Wraps the core prompt-suggestion logic for Gemini CLI.
+Agent Adapter: BeforeAgent Hook
+Wraps the core prompt-suggestion logic for Agent CLI.
 """
 
 import sys
@@ -22,19 +22,19 @@ from cache_manager import (
 )
 from session_state import load_session_state, format_chain_reminder
 
-# Duplicate logic from prompt-suggest.py but adapted for Gemini I/O
-# This ensures we don't break Claude if we change one or the other.
+# Duplicate logic from prompt-suggest.py but adapted for Agent I/O
+# This ensures we don't break the Agent if we change one or the other.
 
 def _project_root() -> Path:
-    # hooks/gemini/before-agent.py -> gemini -> hooks -> project_root
+    # hooks/agents/before-agent.py -> agents -> hooks -> project_root
     return Path(__file__).resolve().parents[2]
 
 
 def _log_debug(message: str) -> None:
-    if os.getenv('GEMINI_HOOK_DEBUG', '').lower() not in {'1', 'true', 'yes'}:
+    if os.getenv('AGENT_HOOK_DEBUG', '').lower() not in {'1', 'true', 'yes'}:
         return
     root = _project_root()
-    log_dir = root / '.gemini'
+    log_dir = root / '.agents'
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / 'hook-debug.log'
     ts = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -97,7 +97,7 @@ def format_tool_call(prompt_id: str, info: dict) -> str:
 def main():
     hook_input = parse_hook_input()
     
-    # Gemini BeforeAgent Input: { "prompt": "..." }
+    # Agent BeforeAgent Input: { "prompt": "..." }
     user_message = (
         hook_input.get("prompt", "") or 
         hook_input.get("message", "") or
@@ -153,7 +153,7 @@ def main():
     # OUTPUT
     if output_lines:
         final_output = "\n".join(output_lines)
-        # Gemini Specific Output Format for BeforeAgent
+        # Agent Specific Output Format for BeforeAgent
         # systemMessage is NOT supported in BeforeAgent, use additionalContext
         out = {
             "hookSpecificOutput": {

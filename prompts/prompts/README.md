@@ -1,11 +1,11 @@
-# Claude Prompts MCP Server
+# Agent Prompts MCP Server
 
 <div align="center">
 
-<img src="assets/logo.png" alt="Claude Prompts MCP Server Logo" width="200" />
+<img src="assets/logo.png" alt="Agent Prompts MCP Server Logo" width="200" />
 
-[![npm version](https://img.shields.io/npm/v/claude-prompts.svg?style=for-the-badge&logo=npm&color=0066cc)](https://www.npmjs.com/package/claude-prompts)
-<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=claude-prompts&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1wcm9tcHRzQGxhdGVzdCJdfQ=="><img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add claude-prompts MCP server to Cursor" height="28" /></a>
+[![npm version](https://img.shields.io/npm/v/agent-prompts.svg?style=for-the-badge&logo=npm&color=0066cc)](https://www.npmjs.com/package/agent-prompts)
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=agent-prompts&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImFnZW50LXByb21wdHNAbGF0ZXN0Il19"><img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add agent-prompts MCP server to Cursor" height="28" /></a>
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ff88.svg?style=for-the-badge&logo=opensource)](https://opensource.org/licenses/MIT)
 
 **Hot-reloadable prompts, structured reasoning, and chain workflows for your AI assistant.**
@@ -54,7 +54,7 @@ flowchart TB
     end
     Server:::server
 
-    subgraph Client["Claude (Client)"]
+    subgraph Client["Agent (Client)"]
         direction TB
         Execute["5. Run prompt + check gates"]:::client
     end
@@ -68,25 +68,28 @@ flowchart TB
     Decide -->|"Done"| Result["7. Return to user"]:::actor
 ```
 
-**The feedback loop:** You send a command with operators → Server parses and injects methodology/gates → Claude executes and self-evaluates → Server routes: next step (PASS), retry (FAIL), or return result (done).
+**The feedback loop:** You send a command with operators → Server parses and injects methodology/gates → Agent executes and self-evaluates → Server routes: next step (PASS), retry (FAIL), or return result (done).
 
 ---
 
 ## Quick Start
 
-### Claude Code (Recommended)
+### Agent CLI (Recommended)
 
 **Step 1: Add the plugin marketplace** (first time only)
+
 ```bash
 /plugin marketplace add minipuft/minipuft-plugins
 ```
 
 **Step 2: Install the plugin**
+
 ```bash
-/plugin install claude-prompts@minipuft
+/plugin install agent-prompts@minipuft
 ```
 
 **Step 3: Try it**
+
 ```bash
 >>tech_evaluation_chain library:'zod' context:'API validation'
 ```
@@ -106,30 +109,31 @@ Raw MCP works, but models sometimes miss the syntax. The hooks catch that. → [
 
 </details>
 
-**User Data**: Custom prompts stored in `~/.local/share/claude-prompts/` persist across updates.
+**User Data**: Custom prompts stored in `~/.local/share/agent-prompts/` persist across updates.
 
-### Gemini CLI
+### Generic CLI
 
 ```bash
 # Install directly from GitHub
-gemini extensions install https://github.com/minipuft/claude-prompts-mcp
+agent extensions install https://github.com/minipuft/agent-prompts-mcp
 
 # Development Setup (Hot Reload)
 # Use a symbolic link to point the extension directory directly to your source code.
 # This ensures changes to hooks and prompts are reflected immediately.
-rm -rf ~/.gemini/extensions/gemini-prompts
-ln -s "$(pwd)" ~/.gemini/extensions/gemini-prompts
+rm -rf ~/.agents/extensions/agent-prompts
+ln -s "$(pwd)" ~/.agents/extensions/agent-prompts
 ```
 
 The extension provides:
+
 - **MCP server** with the same tools (`prompt_engine`, `resource_manager`, `system_control`)
-- **GEMINI.md** context file with usage documentation
+- **AGENTS.md** context file with usage documentation
 
-**Optional hooks** for `>>prompt` syntax detection can be enabled manually - see `GEMINI.md` for setup instructions.
+**Optional hooks** for `>>prompt` syntax detection can be enabled manually - see `AGENTS.md` for setup instructions.
 
-Works with the same prompts, gates, and methodologies as Claude Code.
+Works with the same prompts, gates, and methodologies as other agents.
 
-### Claude Desktop
+### Desktop Agent
 
 | Method | Install Time | Updates | Custom Prompts |
 |--------|-------------|---------|----------------|
@@ -137,30 +141,34 @@ Works with the same prompts, gates, and methodologies as Claude Code.
 | **NPX** | 30 seconds | Automatic | Via env vars |
 
 **Desktop Extension** (one-click):
+
 ```
-1. Download claude-prompts.mcpb → github.com/minipuft/claude-prompts-mcp/releases
-2. Drag into Claude Desktop Settings
+1. Download agent-prompts.mcpb → github.com/minipuft/agent-prompts-mcp/releases
+2. Drag into Desktop Agent Settings
 3. Done. Optionally set a custom prompts folder when prompted.
 ```
 
 **NPX** (auto-updates):
+
 ```json
-// ~/Library/Application Support/Claude/claude_desktop_config.json (macOS)
-// %APPDATA%\Claude\claude_desktop_config.json (Windows)
+// ~/Library/Application Support/Agent/agent_desktop_config.json (macOS)
+// %APPDATA%\Agent\agent_desktop_config.json (Windows)
 {
   "mcpServers": {
-    "claude-prompts": {
+    "agent-prompts": {
       "command": "npx",
-      "args": ["-y", "claude-prompts@latest"]
+      "args": ["-y", "agent-prompts@latest"]
     }
   }
 }
 ```
 
-Restart Claude Desktop. Test it:
+Restart Desktop Agent. Test it:
+
 ```
 >>research_chain topic:'remote team policies' purpose:'handbook update'
 ```
+
 → Returns a 4-step research workflow with methodology injection and quality gates.
 
 ### Other MCP Clients
@@ -173,9 +181,9 @@ Add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "claude-prompts": {
+    "agent-prompts": {
       "command": "npx",
-      "args": ["-y", "claude-prompts@latest"]
+      "args": ["-y", "agent-prompts@latest"]
     }
   }
 }
@@ -188,7 +196,7 @@ Test: `resource_manager(resource_type:"prompt", action:"list")`
 <details>
 <summary><strong>Cursor 1-click install</strong></summary>
 
-<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=claude-prompts&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1wcm9tcHRzQGxhdGVzdCJdfQ==">
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=agent-prompts&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImFnZW50LXByb21wdHNAbGF0ZXN0Il19">
   <img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add to Cursor" height="28" />
 </a>
 
@@ -198,8 +206,8 @@ Test: `resource_manager(resource_type:"prompt", action:"list")`
 <summary><strong>From Source</strong></summary>
 
 ```bash
-git clone https://github.com/minipuft/claude-prompts-mcp.git
-cd claude-prompts-mcp/server && npm install && npm run build
+git clone https://github.com/minipuft/agent-prompts-mcp.git
+cd agent-prompts-mcp/server && npm install && npm run build
 ```
 
 Then point your config to `server/dist/index.js`.
@@ -215,9 +223,9 @@ Use your own prompts without cloning:
 ```json
 {
   "mcpServers": {
-    "claude-prompts": {
+    "agent-prompts": {
       "command": "npx",
-      "args": ["-y", "claude-prompts@latest"],
+      "args": ["-y", "agent-prompts@latest"],
       "env": {
         "MCP_RESOURCES_PATH": "/path/to/your/resources"
       }
@@ -244,13 +252,13 @@ See [CLI Configuration](docs/reference/mcp-tools.md#cli-configuration) for all o
 
 ### 🔥 Hot Reload
 
-Edit prompts, test immediately. Better yet—ask Claude to fix them:
+Edit prompts, test immediately. Better yet—ask the Agent to fix them:
 
 ```text
 User: "The code_review prompt is too verbose"
-Claude: resource_manager(action:"update", id:"code_review", ...)
+Agent: resource_manager(action:"update", id:"code_review", ...)
 User: "Test it"
-Claude: prompt_engine(command:">>code_review")  # Uses updated version instantly
+Agent: prompt_engine(command:">>code_review")  # Uses updated version instantly
 ```
 
 ### 🔗 Chains
@@ -274,7 +282,7 @@ Inject structured thinking patterns:
 
 ### 🛡️ Gates
 
-Quality criteria Claude self-checks:
+Quality criteria the Agent self-checks:
 
 ```text
 Summarize this :: 'under 200 words' :: 'include key statistics'
@@ -284,13 +292,13 @@ Failed gates can retry automatically or pause for your decision.
 
 ### ✨ Judge Selection
 
-Let Claude pick the right tools:
+Let the Agent pick the right tools:
 
 ```text
 %judge Help me refactor this codebase
 ```
 
-Claude analyzes available frameworks, gates, and styles, then applies the best combination.
+The Agent analyzes available frameworks, gates, and styles, then applies the best combination.
 
 ### 📜 Version History
 
@@ -315,10 +323,11 @@ resource_manager(action:"rollback", id:"code_review", version:2, confirm:true)
 | `#` | Style | Apply formatting | `#analytical` |
 
 **Modifiers:**
+
 - `%clean` — No framework/gate injection
 - `%lean` — Gates only, skip framework
 - `%guided` — Force framework injection
-- `%judge` — Claude selects best resources
+- `%judge` — Agent selects best resources
 
 ---
 

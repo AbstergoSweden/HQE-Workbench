@@ -1,13 +1,13 @@
 {
-  "name": "claude-prompts",
+  "name": "agent-prompts",
   "version": "1.1.0",
-  "description": "Claude Custom Prompts MCP Server",
+  "description": "Agent Custom Prompts MCP Server",
   "author": "minipuft",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "claude-prompts": "./dist/index.js"
+    "agent-prompts": "./dist/index.js"
   },
   "types": "dist/index.d.ts",
   "exports": {
@@ -86,14 +86,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/minipuft/claude-prompts.git"
+    "url": "git+https://github.com/minipuft/agent-prompts.git"
   },
   "bugs": {
-    "url": "https://github.com/minipuft/claude-prompts/issues"
+    "url": "https://github.com/minipuft/agent-prompts/issues"
   },
-  "homepage": "https://github.com/minipuft/claude-prompts#readme",
+  "homepage": "https://github.com/minipuft/agent-prompts#readme",
   "keywords": [
-    "claude",
+    "agent",
     "ai",
     "mcp",
     "model-context-protocol",
@@ -124,7 +124,7 @@
     "@types/express": "^4.17.21",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.10.9",
     "@types/ws": "^8.5.14",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",

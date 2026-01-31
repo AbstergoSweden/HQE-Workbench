@@ -1,4 +1,4 @@
-// @lifecycle canonical - Shell verification gate execution for Ralph Wiggum loops.
+// @lifecycle canonical - Shell verification gate execution for Agent autonomous loops.
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -18,8 +18,8 @@ import type { ExecutionContext } from '../../context/execution-context.js';
 /**
  * Pipeline Stage 8b: Shell Verification
  *
- * Executes shell verification gates that enable "Ralph Wiggum" style autonomous loops
- * where Claude's work is validated by real shell command execution (ground truth)
+ * Executes shell verification gates that enable "Agent Loop" style autonomous loops
+ * where Agent's work is validated by real shell command execution (ground truth)
  * rather than LLM self-evaluation.
  *
  * Position: After StepResponseCaptureStage (08), before ExecutionStage (09)
@@ -375,7 +375,7 @@ export class ShellVerificationStage extends BasePipelineStage {
    * Write verify-active.json for Stop hook integration.
    *
    * This file enables the Stop hook to read verification config
-   * and block Claude from stopping until verification passes.
+   * and block Agent from stopping until verification passes.
    */
   private async writeVerifyActiveState(
     context: ExecutionContext,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Gemini Adapter: Stop Hook
+Agent Adapter: Stop Hook
 Wraps ralph-stop logic for autonomous loops.
 """
 import sys

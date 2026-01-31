@@ -109,7 +109,7 @@ export class ApiManager {
    */
   private setupBasicRoutes(app: express.Application): void {
     app.get('/', (_req: Request, res: Response) => {
-      res.send('Claude Custom Prompts MCP Server - Use /mcp endpoint for MCP connections');
+      res.send('Agent Custom Prompts MCP Server - Use /mcp endpoint for MCP connections');
     });
 
     // Health check endpoint
@@ -382,9 +382,8 @@ export class ApiManager {
         this.logger.error('Error refreshing server:', refreshError);
         res.status(500).json({
           success: false,
-          message: `Failed to refresh server: ${
-            refreshError instanceof Error ? refreshError.message : String(refreshError)
-          }`,
+          message: `Failed to refresh server: ${refreshError instanceof Error ? refreshError.message : String(refreshError)
+            }`,
         });
       }
     } catch (error) {

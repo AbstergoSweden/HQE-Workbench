@@ -1,19 +1,19 @@
-# Claude Prompts MCP — Operator Handbook
+# Agents Prompts MCP — Operator Handbook
 
-This handbook trains Claude Code (and any assistant) to behave like a senior developer on this repository. Every guideline maps to the runtime currently shipping from `server/dist/**`. Treat the doc as the canonical operating agreement unless the user explicitly overrides it.
+This handbook trains **Agents** to behave like senior developers on this repository. Every guideline maps to the runtime currently shipping from `server/dist/**`. Treat the doc as the canonical operating agreement unless the user explicitly overrides it.
 
 ---
 
 ## 1. Mission & Scope
 
-- **Role**: Automation/code-editing agent for the Claude Prompts MCP server.
+- **Role**: Automation/code-editing agent for the Agents Prompts MCP server.
 - **Primary Goal**: Deliver safe, reviewable changes that honor MCP protocol guardrails, hot-reload expectations, and proper documentation maintenance.
 - **Source of Truth**: `server/dist/**`. Always confirm behavior there before describing or modifying functionality.
 
 ### Runtime Requirements
 
 | Dependency | Version | Notes |
-|------------|---------|-------|
+| :--- | :--- | :--- |
 | Node.js | `>=18.18.0` | CI verifies 18→24. Local dev defaults to Node 24 via `.nvmrc` / `.node-version`. |
 | TypeScript | `^5.9.3` | Strict mode enabled. |
 | Jest | `^30.0.0` | With `ts-jest` for ESM support. |
@@ -26,29 +26,33 @@ This handbook trains Claude Code (and any assistant) to behave like a senior dev
 ## 2. Core Operating Principles
 
 1. **Plan First** – Outline intent, affected modules, and validation before editing. Use MCP prompts or notes if the change is non-trivial.
-2. **MCP Tooling Only** – Prompts, templates, chains, and tool descriptions must flow through MCP tools (`resource_manager`, `prompt_engine`, `system_control`). Manual edits under `server/prompts/**` or `server/runtime-state/**` are forbidden. Tool descriptions and Zod schemas are generated from contracts; run `npm run generate:contracts` rather than editing outputs.
+2. **MCP Tooling Only** – Prompts, templates, chains, and tool descriptions must flow through MCP tools (`resource_manager`, `prompt_engine`, `system_control`). Manual edits under
+
+```text
+/agent:run "analyze this" --debug
+```server/prompts/**` or `server/runtime-state/**` are forbidden. Tool descriptions and Zod schemas are generated from contracts; run `npm run generate:contracts` rather than editing outputs.
 3. **Contracts as SSOT** – Tool descriptions and MCP parameter schemas are generated from `tooling/contracts/*.json` to `src/tooling/contracts/_generated/`. ToolDescriptionManager loads from generated `tool-descriptions.contracts.json` (and `tool-descriptions.json` exists only as a backwards-compatible alias). MCP registration imports generated Zod schemas from `mcp-schemas.ts`. Methodology overlays remain framework-aware.
 4. **Methodology overlays** – Framework-specific tool descriptions are defined in methodology guides (`getToolDescriptions`). Update these when parameters or guidance change so overlays stay aligned with contracts and runtime registration.
-3. **Transport Parity** – Any runtime change must work in STDIO and SSE. Mention transport implications in code reviews and docs.
-4. **Docs/Code Lockstep** – When code or behavior changes, update the relevant doc in `docs/` (see list below) and adjust lifecycle tags in `docs/README.md` if needed.
-5. **Validation Discipline** – For most changes, treat `npm run typecheck`, `npm run lint:ratchet`, and `npm run test:ci` as the minimum gates. Add `npm run validate:arch` when touching module boundaries. Run `npm run validate:all` intentionally (it includes the full ESLint pass and may fail until lint debt is reduced). Document any skipped command with justification.
-6. **Reversibility** – Prefer small, atomic diffs. Never delete “legacy” code paths without checking the migration plan.
+5. **Transport Parity** – Any runtime change must work in STDIO and SSE. Mention transport implications in code reviews and docs.
+6. **Docs/Code Lockstep** – When code or behavior changes, update the relevant doc in `docs/` (see list below) and adjust lifecycle tags in `docs/README.md` if needed.
+7. **Validation Discipline** – For most changes, treat `npm run typecheck`, `npm run lint:ratchet`, and `npm run test:ci` as the minimum gates. Add `npm run validate:arch` when touching module boundaries. Run `npm run validate:all` intentionally (it includes the full ESLint pass and may fail until lint debt is reduced). Document any skipped command with justification.
+8. **Reversibility** – Prefer small, atomic diffs. Never delete “legacy” code paths without checking the migration plan.
 
 ---
 
 ## 3. Documentation Map (Use Before Coding)
 
-| Topic                          | Doc                              |
-| ------------------------------ | -------------------------------- |
-| Architecture & runtime phases  | `docs/architecture/overview.md`  |
-| MCP tooling workflows          | `docs/reference/mcp-tools.md`    |
-| Prompt/template authoring      | `docs/guides/prompt-authoring-guide.md` |
-| Script tools & auto-execute    | `docs/guides/script-tools.md`    |
-| Chains                         | `docs/guides/chains.md`          |
-| Gate system                    | `docs/guides/gates.md`           |
-| Troubleshooting                | `docs/guides/troubleshooting.md` |
-| Release highlights             | `CHANGELOG.md`                   |
-| Docs lifecycle overview        | `docs/README.md`                 |
+| Topic | Doc |
+| :--- | :--- |
+| Architecture & runtime phases | `docs/architecture/overview.md` |
+| MCP tooling workflows | `docs/reference/mcp-tools.md` |
+| Prompt/template authoring | `docs/guides/prompt-authoring-guide.md` |
+| Script tools & auto-execute | `docs/guides/script-tools.md` |
+| Chains | `docs/guides/chains.md` |
+| Gate system | `docs/guides/gates.md` |
+| Troubleshooting | `docs/guides/troubleshooting.md` |
+| Release highlights | `CHANGELOG.md` |
+| Docs lifecycle overview | `docs/README.md` |
 
 Always read the doc relevant to your task before editing files. Update those docs when behavior changes.
 
@@ -56,10 +60,10 @@ Always read the doc relevant to your task before editing files. Update those doc
 
 ## 3.1. Rules Reference (Auto-Loaded)
 
-Claude Code automatically loads rules from `.claude/rules/` based on file paths. These rules are **auto-loaded** when working on matching files—no explicit invocation needed.
+The Agent automatically loads rules from `.agents/rules/` based on file paths. These rules are **auto-loaded** when working on matching files—no explicit invocation needed.
 
-| Rule | Scope | Purpose |
-|------|-------|---------|
+| Rule | Directory | Purpose |
+| :--- | :--- | :--- |
 | `orchestration-layers.md` | `stages/**/*.ts`, `**/core/*.ts`, `**/*handler*.ts` | Size limits, domain ownership matrix, service extraction |
 | `state-persistence.md` | `*-state-manager.ts`, `chain-session/**`, `runtime-state/**` | Await persistence, throw on failure, no silent state failures |
 | `async-error-handling.md` | `server/src/**/*.ts` | Error propagation, no double-catch, check return values |
@@ -101,7 +105,7 @@ Use these paths to verify implementation details before documenting or reasoning
 | `npm test` / `npm run test:unit`        | Full Jest suite. Add targeted tests when touching execution/framework/gate modules.     |
 | `npm run test:watch`                    | Jest watch mode for continuous testing during development.                              |
 | `npm run test:coverage`                 | Run tests with coverage report.                                                         |
-| `npm run start:stdio`                   | Manual STDIO smoke test (Claude Desktop / CLI).                                         |
+| `npm run start:stdio`                   | Manual STDIO smoke test (CLI Agent).                                    |
 | `npm run start:sse`                     | Manual SSE smoke test (web clients).                                                    |
 | `npm run start:verbose` / `start:debug` | Diagnose startup or transport issues.                                                   |
 | `npm run lint`                          | Full ESLint pass (may fail until lint debt is reduced).                                 |
@@ -126,7 +130,7 @@ Hooks in `.husky/` (repo root) run subsets automatically. Do not bypass without 
 The `prompt_engine` supports a symbolic command language for expressing complex execution flows without JSON:
 
 | Operator | Purpose | Example | Status |
-|----------|---------|---------|--------|
+| :--- | :--- | :--- | :--- |
 | `-->` | Chain operator (sequential execution) | `>>step1 --> >>step2 --> >>step3` | ✅ Implemented |
 | `@` | Framework operator (apply methodology) | `>>prompt @CAGEERF` | ✅ Implemented |
 | `::` | Gate operator (inline quality criteria) | `>>prompt :: 'criteria text'` | ✅ Implemented |
@@ -135,6 +139,7 @@ The `prompt_engine` supports a symbolic command language for expressing complex 
 | `?` | Conditional operator (branching logic) | `>>p1 ? "cond" : >>p2` | 🔮 Reserved |
 
 **Key Features:**
+
 - Operators can be combined for complex workflows
 - `>>` prefix is optional (automatically normalized)
 - Supports inline parameters: `>>prompt key:'value'`
@@ -176,9 +181,10 @@ system_control(action:"status")
 
 ## 7.1. MCP Tool Schema Maintenance
 
-> **Full protocol**: See `.claude/rules/mcp-contracts.md` (auto-loaded when editing contracts or MCP tools)
+> **Full protocol**: See `.agents/rules/mcp-contracts.md` (auto-loaded when editing contracts or MCP tools)
 
 **Quick reference**:
+
 1. Edit source: `tooling/contracts/*.json`
 2. Regenerate: `npm run generate:contracts`
 3. Validate: `npm run typecheck && npm run build && npm test`
@@ -228,7 +234,7 @@ system_control(action:"status")
 ### Test Update Checklist (MANDATORY for Step 4)
 
 | If you added... | Then write... | Location |
-|-----------------|---------------|----------|
+| :-------------- | :------------ | :------- |
 | New feature (new module/capability) | Integration test FIRST | `tests/integration/` |
 | Complex edge cases | Unit tests | `tests/unit/` |
 | Critical user workflow | E2E test | `tests/e2e/` |
@@ -245,6 +251,7 @@ This project uses [Keep a Changelog](https://keepachangelog.com/) format. The ch
 ### Development Cycle
 
 1. **During development**: Add entries to `[Unreleased]` section as you work
+
    ```markdown
    ## [Unreleased]
 
@@ -256,6 +263,7 @@ This project uses [Keep a Changelog](https://keepachangelog.com/) format. The ch
    ```
 
 2. **When publishing to NPM**: Move `[Unreleased]` items to a new version section
+
    ```markdown
    ## [Unreleased]
 
@@ -269,6 +277,7 @@ This project uses [Keep a Changelog](https://keepachangelog.com/) format. The ch
    ```
 
 3. **Create git tag**: After publishing, tag the release
+
    ```bash
    git tag v1.0.2
    git push origin v1.0.2
@@ -279,7 +288,7 @@ This project uses [Keep a Changelog](https://keepachangelog.com/) format. The ch
 Use these standard categories (in order):
 
 | Category | When to Use |
-|----------|-------------|
+| :--- | :--- |
 | `Added` | New features |
 | `Changed` | Changes in existing functionality |
 | `Deprecated` | Soon-to-be removed features |
@@ -290,7 +299,7 @@ Use these standard categories (in order):
 ### NPM Package
 
 - **Package name**: `claude-prompts`
-- **Registry**: https://www.npmjs.com/package/claude-prompts
+- **Registry**: <https://www.npmjs.com/package/claude-prompts>
 - **Publish from**: `server/` directory
 
 ```bash
@@ -335,16 +344,8 @@ Open follow-up tasks in `plans/` when implementing any of the above.
 
 ### ExecutionContext is Ephemeral
 
-```
-Request 1:                    Request 2:
-┌─────────────────────┐      ┌─────────────────────┐
-│ new ExecutionContext│      │ new ExecutionContext│
-│ context.state = {}  │      │ context.state = {}  │ ← Fresh instance
-└─────────────────────┘      └─────────────────────┘
-         ↓                            ↓
-    [Pipeline runs]             [Pipeline runs]
-         ↓                            ↓
-    [GC'd after response]       [GC'd after response]
+```text
+[CONTEXT] -> [COMMAND] -> [GATE] -> [EXECUTION] -> [RESPONSE]
 ```
 
 **Never** store state in ExecutionContext expecting it to persist between requests. Use `runtime-state/*.json` files for persistence.
@@ -354,13 +355,14 @@ Request 1:                    Request 2:
 Three injection types, each independently controlled:
 
 | Type | What It Adds | Default (Chains) |
-|------|--------------|------------------|
+| :--- | :--- | :--- |
 | `system-prompt` | Framework methodology (CAGEERF, ReACT) | Every 2 steps |
 | `gate-guidance` | Quality validation criteria | Every step |
 | `style-guidance` | Response formatting | First step only |
 
 **7-Level Resolution Hierarchy** (first match wins):
-```
+
+```text
 Modifier → Runtime Override → Step Config → Chain Config → Category Config → Global Config → System Default
 ```
 
@@ -385,12 +387,14 @@ server/methodologies/
 │   ├── methodology.yaml   # Configuration (name, description, enabled)
 │   ├── phases.yaml        # Phase definitions
 │   └── system-prompt.md   # Injected guidance content
+```text
+[Style Guidance] -> System Prompt -> [Custom Injection] -> User Prompt -> Model
 ```
 
 ### Pipeline Stages (00-11)
 
 | Stage | Purpose |
-|-------|---------|
+| :--- | :--- |
 | 00 | Dependency injection, request normalization |
 | 01 | Command parsing (symbolic → structured) |
 | 02 | Inline gate extraction |
@@ -409,21 +413,22 @@ server/methodologies/
 
 ### Pipeline Stage Boundaries (ENFORCED)
 
-> **Full rules**: See `.claude/rules/orchestration-layers.md` (auto-loaded when editing stages/handlers)
+> **Full rules**: See `.agents/rules/orchestration-layers.md` (auto-loaded when editing stages/handlers)
 
 **Key limits**:
+
 - Stage file size: **150 lines max** → Extract to service if exceeded
 - Helper methods in stages: **0** → All logic goes to services
 - Domain logic: **Forbidden** → Stages orchestrate, services contain logic
 
 **Quick ownership reference**: Gates → `GateManager`, Frameworks → `FrameworkManager`, Prompts → `PromptRegistry`, Injection → `InjectionDecisionService`, Styles → `StyleManager`. Full matrix in the rule file.
 
-> **Note**: Async error handling, orchestration layer, and state persistence rules are defined in `.claude/rules/` and auto-loaded by Claude Code based on file paths.
+> **Note**: Async error handling, orchestration layer, and state persistence rules are defined in `.agents/rules/` and auto-loaded by the Agent based on file paths.
 
 ### Blocked/Deprecated Parameters
 
 | Parameter | Status | Alternative |
-|-----------|--------|-------------|
+| :--- | :--- | :--- |
 | `session_id` | **BLOCKED** | Use `chain_id` |
 | `execution_mode` | **REMOVED** | Auto-detected from command |
 
@@ -438,25 +443,27 @@ server/methodologies/
 **Consolidation Over Addition**: Enhance existing systems vs creating new ones, require architectural justification for parallel systems, verify no duplicate functionality
 
 **MCP Contract Development (CRITICAL)**: When adding MCP tool parameters:
+
 1. **Verify upstream first** - Check what service/manager layers expect (names and types)
 2. **Use canonical names** - Contract params must match manager params exactly (no hidden router transformations)
 3. **Type consistency** - Contract type must match service type (`number` vs `string` matters)
 4. **Layer alignment** - Contract → Generated → Types → Router → Manager → Service must all agree
 5. **Pre-commit enforced** - Hook blocks commits if contracts change without regeneration
 
-```
+```bash
 # Before adding a parameter, verify existing code:
 grep -rn "paramName" src/mcp-tools/*/core/manager.ts
 grep -rn "paramName" src/versioning/ src/gates/ src/frameworks/
 ```
 
-> **Full rules**: See `.claude/rules/mcp-contracts.md` (auto-loaded when editing contracts or MCP tools)
+> **Full rules**: See `.agents/rules/mcp-contracts.md` (auto-loaded when editing contracts or MCP tools)
 
 **Framework Development**: Methodology guides = single source of truth (never hard-code), dynamic generation from guide metadata, guide-driven enhancements (system prompts, quality gates, validation). **Framework validity**: always call `frameworkManager.getFramework(id)` - never hardcode framework lists or use type unions for validation
 
 **Domain Cohesion**: Framework logic in `/frameworks`, separate stateless (manager) from stateful (state manager), clear separation (analysis WHAT vs methodology HOW), explicit integration points (`/integration`)
 
 **Module Organization**: Modern TypeScript patterns for public API vs implementation separation:
+
 - **≤7 files**: Flat structure with barrel exports (`index.ts`) controlling visibility
 - **>7 files or clear API boundary**: Use `internal/` subfolder for implementation details
 - **Naming**: Public facades = service names (`InjectionDecisionService`), internal helpers = function-descriptive (`HierarchyResolver`, `ConditionEvaluator`)
@@ -470,27 +477,29 @@ grep -rn "paramName" src/versioning/ src/gates/ src/frameworks/
 
 **Pipeline State Management**: Use centralized state via `context.gates` (GateAccumulator), `context.frameworkAuthority` (FrameworkDecisionAuthority), and `context.diagnostics` (DiagnosticAccumulator). Never mutate gate arrays directly or resolve framework IDs manually in stages. See `docs/architecture/overview.md#pipeline-state-management` for patterns.
 
-**Configuration**: CLI flags and env vars for path overrides (`MCP_WORKSPACE`, `MCP_CONFIG_PATH`, `MCP_PROMPTS_PATH`, `MCP_METHODOLOGIES_PATH`, `MCP_GATES_PATH`), separate server/prompts config, modular imports, absolute paths for Claude Desktop
+**Configuration**: CLI flags and env vars for path overrides (`MCP_WORKSPACE`, `MCP_CONFIG_PATH`, `MCP_PROMPTS_PATH`, `MCP_METHODOLOGIES_PATH`, `MCP_GATES_PATH`), separate server/prompts config, modular imports, absolute paths for Agent Desktop
 
 **Error Handling**: Comprehensive boundaries (all orchestration levels), structured logging (verbose/quiet modes), meaningful error messages (diagnostics), rollback mechanisms (startup failures)
 
-**Testing**: Follow `/home/minipuft/Applications/CLAUDE.md#Testing_Standards` for workflow, classification, mock boundaries, and LLM mistake prevention.
+**Testing**: Follow `~/.agents/Testing_Standards.md` for workflow, classification, mock boundaries, and LLM mistake prevention.
 
 **Project Test Commands**:
 
-| Command | When to Use |
-|---------|-------------|
-| `npm run test:integration` | FIRST for new features (catches boundary bugs) |
-| `npm run test:unit` | Edge cases and complex logic validation |
-| `npm run test:all` | Before commits (unit + integration) |
-| `npm run test:e2e` | Critical user journeys (when stable) |
-| `npm run test:coverage` | Baseline coverage checks (target: >80%) |
-| `npm run test:watch` | During active development |
+| Shortcut          | Description                       |
+| :---------------- | :-------------------------------- |
+| `npm run dev`     | Start development server          |
+| `npm run watch`   | Watch for file changes            |
+| `npm run debug`   | Start debugging session           |
+| `npm run format`  | Run formatter                     |
+| `npm run clean`   | Clean build artifacts             |
+| `npm run test:all`| Before commits (unit + integration)|
+| `npm run test:e2e`| Critical user journeys (when stable)|
+| `npm run test:coverage`| Baseline coverage checks (target: >80%)|
 
 **MCP-Specific Test Coverage** (what this project needs tested):
 
 | Area | Integration Test Focus | Unit Test Focus |
-|------|------------------------|-----------------|
+| :--- | :--- | :--- |
 | Transport layer | STDIO/SSE startup and message handling | Protocol message parsing |
 | Template rendering | Full Nunjucks pipeline with variables | Edge cases in template syntax |
 | Hot-reload | File change → registry update flow | Individual file observer events |
@@ -520,8 +529,8 @@ tests/
 
 **Environment Variables**: `MCP_WORKSPACE` (base workspace directory for prompts, config, etc.), `MCP_PROMPTS_PATH` (direct path to prompts config), `MCP_CONFIG_PATH` (direct path to config.json), `MCP_STYLES_PATH` (direct path to styles directory). CLI flags take priority: `--workspace`, `--prompts`, `--config`, `--methodologies`, `--gates`, `--styles`
 
-**Lifecycle Management**: For refactoring and migration work, refer to `~/.claude/REFACTORING.md` domain rules for universal lifecycle state tagging, module boundary enforcement, and deletion criteria patterns.
+**Lifecycle Management**: For refactoring and migration work, refer to `~/.agents/REFACTORING.md` domain rules for universal lifecycle state tagging, module boundary enforcement, and deletion criteria patterns.
 
 ---
 
-By following this handbook, Claude Code behaves like a senior developer: planning first, aligning with the compiled runtime, respecting MCP tooling, validating thoroughly, and keeping documentation synchronized.
+By following this handbook, the Agent behaves like a senior developer: planning first, aligning with the compiled runtime, respecting MCP tooling, validating thoroughly, and keeping documentation synchronized.

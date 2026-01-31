@@ -3,7 +3,7 @@
  * Shell Verification Gate Types
  *
  * Type definitions for shell-based verification gates that enable
- * "Ralph Wiggum" style autonomous loops where Claude's work is validated
+ * "Ralph Wiggum" style autonomous loops where the Agent's work is validated
  * by real shell command execution (ground truth) rather than LLM self-evaluation.
  *
  * @see plans/ralph-style-loop.md for the implementation plan
@@ -47,7 +47,7 @@ export interface ShellVerifyGate {
  * Result of executing a shell verification command.
  *
  * Contains all information needed to determine pass/fail status
- * and provide diagnostic feedback to Claude.
+ * and provide diagnostic feedback to the Agent.
  */
 export interface ShellVerifyResult {
   /** Whether the verification passed (exit code 0) */
@@ -114,7 +114,7 @@ export const SHELL_VERIFY_DEFAULT_MAX_ITERATIONS = 10;
  * State persisted to runtime-state/verify-active.json for Stop hook integration.
  *
  * This enables the Stop hook to read verification config set by prompt_engine
- * and run verification when Claude tries to stop, creating autonomous loops.
+ * and run verification when the Agent tries to stop, creating autonomous loops.
  */
 export interface VerifyActiveState {
   /** Chain session ID for tracking */

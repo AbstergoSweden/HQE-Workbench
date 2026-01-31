@@ -103,10 +103,10 @@ export class GateValidator {
       this.logger.debug(`Validating content against gate: ${gateId}`);
 
       // Run validation checks
-      const checks: ValidationCheck[] = [];
+      const checks: ValidationCheck[] = (context.metadata?.['checks'] as ValidationCheck[]) || [];
       let llmValidationUsed = false;
 
-      if (gate.pass_criteria) {
+      if (gate.pass_criteria !== undefined) {
         for (const criteria of gate.pass_criteria) {
           const check = await this.runValidationCheck(criteria, context);
           checks.push(check);
@@ -173,11 +173,11 @@ export class GateValidator {
 
     for (const gateId of gateIds) {
       const result = await this.validateGate(gateId, context);
-      if (result) {
+      if (result !== null) {
         results.push(result);
 
         // Update statistics based on result
-        if (result.passed) {
+        if (result.passed === true) {
           this.validationStats.successfulValidations++;
         } else {
           this.validationStats.failedValidations++;
@@ -197,10 +197,10 @@ export class GateValidator {
   /**
    * Run a single validation check
    *
- * NOTE: String-based checks (content_check, pattern_check) are retained as a
- * baseline for validation when LLM self-check is not configured. When LLM
- * integration is enabled, llm_self_check provides the strongest signal.
- */
+   * NOTE: String-based checks (content_check, pattern_check) are retained as a
+   * baseline for validation when LLM self-check is not configured. When LLM
+   * integration is enabled, llm_self_check provides the strongest signal.
+   */
   private async runValidationCheck(
     criteria: GatePassCriteria,
     context: ValidationContext
@@ -280,7 +280,7 @@ export class GateValidator {
   ): Promise<ValidationCheck> {
     // Check if LLM integration is configured and enabled
     const llmConfig = this.llmConfig;
-    if (llmConfig?.enabled !== true) {
+    if (!llmConfig?.enabled) {
       this.logger.debug('[LLM GATE] LLM self-check skipped - LLM integration disabled in config');
       return {
         type: 'llm_self_check',
@@ -433,10 +433,12 @@ export class GateValidator {
   }
 
   private buildSelfCheckPrompt(criteria: GatePassCriteria, context: ValidationContext): string {
-    const metadata = context.metadata ? JSON.stringify(context.metadata, null, 2) : '{}';
-    const executionContext = context.executionContext
-      ? JSON.stringify(context.executionContext, null, 2)
-      : '{}';
+    const metadata = JSON.stringify(context.metadata || {}, null, 2);
+    const checks = context.metadata?.['checks'] || [];
+    const executionContext =
+      context.executionContext !== undefined
+        ? JSON.stringify(context.executionContext, null, 2)
+        : '{}';
 
     const defaultTemplate = `You are a strict quality gate for LLM outputs.
 Evaluate the content and return JSON: {"passed": boolean, "score": number, "feedback": string}.
@@ -451,20 +453,15 @@ Metadata:
 ExecutionContext:
 {{execution_context}}`;
 
-    const template = criteria.prompt_template?.trim().length
-      ? criteria.prompt_template
-      : defaultTemplate;
+    const promptTemplate = criteria.prompt_template || defaultTemplate;
 
-    return template
+    return promptTemplate
       .replace('{{content}}', context.content ?? '')
       .replace('{{metadata}}', metadata)
       .replace('{{execution_context}}', executionContext);
   }
 
-  private async callLLMSelfCheck(
-    llmConfig: LLMIntegrationConfig,
-    prompt: string
-  ): Promise<string> {
+  private async callLLMSelfCheck(llmConfig: LLMIntegrationConfig, prompt: string): Promise<string> {
     const endpoint = llmConfig.endpoint ?? 'https://api.openai.com/v1/chat/completions';
     const lower = endpoint.toLowerCase();
 
@@ -488,9 +485,9 @@ ExecutionContext:
         throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
       }
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as { content?: Array<{ text: string }> };
       const content = data.content?.[0]?.text;
-      if (!content) {
+      if (content === undefined || content === '') {
         throw new Error('No content in Anthropic response');
       }
       return content;
@@ -500,7 +497,7 @@ ExecutionContext:
       'Content-Type': 'application/json',
     };
     if (llmConfig.apiKey) {
-      headers.Authorization = `Bearer ${llmConfig.apiKey}`;
+      headers['Authorization'] = `Bearer ${llmConfig.apiKey}`;
     }
 
     const response = await fetch(endpoint, {
@@ -528,9 +525,11 @@ ExecutionContext:
       throw new Error(`LLM API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
     const content = data.choices?.[0]?.message?.content;
-    if (!content) {
+    if (content === undefined || content === '') {
       throw new Error('No content in LLM response');
     }
 
@@ -576,8 +575,8 @@ ExecutionContext:
 
     // Add gate-specific guidance as a hint
     // Skip for inline gates - criteria already displayed prominently in "Inline Quality Criteria" section
-    const isInlineGate = gate.name?.includes('Inline Quality') || gate.id?.startsWith('temp_');
-    if (gate.guidance && !isInlineGate) {
+    const isInlineGate = gate.name.includes('Inline Quality') || gate.id.startsWith('temp_');
+    if (gate.retry_config?.improvement_hints) {
       hints.push(`Remember the ${gate.name} guidelines:\n${gate.guidance}`);
     }
 
@@ -586,8 +585,9 @@ ExecutionContext:
       if (check.type === 'llm_self_check') {
         hints.push('Review the quality criteria and improve content structure and depth');
         // When LLM validation is implemented, this would include specific feedback
-        if (check.details?.['feedback'] !== undefined) {
-          hints.push(check.details['feedback'] as string);
+        const detailParams = check.details as { passed?: boolean; score?: number; feedback?: string } | undefined;
+        if (detailParams?.feedback !== undefined) {
+          hints.push(detailParams.feedback);
         }
       }
     }

@@ -392,7 +392,7 @@ export class StyleDefinitionLoader {
       try {
         if (existsSync(pkgPath)) {
           const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-          if (pkg.name === 'claude-prompts') {
+          if (pkg.name === 'agent-prompts') {
             // Check resources/styles first (new structure)
             const resourcesStylesPath = join(dir, 'resources', 'styles');
             if (existsSync(resourcesStylesPath) && this.hasYamlFiles(resourcesStylesPath)) {

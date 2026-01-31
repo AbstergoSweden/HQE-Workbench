@@ -20,7 +20,7 @@ function escapeJsonForNunjucks(jsonStr: string): string {
     .replace(/#\}/g, '\\#\\}'); // Escape Nunjucks comment syntax
 }
 
-function unescapeJsonFromNunjucks(escapedStr: string): string {
+function _unescapeJsonFromNunjucks(escapedStr: string): string {
   return escapedStr
     .replace(/\\{\\{/g, '{{') // Unescape Nunjucks variable syntax
     .replace(/\\}\\}/g, '}}') // Unescape Nunjucks variable syntax
@@ -38,7 +38,7 @@ let nunjucksEnv: nunjucks.Environment | null = null;
 function getPromptTemplatesPath(): string {
   // Check for test environment override first
   const promptsPathEnv = process.env['PROMPTS_PATH'];
-  if (promptsPathEnv) {
+  if (promptsPathEnv !== undefined) {
     return promptsPathEnv;
   }
 
@@ -55,7 +55,7 @@ function getPromptTemplatesPath(): string {
     const currentFileUrl = fileURLToPath(metaUrl);
     const currentDirPath = path.dirname(currentFileUrl);
     return path.resolve(currentDirPath, '../../prompts');
-  } catch (error) {
+  } catch (_error) {
     // Fallback for any environment where import.meta is not available
     // Use process.cwd() as last resort
     return path.resolve(process.cwd(), 'server/prompts');
@@ -64,7 +64,7 @@ function getPromptTemplatesPath(): string {
 
 // Initialize Nunjucks environment (called lazily)
 function getNunjucksEnv(): nunjucks.Environment {
-  if (!nunjucksEnv) {
+  if (nunjucksEnv === null) {
     const promptTemplatesPath = getPromptTemplatesPath();
     nunjucksEnv = nunjucks.configure(promptTemplatesPath, {
       autoescape: false, // We're generating plain text prompts for LLM, not HTML
@@ -91,7 +91,7 @@ function getNunjucksEnv(): nunjucks.Environment {
  * @returns Object with validation results and sanitized arguments
  */
 export function validateJsonArguments(
-  jsonArgs: any,
+  jsonArgs: Record<string, unknown>,
   prompt: PromptDefinition
 ): {
   valid: boolean;
@@ -159,7 +159,11 @@ export function validateJsonArguments(
     result.sanitizedArgs = sanitizedArgs;
   }
 
-  return result;
+  return result as {
+    valid: boolean;
+    errors?: string[];
+    sanitizedArgs?: Record<string, string | number | boolean | null | any[]>;
+  };
 }
 
 /**
@@ -215,12 +219,14 @@ export function processTemplate(
     // The error will be re-thrown and should be handled by the calling function
     // (e.g., in TemplateProcessor) which can add more context like Prompt ID.
     if (error instanceof Error) {
+      // eslint-disable-next-line no-console
       console.error('[Nunjucks Render Error] Failed to process template:', error.message);
       // Optionally, log error.stack for more detailed debugging if needed in development
       // if (process.env.NODE_ENV === 'development' && error.stack) {
       //   console.error(error.stack);
       // }
     } else {
+      // eslint-disable-next-line no-console
       console.error(
         '[Nunjucks Render Error] Failed to process template with an unknown error object:',
         error
@@ -338,7 +344,7 @@ export async function processTemplateWithRefs(
 
   // 1. Resolve {{ref:...}} patterns first (prompt references)
   const promptResolver = resolver ?? options?.promptResolver;
-  if (promptResolver) {
+  if (promptResolver !== undefined) {
     const combinedContext = { ...specialContext, ...args };
     const preResolveResult = await promptResolver.preResolve(resolvedTemplate, combinedContext);
     resolvedTemplate = preResolveResult.resolvedTemplate;
@@ -356,7 +362,7 @@ export async function processTemplateWithRefs(
 
   // 2. Resolve {{script:...}} patterns (inline script references)
   const scriptResolver = options?.scriptResolver;
-  if (scriptResolver?.hasScriptReferences(resolvedTemplate)) {
+  if (scriptResolver?.hasScriptReferences(resolvedTemplate) === true) {
     const combinedContext = { ...specialContext, ...args };
     const scriptResolveResult = await scriptResolver.preResolve(
       resolvedTemplate,

@@ -13,9 +13,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 // Import all module managers
 import {
-  buildClaudeCodeCacheAuxiliaryReloadConfig,
+  buildAgentCodeCacheAuxiliaryReloadConfig,
   generateCacheOnStartup,
-} from './claude-code-cache-hot-reload.js';
+} from './agent-code-cache-hot-reload.js';
 import { createRuntimeFoundation } from './context.js';
 import { loadPromptData } from './data-loader.js';
 import { buildGateAuxiliaryReloadConfig } from './gate-hot-reload.js';
@@ -233,7 +233,7 @@ export class Application {
     // Only show startup messages if not in quiet mode
     if (!isQuiet) {
       this.debugLog('About to call logger.info - Starting MCP...');
-      this.logger.info('Starting MCP Claude Prompts Server...');
+      this.logger.info('Starting MCP Agent Prompts Server...');
       this.debugLog('First logger.info completed');
       this.logger.info(`Transport: ${transport}`);
       this.debugLog('Second logger.info completed');
@@ -443,9 +443,8 @@ export class Application {
       this.logger.error('Framework switch error:', error);
       return {
         success: false,
-        message: `Error switching framework: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        message: `Error switching framework: ${error instanceof Error ? error.message : String(error)
+          }`,
       };
     }
   }
@@ -656,7 +655,7 @@ export class Application {
       };
       this.logger.info(
         `✅ Framework switching system ready: ${switchingStatus.currentFrameworkName} active ` +
-          `(${switchingStatus.enabledFrameworks}/${switchingStatus.availableFrameworks} frameworks available)`
+        `(${switchingStatus.enabledFrameworks}/${switchingStatus.availableFrameworks} frameworks available)`
       );
 
       // complexity removed - focusing on simple framework switching instead of multi-framework consensus
@@ -722,9 +721,9 @@ export class Application {
               ? buildScriptAuxiliaryReloadConfig(this.logger, scriptLoader, promptsDir)
               : undefined;
 
-            // Build Claude Code cache refresh auxiliary reload config
-            const claudeCodeCacheAux = this.serverRoot
-              ? buildClaudeCodeCacheAuxiliaryReloadConfig(this.logger, this.serverRoot)
+            // Agent hooks cache refresh auxiliary reload config
+            const agentCodeCacheAux = this.serverRoot
+              ? buildAgentCodeCacheAuxiliaryReloadConfig(this.logger, this.serverRoot)
               : undefined;
 
             // Collect all auxiliary reloads
@@ -732,7 +731,7 @@ export class Application {
               methodologyAux,
               gateAux,
               scriptAux,
-              claudeCodeCacheAux,
+              agentCodeCacheAux,
             ].filter((aux): aux is NonNullable<typeof aux> => aux !== undefined);
 
             const hotReloadOptions: Parameters<typeof this.promptManager.startHotReload>[2] = {};
@@ -776,8 +775,7 @@ export class Application {
     const reloadPromise = (async () => {
       try {
         this.logger.info(
-          `🔥 Hot reload event received (${event.type}): ${
-            event.reason
+          `🔥 Hot reload event received (${event.type}): ${event.reason
           } [${event.affectedFiles.join(', ')}]`
         );
 
@@ -1133,8 +1131,7 @@ export class Application {
       };
     } catch (error) {
       errors.push(
-        `Error collecting diagnostic info: ${
-          error instanceof Error ? error.message : String(error)
+        `Error collecting diagnostic info: ${error instanceof Error ? error.message : String(error)
         }`
       );
 

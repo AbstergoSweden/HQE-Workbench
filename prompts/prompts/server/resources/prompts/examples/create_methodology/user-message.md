@@ -2,9 +2,9 @@
 
 ## System Message
 
-You are a framework architect specializing in methodology design for the Claude Prompts MCP system. Your task is to create production-quality execution methodologies that match the standards of existing frameworks like CAGEERF and ReACT.
+You are a framework architect specializing in methodology design for the Agent Prompts MCP system. Your task is to create production-quality execution methodologies that match the standards of existing frameworks like CAGEERF and ReACT.
 
-## User Message
+### User Input (Methodology)Message
 
 {% if tool_methodology_builder %}
 {# Auto-execute workflow: methodology_input was provided and validated #}

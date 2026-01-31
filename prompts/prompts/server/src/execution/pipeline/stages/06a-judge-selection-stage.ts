@@ -49,7 +49,7 @@ interface OperatorContext {
  *
  * ** - Judge Phase** (triggered by `%judge`):
  * - Collects all available resources (styles, frameworks, gates)
- * - Returns a judge prompt with resource menu for Claude to analyze
+ * - Returns a judge prompt with resource menu for Agent to analyze
  * - Pipeline terminates early with the judge response
  *
  * ** - Execution Phase** (follow-up call with operators):
@@ -270,7 +270,7 @@ export class JudgeSelectionStage extends BasePipelineStage {
    */
   private buildJudgeResponse(resources: ResourceMenu, context: ExecutionContext): ToolResponse {
     const operatorContext = this.getOperatorContext(context);
-    const menu = this.formatResourceMenuForClaude(resources, operatorContext);
+    const menu = this.formatResourceMenuForAgent(resources, operatorContext);
     const cleanCommand = this.getCleanCommandForDisplay(context);
     const originalCommand = context.mcpRequest.command ?? '';
 
@@ -295,15 +295,15 @@ export class JudgeSelectionStage extends BasePipelineStage {
 
     const introLines = methodologyJudgePrompt
       ? [
-          methodologyJudgePrompt.systemMessage ?? '',
-          '',
-          '### Methodology-Specific Instructions',
-          methodologyJudgePrompt.userMessageTemplate ?? '',
-          '',
-        ]
+        methodologyJudgePrompt.systemMessage ?? '',
+        '',
+        '### Methodology-Specific Instructions',
+        methodologyJudgePrompt.userMessageTemplate ?? '',
+        '',
+      ]
       : [
-          'You are an expert resource selector. Analyze the task below and select appropriate enhancement resources to improve the response quality.',
-        ];
+        'You are an expert resource selector. Analyze the task below and select appropriate enhancement resources to improve the response quality.',
+      ];
 
     const responseLines = [
       '## Resource Selection Required',
@@ -329,16 +329,14 @@ export class JudgeSelectionStage extends BasePipelineStage {
       '',
       'Analyze the task and select resources that will enhance the response:',
       '',
-      `${frameworkInstructions}${
-        operatorContext.hasFrameworkOperator ? '1' : '2'
+      `${frameworkInstructions}${operatorContext.hasFrameworkOperator ? '1' : '2'
       }. **Style** (recommended): Select a response style matching the task type`,
       '   - analytical: Systematic analysis and data-driven responses',
       '   - procedural: Step-by-step instructions and processes',
       '   - creative: Innovative thinking and brainstorming',
       '   - reasoning: Logical decomposition and problem-solving',
       '',
-      `${
-        operatorContext.hasFrameworkOperator ? '2' : '3'
+      `${operatorContext.hasFrameworkOperator ? '2' : '3'
       }. **Gates** (optional): Select quality gates to ensure specific aspects`,
       '   - Select gates relevant to the task domain (code, research, security, etc.)',
       '',
@@ -350,8 +348,7 @@ export class JudgeSelectionStage extends BasePipelineStage {
       '',
       '```',
       `prompt_engine({`,
-      `  command: "${escapedCommand}${
-        operatorContext.hasFrameworkOperator ? '' : ' @<framework>'
+      `  command: "${escapedCommand}${operatorContext.hasFrameworkOperator ? '' : ' @<framework>'
       } :: <gate_id or criteria> #<analytical|procedural|creative|reasoning>"`,
       `})`,
       '```',
@@ -535,10 +532,10 @@ export class JudgeSelectionStage extends BasePipelineStage {
   }
 
   /**
-   * Format collected resources as a structured menu for Claude.
+   * Format collected resources as a structured menu for Agent.
    * Context-aware: hides framework section if already specified, marks pre-selected gates.
    */
-  private formatResourceMenuForClaude(
+  private formatResourceMenuForAgent(
     resources: ResourceMenu,
     operatorContext: OperatorContext
   ): string {

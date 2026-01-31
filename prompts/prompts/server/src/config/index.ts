@@ -82,13 +82,13 @@ const DEFAULT_EXECUTION_CONFIG: ExecutionConfig = {
 };
 
 /**
- * Default transport mode - STDIO for Claude Desktop/CLI compatibility
+ * Default transport mode - STDIO for Agent Desktop/CLI compatibility
  */
 const DEFAULT_TRANSPORT_MODE: TransportMode = 'stdio';
 
 const DEFAULT_CONFIG: Config = {
   server: {
-    name: 'Claude Custom Prompts',
+    name: 'Agent Custom Prompts',
     version: '1.0.0',
     port: 3456,
   },
@@ -226,7 +226,7 @@ export class ConfigManager extends EventEmitter {
         const validLevelsStr = validLevels.join(', ');
         console.warn(
           `Invalid LOG_LEVEL environment variable: "${envLogLevel}". ` +
-            `Valid levels: ${validLevelsStr}. Using configured level: "${configLogging.level}"`
+          `Valid levels: ${validLevelsStr}. Using configured level: "${configLogging.level}"`
         );
       }
     }

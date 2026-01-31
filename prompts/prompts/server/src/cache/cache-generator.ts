@@ -1,6 +1,6 @@
 // @lifecycle canonical - Generates hook cache files from MCP server resources.
 /**
- * Cache Generator for Claude Code Hooks
+ * Cache Generator for Agent Code Hooks
  *
  * Scans prompts and gates directories and generates JSON cache files
  * that hooks can read without needing to parse YAML at runtime.

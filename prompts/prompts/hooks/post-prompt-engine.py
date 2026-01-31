@@ -2,7 +2,7 @@
 """
 PostToolUse hook: Track chain/gate state from prompt_engine responses.
 
-Triggers after: mcp__claude-prompts-mcp__prompt_engine
+Triggers after: mcp__agent-prompts-mcp__prompt_engine
 
 Parses the response to:
 1. Track current chain step
@@ -26,7 +26,7 @@ from session_state import (
 
 
 def parse_hook_input() -> dict:
-    """Parse JSON input from Claude Code hook system."""
+    """Parse JSON input from Agent hook system."""
     try:
         data = json.load(sys.stdin)
         # Debug: log what we receive
@@ -98,7 +98,7 @@ def main():
             output_lines.append(f"[Chain] Step {step}/{total} - call prompt_engine to continue")
 
     # Use JSON format for proper PostToolUse hook protocol
-    # - additionalContext: injected to Claude for next steps
+    # - additionalContext: injected to Agent for next steps
     if output_lines:
         output = "\n".join(output_lines)
         hook_response = {

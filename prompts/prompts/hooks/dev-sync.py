@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SessionStart hook: Auto-sync plugin source to Claude Code cache.
+SessionStart hook: Auto-sync plugin source to Agent Code cache.
 
 Uses quick-check mode: compares source timestamps against last sync marker.
 Skips sync if no changes detected (<100ms). Full sync only when needed (2-5s).
@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 # Directories to sync and check for changes
-SYNC_DIRS = [".claude-plugin", "hooks"]
+SYNC_DIRS = [".agent-plugin", "hooks"]
 SYNC_SERVER_SUBDIRS = ["cache", "dist"]
 MARKER_FILE = ".dev-sync-marker"
 
@@ -84,50 +84,50 @@ def write_sync_marker(cache_dir: Path, mtime: float) -> None:
 def find_source_dir() -> Path | None:
     """Find the plugin source directory at known dev locations.
 
-    Searches common development directories for claude-prompts-mcp.
+    Searches common development directories for agent-prompts-mcp.
     Returns None if not found (e.g., marketplace install).
     """
     # Check common dev locations across different OS conventions
     candidates = [
         # macOS/Linux common locations
-        Path.home() / "Applications/claude-prompts-mcp",
-        Path.home() / "projects/claude-prompts-mcp",
-        Path.home() / "dev/claude-prompts-mcp",
-        Path.home() / "src/claude-prompts-mcp",
-        Path.home() / "code/claude-prompts-mcp",
-        Path.home() / "repos/claude-prompts-mcp",
-        Path.home() / "git/claude-prompts-mcp",
-        Path.home() / "workspace/claude-prompts-mcp",
+        Path.home() / "Applications/agent-prompts-mcp",
+        Path.home() / "projects/agent-prompts-mcp",
+        Path.home() / "dev/agent-prompts-mcp",
+        Path.home() / "src/agent-prompts-mcp",
+        Path.home() / "code/agent-prompts-mcp",
+        Path.home() / "repos/agent-prompts-mcp",
+        Path.home() / "git/agent-prompts-mcp",
+        Path.home() / "workspace/agent-prompts-mcp",
         # Windows common locations
-        Path.home() / "Documents/claude-prompts-mcp",
-        Path.home() / "Documents/GitHub/claude-prompts-mcp",
+        Path.home() / "Documents/agent-prompts-mcp",
+        Path.home() / "Documents/GitHub/agent-prompts-mcp",
         # XDG conventions
-        Path.home() / ".local/src/claude-prompts-mcp",
+        Path.home() / ".local/src/agent-prompts-mcp",
     ]
 
     for candidate in candidates:
-        if (candidate / "server").exists() and (candidate / ".claude-plugin").exists():
+        if (candidate / "server").exists() and (candidate / ".agent-plugin").exists():
             return candidate
 
     return None
 
 
 def find_cache_dir() -> Path | None:
-    """Find the Claude Code plugin cache directory.
+    """Find the Agent Code plugin cache directory.
 
-    Searches for any publisher's cache containing 'claude-prompts'.
+    Searches for any publisher's cache containing 'agent-prompts'.
     """
-    cache_base = Path.home() / ".claude/plugins/cache"
+    cache_base = Path.home() / ".agents/plugins/cache"
 
     if not cache_base.exists():
         return None
 
-    # Search all publishers for claude-prompts plugin
+    # Search all publishers for agent-prompts plugin
     for publisher_dir in cache_base.iterdir():
         if not publisher_dir.is_dir():
             continue
         for plugin_dir in publisher_dir.iterdir():
-            if "claude-prompts" in plugin_dir.name and plugin_dir.is_dir():
+            if "agent-prompts" in plugin_dir.name and plugin_dir.is_dir():
                 # Get the first version directory
                 versions = [v for v in plugin_dir.iterdir() if v.is_dir()]
                 if versions:

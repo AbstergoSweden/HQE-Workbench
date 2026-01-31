@@ -1,8 +1,8 @@
-// @lifecycle canonical - Triggers Claude Code cache refresh on MCP resource changes.
+// @lifecycle canonical - Triggers Agent hooks cache refresh on MCP resource changes.
 /**
- * Claude Code Cache Hot Reload Integration
+ * Agent Hooks Cache Hot Reload Integration
  *
- * Registers an auxiliary reload handler that triggers the Claude Code
+ * Registers an auxiliary reload handler that triggers the Agent
  * hooks cache refresh whenever prompts or gates change in the MCP server.
  *
  * Uses native TypeScript cache generator (no external Python dependency).
@@ -16,20 +16,20 @@ import type { Logger } from '../logging/index.js';
 import type { AuxiliaryReloadConfig, HotReloadEvent } from '../prompts/hot-reload-manager.js';
 
 /**
- * Build auxiliary reload config for Claude Code cache refresh.
+ * Build auxiliary reload config for Agent hooks cache refresh.
  * Watches prompts and gates directories and triggers cache refresh on changes.
  */
-export function buildClaudeCodeCacheAuxiliaryReloadConfig(
+export function buildAgentCodeCacheAuxiliaryReloadConfig(
   logger: Logger,
   serverRoot: string
 ): AuxiliaryReloadConfig {
   const resourcesDir = path.join(serverRoot, 'resources');
 
   return {
-    id: 'claude-code-cache',
+    id: 'agent-hooks-cache',
     directories: [path.join(resourcesDir, 'prompts'), path.join(resourcesDir, 'gates')],
     handler: async (event: HotReloadEvent) => {
-      await refreshClaudeCodeCache(logger, serverRoot, event);
+      await refreshAgentCodeCache(logger, serverRoot, event);
     },
   };
 }
@@ -37,7 +37,7 @@ export function buildClaudeCodeCacheAuxiliaryReloadConfig(
 /**
  * Generate cache using native TypeScript generator.
  */
-async function refreshClaudeCodeCache(
+async function refreshAgentCodeCache(
   logger: Logger,
   serverRoot: string,
   event: HotReloadEvent

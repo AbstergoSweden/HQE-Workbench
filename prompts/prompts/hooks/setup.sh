@@ -4,7 +4,7 @@
 
 set -e
 
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$0")")}"
+PLUGIN_ROOT="${AGENT_PLUGIN_ROOT:-$(dirname "$(dirname "$0")")}"
 SERVER_DIR="${PLUGIN_ROOT}/server"
 
 # Check if node_modules exists

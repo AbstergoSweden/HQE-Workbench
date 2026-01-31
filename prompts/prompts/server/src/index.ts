@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @lifecycle canonical - Main MCP server entrypoint.
 /**
- * MCP Claude Prompts Server - Main Entry Point
+ * MCP Agent Prompts Server - Main Entry Point
  * Minimal entry point with comprehensive error handling, health checks, and validation
  */
 
@@ -307,17 +307,17 @@ async function gracefulShutdown(exitCode: number = 0): Promise<void> {
  */
 function showHelp(): void {
   console.error(`
-MCP Claude Prompts Server v1.0.0 - Configurable Workspace Support
+MCP Agent Prompts Server v1.0.0 - Configurable Workspace Support
 
 USAGE:
-  npx claude-prompts [OPTIONS]
+  npx agent-prompts [OPTIONS]
   node dist/index.js [OPTIONS]
 
 QUICK START:
-  npx claude-prompts --init=~/my-prompts    Create a new workspace with starter prompts
+  npx agent-prompts --init=~/my-prompts    Create a new workspace with starter prompts
 
-  Then add MCP_WORKSPACE to your Claude Desktop config and restart.
-  Claude can update your prompts via resource_manager - no manual editing needed!
+  Then add MCP_WORKSPACE to your Agent Desktop config and restart.
+  The Agent can update your prompts via resource_manager - no manual editing needed!
 
 PATH OPTIONS:
   --workspace=/path       Base directory for user assets (prompts, config, etc.)
@@ -356,21 +356,21 @@ WORKSPACE STRUCTURE:
 
 EXAMPLES:
   # Use a custom workspace
-  npx claude-prompts --workspace=/home/user/my-prompts
+  npx agent-prompts --workspace=/home/user/my-prompts
 
   # Override specific paths
-  npx claude-prompts --prompts=/path/to/prompts
+  npx agent-prompts --prompts=/path/to/prompts
 
   # Via environment variables
-  MCP_WORKSPACE=/home/user/my-prompts npx claude-prompts
+  MCP_WORKSPACE=/home/user/my-prompts npx agent-prompts
 
-  # Claude Desktop configuration (recommended)
-  # Add to ~/.config/claude/claude_desktop_config.json:
+  # Agent Desktop configuration (recommended)
+  # Add to typical mcp config:
   {
     "mcpServers": {
-      "claude-prompts": {
+      "agent-prompts": {
         "command": "npx",
-        "args": ["-y", "claude-prompts@latest"],
+        "args": ["-y", "agent-prompts@latest"],
         "env": {
           "MCP_WORKSPACE": "/home/user/my-mcp-workspace"
         }
@@ -379,12 +379,12 @@ EXAMPLES:
   }
 
 STARTUP MODES:
-  Production:    npx claude-prompts --quiet
-  Development:   npx claude-prompts --verbose --transport=sse
-  Debugging:     npx claude-prompts --debug-startup
-  Testing:       npx claude-prompts --startup-test
+  Production:    npx agent-prompts --quiet
+  Development:   npx agent-prompts --verbose --transport=sse
+  Debugging:     npx agent-prompts --debug-startup
+  Testing:       npx agent-prompts --startup-test
 
-For more information: https://github.com/minipuft/claude-prompts-mcp
+For more information: https://github.com/minipuft/agent-prompts-mcp
 `);
 }
 
@@ -494,13 +494,13 @@ Created files:
 
 Next steps:
 
-1. Add to your Claude Desktop config (~/.config/claude/claude_desktop_config.json):
+1. Add to your Agent Desktop config (or typical mcp config):
 
    {
      "mcpServers": {
-       "claude-prompts": {
+       "agent-prompts": {
          "command": "npx",
-         "args": ["-y", "claude-prompts@latest"],
+         "args": ["-y", "agent-prompts@latest"],
          "env": {
            "MCP_WORKSPACE": "${workspacePath}"
          }
@@ -508,16 +508,16 @@ Next steps:
      }
    }
 
-2. Restart Claude Desktop
+2. Restart Agent Desktop
 
 3. Test with: resource_manager(resource_type: "prompt", action: "list")
 
-4. Edit prompts directly or ask Claude:
+4. Edit prompts directly or ask Agent:
    "Update the quick_review prompt to also check for TypeScript errors"
 
-   Claude will use resource_manager to update your prompts automatically!
+   Agent will use resource_manager to update your prompts automatically!
 
-📖 Full docs: https://github.com/minipuft/claude-prompts-mcp
+📖 Full docs: https://github.com/minipuft/agent-prompts-mcp
 `,
     };
   } catch (error) {
@@ -555,7 +555,7 @@ function parseCommandLineArgs(): { shouldExit: boolean; exitCode: number } {
         targetPath = nextArg;
       } else {
         console.error('Error: --init requires a path. Usage: --init=/path/to/workspace');
-        console.error('Example: npx claude-prompts --init=~/my-prompts');
+        console.error('Example: npx agent-prompts --init=~/my-prompts');
         return { shouldExit: true, exitCode: 1 };
       }
     }
@@ -658,7 +658,7 @@ async function main(): Promise<void> {
 
     // Use stderr for all logging to avoid corrupting STDIO protocol
     if (isVerbose) {
-      console.error('Starting MCP Claude Prompts Server...');
+      console.error('Starting MCP Agent Prompts Server...');
     }
 
     // Initialize the application using the orchestrator
@@ -754,7 +754,7 @@ async function main(): Promise<void> {
     if (isStartupTest) {
       if (isVerbose) {
         // Always use stderr to avoid corrupting STDIO protocol
-        console.error('✅ MCP Claude Prompts Server startup validation completed successfully');
+        console.error('✅ MCP Agent Prompts Server startup validation completed successfully');
         console.error(
           '✅ All phases completed: Foundation → Data Loading → Module Initialization → Server Setup'
         );
@@ -765,7 +765,7 @@ async function main(): Promise<void> {
     }
 
     // Log successful startup with details
-    activeLogger.info('🚀 MCP Claude Prompts Server started successfully');
+    activeLogger.info('🚀 MCP Agent Prompts Server started successfully');
 
     // Log comprehensive application status
     const status = activeOrchestrator.getStatus();
@@ -787,7 +787,7 @@ async function main(): Promise<void> {
     activeLogger.info('✅ Application initialization completed - all systems operational');
   } catch (error) {
     // Comprehensive error handling with rollback
-    console.error('❌ Failed to start MCP Claude Prompts Server:', error);
+    console.error('❌ Failed to start MCP Agent Prompts Server:', error);
 
     if (logger !== null) {
       logger.error('Fatal startup error:', error);

@@ -1,41 +1,57 @@
 {
   "hooks": {
-    "SessionStart": [{
-      "hooks": [
-        {
-          "type": "command",
-          "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/dev-sync.py"
-        }
-      ]
-    }],
-    "UserPromptSubmit": [{
-      "matcher": "*",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/prompt-suggest.py"
-        }
-      ]
-    }],
-    "PostToolUse": [{
-      "matcher": "*prompt_engine*",
-      "hooks": [{
-        "type": "command",
-        "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/post-prompt-engine.py"
-      }]
-    }],
-    "Stop": [{
-      "hooks": [{
-        "type": "command",
-        "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/ralph-stop.py"
-      }]
-    }],
-    "PreCompact": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.py"
-      }]
-    }]
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${AGENT_PLUGIN_ROOT}/hooks/dev-sync.py"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${AGENT_PLUGIN_ROOT}/hooks/prompt-suggest.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*prompt_engine*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${AGENT_PLUGIN_ROOT}/hooks/post-prompt-engine.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${AGENT_PLUGIN_ROOT}/hooks/ralph-stop.py"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${AGENT_PLUGIN_ROOT}/hooks/pre-compact.py"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -1,63 +1,76 @@
-# Gemini Prompts Extension
+# Agents Prompts Extension
 
 This extension provides reusable prompt templates, quality gates, and multi-step workflows for consistent AI outputs.
 
 ## Quick Start
 
 ### Invoke a Prompt
-```
+
+```text
 >>prompt_id
 ```
+
 Example: `>>deep_analysis`, `>>code_review`, `>>reasoning`
 
 ### Chain Prompts
-```
+
+```text
 >>analyze --> >>design --> >>implement
 ```
+
 Chains execute sequentially with context passing between steps.
 
 ### List Available Prompts
-```
+
+```bash
 resource_manager(resource_type: "prompt", action: "list")
 ```
 
 ## MCP Tools
 
 ### prompt_engine
+
 Execute prompts and chains with CAGEERF methodology.
 
 **Single prompt:**
-```
+
+```bash
 prompt_engine(command: ">>reasoning")
 ```
 
 **With arguments:**
-```
+
+```bash
 prompt_engine(command: ">>code_review", options: {"focus": "security"})
 ```
 
 **Chain execution:**
-```
+
+```bash
 prompt_engine(command: ">>analyze --> >>implement --> >>test")
 ```
 
 **Resume chain:**
-```
+
+```bash
 prompt_engine(chain_id: "chain-xyz#2", user_response: "...", gate_verdict: "GATE_REVIEW: PASS - ...")
 ```
 
 ### resource_manager
+
 CRUD operations for prompts, gates, and methodologies.
 
 **List resources:**
-```
+
+```bash
 resource_manager(resource_type: "prompt", action: "list")
 resource_manager(resource_type: "gate", action: "list")
 resource_manager(resource_type: "methodology", action: "list")
 ```
 
 **Create prompt:**
-```
+
+```bash
 resource_manager(
   resource_type: "prompt",
   action: "create",
@@ -71,9 +84,10 @@ resource_manager(
 ```
 
 ### system_control
+
 System administration and status.
 
-```
+```bash
 system_control(action: "status")
 system_control(action: "framework", operation: "list")
 ```
@@ -83,7 +97,7 @@ system_control(action: "framework", operation: "list")
 Prompts follow the C.A.G.E.E.R.F framework:
 
 | Phase | Purpose |
-|-------|---------|
+| :--- | :--- |
 | **C**ontext | Gather domain knowledge |
 | **A**nalysis | Break down the problem |
 | **G**oals | Define success criteria |
@@ -97,7 +111,8 @@ Prompts follow the C.A.G.E.E.R.F framework:
 Gates validate output quality between chain steps.
 
 **Gate response format:**
-```
+
+```text
 GATE_REVIEW: PASS - All criteria met
 GATE_REVIEW: FAIL - Missing error handling
 ```
@@ -107,7 +122,7 @@ GATE_REVIEW: FAIL - Missing error handling
 ## Syntax Reference
 
 | Syntax | Purpose |
-|--------|---------|
+| :--- | :--- |
 | `>>prompt_id` | Invoke single prompt |
 | `>>a --> >>b` | Chain prompts |
 | `:: 'criteria'` | Inline gate |
@@ -122,7 +137,7 @@ GATE_REVIEW: FAIL - Missing error handling
 
 ## Optional: Enable Hooks
 
-Hooks provide automatic `>>prompt` syntax detection. Add to your `~/.gemini/settings.json`:
+Hooks provide automatic `>>prompt` syntax detection. Add to your `~/.agents/settings.json`:
 
 ```json
 {
@@ -133,7 +148,7 @@ Hooks provide automatic `>>prompt` syntax detection. Add to your `~/.gemini/sett
         "hooks": [{
           "name": "prompt-suggest",
           "type": "command",
-          "command": "python3 ~/.gemini/extensions/gemini-prompts/.gemini/hooks/prompt-suggest.py"
+          "command": "python3 ~/.agents/extensions/agents-prompts/.agents/hooks/prompt-suggest.py"
         }]
       }
     ],
@@ -143,7 +158,7 @@ Hooks provide automatic `>>prompt` syntax detection. Add to your `~/.gemini/sett
         "hooks": [{
           "name": "chain-tracker",
           "type": "command",
-          "command": "python3 ~/.gemini/extensions/gemini-prompts/.gemini/hooks/post-prompt-engine.py"
+          "command": "python3 ~/.agents/extensions/agents-prompts/.agents/hooks/post-prompt-engine.py"
         }]
       }
     ],
@@ -153,7 +168,7 @@ Hooks provide automatic `>>prompt` syntax detection. Add to your `~/.gemini/sett
         "hooks": [{
           "name": "pre-compact",
           "type": "command",
-          "command": "python3 ~/.gemini/extensions/gemini-prompts/hooks/gemini/pre-compact.py"
+          "command": "python3 ~/.agents/extensions/agents-prompts/hooks/agents/pre-compact.py"
         }]
       }
     ]

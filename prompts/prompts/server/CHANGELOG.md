@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the `claude-prompts` npm package will be documented in this file.
+All notable changes to the `agent-prompts` npm package will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -17,19 +17,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Full E2E test coverage with `StreamableHttpMcpClient` helper
 - **System control session tools**: `system_control(action:"session")` supports `list`, `inspect`, and `clear` for active chain sessions and pending reviews.
 - **Gemini hook adapters**: Centralized Gemini BeforeAgent/AfterTool hooks with optional `GEMINI_HOOK_DEBUG=1` logging.
-- **Claude Desktop Extension (.mcpb)**: One-click installation for Claude Desktop via `.mcpb` bundle format.
-  - Drag-and-drop install into Claude Desktop Settings
+- **Agent Desktop Extension (.mcpb)**: One-click installation for Agent Desktop via `.mcpb` bundle format.
+  - Drag-and-drop install into Agent Desktop Settings
   - Optional **Custom Prompts Directory** user config - point to your own prompt templates
   - Production-optimized bundle (~5MB) with all dependencies included
   - Build locally with `npm run pack:mcpb` (from `server/`)
   - Manifest follows [Desktop Extensions spec v0.3](https://www.anthropic.com/engineering/desktop-extensions)
-- **Claude Code plugin with hooks**: Install via `/plugin install claude-prompts@minipuft`. Includes hooks that guide model behavior:
+- **Agent Code plugin with hooks**: Install via `/plugin install agent-prompts@minipuft`. Includes hooks that guide model behavior:
   - `prompt-suggest.py` (UserPromptSubmit) — Detects `>>prompt` syntax and suggests correct MCP calls
   - `post-prompt-engine.py` (PostToolUse) — Tracks chain state, reminds about gate reviews
   - `pre-compact.py` (PreCompact) — Cleans up chain session state before context compaction
   - `dev-sync.py` (SessionStart) — Synchronizes development cache on session start
   - Solves: models missing `>>` syntax, forgetting to continue chains, skipping gate reviews
-- **Gemini CLI extension**: Install via `gemini extensions install https://github.com/minipuft/claude-prompts-mcp`. Same MCP server with Gemini-specific context file (`GEMINI.md`).
+- **Gemini CLI Integration**: Install via `gemini extensions install https://github.com/minipuft/agent-prompts-mcp`. Same MCP server with Gemini-specific context file (`GEMINI.md`).
 - **Unified resources path**: New `MCP_RESOURCES_PATH` environment variable for pointing to a custom resources directory containing `prompts/`, `gates/`, `methodologies/`, `styles/`, and `scripts/`. Simplifies customization without cloning the repo.
 - **Styles path override**: Added `MCP_STYLES_PATH` environment variable for fine-grained style directory control.
 - **Template references**: `{{ref:id}}` includes other prompts; `{{script:id}}` runs scripts inline during render.
@@ -48,13 +48,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - FIFO pruning when exceeding `max_versions` (default: 50)
 - **Script tools**: YAML-defined tools under `server/scripts/` with deterministic trigger types and prompt-scoped tool detection.
 - **Script execution**: subprocess runner for scripts (spawned process, working directory sandboxed to the tool directory) plus optional auto-execute wiring for `resource_manager`.
-- **Script tools documentation**: New guide at `docs/guides/script-tools.md` covering trigger types, confirmation, and migration.
+- **Script tools Documentation**: New guide at `docs/guides/script-tools.md` covering trigger types, confirmation, and migration.
 - **Cursor install**: 1-click Cursor MCP install deeplink in the root README.
-- **Release automation**: Release Please + gated npm publish workflow (GitHub Release → npm publish) for the `claude-prompts` package.
+- **Release automation**: Release Please + gated npm publish workflow (GitHub Release → npm publish) for the `agent-prompts` package.
 
 ### Changed
 
-- **Plugin structure**: Migrated from separate `claude-prompts-plugin` repo to this repo. Plugin files (hooks/, skills/, commands/, mcp.json) now live at repo root; only `plugin.json` remains in `.claude-plugin/`.
+- **Plugin structure**: Migrated from separate `agent-prompts-plugin` repo to this repo. Plugin files (hooks/, skills/, commands/, mcp.json) now live at repo root; only `plugin.json` remains in `.claude-plugin/`.
 - **Prompts**: bundled prompts moved to a YAML directory format (`prompt.yaml` + message templates) for better structure and hot-reloadability.
 - **Prompt schema**: `category` now optional—auto-derived from directory path.
 - **Tools**: introduced `resource_manager` as the unified CRUD surface for prompts/gates/methodologies; `prompt_manager` remains available with deprecation guidance.
@@ -63,7 +63,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Script tools**: Consolidated `mode` parameter into `trigger` + `confirm` options (see Migration below).
 - **Dev sync hook**: SessionStart now checks cached `node_modules` and runs `npm install` when required packages are missing.
 - **Chain response capture**: Step capture now snapshots the current step at stage entry to avoid mutation during gate review advancement.
-- **Release automation**: Release Please publishes non-draft releases; GitHub Releases attach the Claude Desktop `.mcpb` after npm publish while CLI extensions remain repo-based.
+- **Release automation**: Release Please publishes non-draft releases; GitHub Releases attach the Agent Desktop `.mcpb` after npm publish while CLI extensions remain repo-based.
 
 ### Deprecated
 
@@ -118,7 +118,7 @@ See `docs/guides/script-tools.md` for full documentation.
 
 ## [1.0.0] - 2025-12-06
 
-**First public release** on NPM as `claude-prompts`.
+**First public release** on NPM as `agent-prompts`.
 
 ### Added
 

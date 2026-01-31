@@ -3,7 +3,7 @@
  * Server Root Detection and Startup Utilities
  * Robust server root directory detection for different execution contexts:
  * - Local development (node dist/index.js)
- * - Claude Desktop (absolute path invocation)
+ * - Agent Desktop (absolute path invocation)
  * - Global npm install (npm install -g)
  * - npx execution (temporary install)
  * - Local npm install (node_modules/.bin/)
@@ -28,7 +28,7 @@ interface ValidationResult {
 /**
  * Server Root Detector
  * Handles robust server root directory detection using multiple strategies
- * optimized for different execution contexts (npm install, Claude Desktop, development)
+ * optimized for different execution contexts (npm install, Agent Desktop, development)
  */
 export class ServerRootDetector {
   private isVerbose = false;
@@ -120,7 +120,7 @@ export class ServerRootDetector {
         try {
           const content = await fs.readFile(pkgPath, 'utf8');
           const pkg = JSON.parse(content);
-          if (pkg.name === 'claude-prompts') {
+          if (pkg.name === 'agent-prompts') {
             if (this.isVerbose) {
               console.error(`  Found package.json at: ${pkgPath}`);
               console.error(`  Package name matches: ${pkg.name}`);
@@ -141,7 +141,7 @@ export class ServerRootDetector {
   }
 
   /**
-   * Strategy 2: Script Entry Point (Claude Desktop, direct node)
+   * Strategy 2: Script Entry Point (Agent Desktop, direct node)
    * Resolves symlinks to find actual package location
    */
   private async resolveFromScriptPath(): Promise<string | null> {
@@ -149,7 +149,7 @@ export class ServerRootDetector {
 
     try {
       // Resolve symlinks to get actual file location
-      // This handles: /usr/local/bin/claude-prompts -> actual package
+      // This handles: /usr/local/bin/agent-prompts -> actual package
       const realPath = await fs.realpath(process.argv[1]);
       const scriptDir = path.dirname(realPath);
 
@@ -289,17 +289,17 @@ This usually happens when:
 SOLUTIONS:
 
 If running from source:
-  cd /path/to/claude-prompts-mcp/server
+  cd /path/to/agent-prompts-mcp/server
   node dist/index.js
 
 If installed via npm:
-  npm uninstall -g claude-prompts
-  npm install -g claude-prompts
+  npm uninstall -g agent-prompts
+  npm install -g agent-prompts
 
-For Claude Desktop, ensure claude_desktop_config.json uses absolute paths:
+For Agent Desktop, ensure config uses absolute paths:
   {
     "mcpServers": {
-      "claude-prompts-mcp": {
+      "agent-prompts-mcp": {
         "command": "node",
         "args": ["/full/path/to/server/dist/index.js"]
       }

@@ -335,7 +335,7 @@ export class RuntimeMethodologyLoader {
       try {
         if (existsSync(pkgPath)) {
           const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-          if (pkg.name === 'claude-prompts') {
+          if (pkg.name === 'agent-prompts') {
             // Check resources/methodologies first (new structure)
             const resourcesMethodologiesPath = join(dir, 'resources', 'methodologies');
             if (

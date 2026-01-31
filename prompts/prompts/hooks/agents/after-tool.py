@@ -28,7 +28,7 @@ def _log_debug(message: str) -> None:
     if os.getenv('GEMINI_HOOK_DEBUG', '').lower() not in {'1', 'true', 'yes'}:
         return
     root = _project_root()
-    log_dir = root / '.gemini'
+    log_dir = root / '.agents'
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / 'hook-debug.log'
     ts = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')

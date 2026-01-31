@@ -6,7 +6,7 @@ Blocks:
 1. GATE_REVIEW: FAIL without retry attempt
 2. Missing gate_verdict when resuming a chain that requires it
 
-Allows Claude to self-correct before the tool executes.
+Allows the Agent to self-correct before the tool executes.
 """
 
 import json
@@ -21,7 +21,7 @@ from session_state import load_session_state
 
 
 def parse_hook_input() -> dict:
-    """Parse JSON input from Claude Code hook system."""
+    """Parse JSON input from Agent hook system."""
     try:
         return json.load(sys.stdin)
     except json.JSONDecodeError:

@@ -39,7 +39,7 @@ const normalizePatterns = (patterns = DEFAULT_FORBIDDEN_PATTERNS) => {
       };
     }
 
-    throw new Error(`Invalid pattern configuration supplied to claude/no-legacy-imports: ${pattern}`);
+    throw new Error(`Invalid pattern configuration supplied to agent/no-legacy-imports: ${pattern}`);
   });
 };
 

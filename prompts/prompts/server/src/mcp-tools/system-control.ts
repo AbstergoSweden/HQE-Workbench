@@ -279,12 +279,12 @@ export class ConsolidatedSystemControl {
 
     const structuredMemoryUsage = memoryUsage
       ? {
-          rss: memoryUsage.rss,
-          heapTotal: memoryUsage.heapTotal,
-          heapUsed: memoryUsage.heapUsed,
-          external: memoryUsage.external,
-          arrayBuffers: memoryUsage.arrayBuffers,
-        }
+        rss: memoryUsage.rss,
+        heapTotal: memoryUsage.heapTotal,
+        heapUsed: memoryUsage.heapUsed,
+        external: memoryUsage.external,
+        arrayBuffers: memoryUsage.arrayBuffers,
+      }
       : undefined;
 
     return createStructuredResponse(text, false, {
@@ -556,14 +556,13 @@ export class ConsolidatedSystemControl {
     if (include_metrics) {
       response += `📊 **Performance Metrics**:\n`;
       response += `- Total Executions: ${this.systemAnalytics.totalExecutions}\n`;
-      response += `- Success Rate: ${
-        this.systemAnalytics.totalExecutions > 0
+      response += `- Success Rate: ${this.systemAnalytics.totalExecutions > 0
           ? Math.round(
-              (this.systemAnalytics.successfulExecutions / this.systemAnalytics.totalExecutions) *
-                100
-            )
+            (this.systemAnalytics.successfulExecutions / this.systemAnalytics.totalExecutions) *
+            100
+          )
           : 0
-      }%\n`;
+        }%\n`;
       response += `- Average Execution Time: ${this.systemAnalytics.averageExecutionTime}ms\n\n`;
     }
 
@@ -684,8 +683,8 @@ export class ConsolidatedSystemControl {
       const available = runtimeLoader.discoverMethodologies();
       return this.createMinimalSystemResponse(
         `📋 **Available Methodologies**\n\n` +
-          `Use \`operation:"inspect" methodology_id:"<id>"\` to inspect a specific methodology.\n\n` +
-          `Available: ${available.join(', ')}`,
+        `Use \`operation:"inspect" methodology_id:"<id>"\` to inspect a specific methodology.\n\n` +
+        `Available: ${available.join(', ')}`,
         'inspect_methodology'
       );
     }
@@ -696,7 +695,7 @@ export class ConsolidatedSystemControl {
       const available = runtimeLoader.discoverMethodologies();
       return this.createMinimalSystemResponse(
         `❌ **Methodology Not Found**: \`${methodologyId}\`\n\n` +
-          `Available methodologies: ${available.join(', ')}`,
+        `Available methodologies: ${available.join(', ')}`,
         'inspect_methodology'
       );
     }
@@ -711,9 +710,8 @@ export class ConsolidatedSystemControl {
 
     // System prompt guidance
     if (definition.systemPromptGuidance) {
-      response += `**System Guidance**:\n${definition.systemPromptGuidance.slice(0, 500)}${
-        definition.systemPromptGuidance.length > 500 ? '...' : ''
-      }\n\n`;
+      response += `**System Guidance**:\n${definition.systemPromptGuidance.slice(0, 500)}${definition.systemPromptGuidance.length > 500 ? '...' : ''
+        }\n\n`;
     }
 
     // Gates
@@ -775,7 +773,7 @@ export class ConsolidatedSystemControl {
     if (methodologyIds.length === 0) {
       return this.createMinimalSystemResponse(
         `📋 **No Methodologies Found**\n\n` +
-          `Ensure YAML files exist in \`resources/methodologies/<id>/methodology.yaml\`.`,
+        `Ensure YAML files exist in \`resources/methodologies/<id>/methodology.yaml\`.`,
         'list_methodologies'
       );
     }
@@ -1070,11 +1068,11 @@ export class ConsolidatedSystemControl {
     // Filter by search query if provided
     const filteredGates = searchQuery
       ? gateDefinitions.filter(
-          (gate) =>
-            gate.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            gate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (gate.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
-        )
+        (gate) =>
+          gate.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          gate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (gate.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+      )
       : gateDefinitions;
 
     if (filteredGates.length === 0) {
@@ -1295,22 +1293,20 @@ export class ConsolidatedSystemControl {
     Object.entries(executionsByMode).forEach(([mode, count]) => {
       const percentage =
         totalModeExecutions > 0 ? Math.round((count / totalModeExecutions) * 100) : 0;
-      response += `- **${
-        mode.charAt(0).toUpperCase() + mode.slice(1)
-      } Mode**: ${count} executions (${percentage}%)\n`;
+      response += `- **${mode.charAt(0).toUpperCase() + mode.slice(1)
+        } Mode**: ${count} executions (${percentage}%)\n`;
     });
     response += '\n';
 
     // Quality Gates
     response += '## 🛡️ Quality Gate Analytics\n\n';
     response += `**Gate Validations**: ${this.systemAnalytics.gateValidationCount}\n`;
-    response += `**Gate Adoption Rate**: ${
-      this.systemAnalytics.totalExecutions > 0
+    response += `**Gate Adoption Rate**: ${this.systemAnalytics.totalExecutions > 0
         ? Math.round(
-            (this.systemAnalytics.gateValidationCount / this.systemAnalytics.totalExecutions) * 100
-          )
+          (this.systemAnalytics.gateValidationCount / this.systemAnalytics.totalExecutions) * 100
+        )
         : 0
-    }%\n`;
+      }%\n`;
 
     // System Resources
     if (this.systemAnalytics.memoryUsage) {
@@ -1488,8 +1484,8 @@ export class ConsolidatedSystemControl {
     const config = this.configManager?.getConfig();
     const value = config
       ? key
-          .split('.')
-          .reduce((obj: any, k) => (obj?.[k] !== undefined ? obj[k] : undefined), config)
+        .split('.')
+        .reduce((obj: any, k) => (obj?.[k] !== undefined ? obj[k] : undefined), config)
       : undefined;
     return this.createMinimalSystemResponse(`**${key}**: ${JSON.stringify(value)}`, 'config_get');
   }
@@ -1519,7 +1515,7 @@ export class ConsolidatedSystemControl {
  * Base class for action handlers using command pattern
  */
 abstract class ActionHandler {
-  constructor(protected systemControl: ConsolidatedSystemControl) {}
+  constructor(protected systemControl: ConsolidatedSystemControl) { }
   abstract execute(args: any): Promise<ToolResponse>;
 
   // Convenience getters for accessing system control properties
@@ -1824,11 +1820,11 @@ class GuideActionHandler extends ActionHandler {
     const filtered =
       topic.length > 0
         ? operations.filter(
-            (operation) =>
-              operation.category.toLowerCase().includes(topic) ||
-              operation.id.toLowerCase().includes(topic) ||
-              operation.description.toLowerCase().includes(topic)
-          )
+          (operation) =>
+            operation.category.toLowerCase().includes(topic) ||
+            operation.id.toLowerCase().includes(topic) ||
+            operation.description.toLowerCase().includes(topic)
+        )
         : operations;
 
     const lines: string[] = [];
@@ -1847,9 +1843,8 @@ class GuideActionHandler extends ActionHandler {
       );
     } else {
       filtered.forEach((operation) => {
-        let entry = `- \`${operation.id}\` (${this.describeStatus(operation.status)}) — ${
-          operation.description
-        }`;
+        let entry = `- \`${operation.id}\` (${this.describeStatus(operation.status)}) — ${operation.description
+          }`;
         if (operation.issues && operation.issues.length > 0) {
           entry += `\n  Issues: ${operation.issues
             .map((issue) => `${issue.severity === 'high' ? '❗' : '⚠️'} ${issue.summary}`)
@@ -2037,11 +2032,10 @@ class MaintenanceActionHandler extends ActionHandler {
       response += '## 🎯 Performance Breakdown\n\n';
       const switchingMetrics = systemHealth.switchingMetrics;
       response += `**Framework Switches**: ${switchingMetrics.totalSwitches}\n`;
-      response += `**Framework Switch Success Rate**: ${
-        switchingMetrics.totalSwitches > 0
+      response += `**Framework Switch Success Rate**: ${switchingMetrics.totalSwitches > 0
           ? Math.round((switchingMetrics.successfulSwitches / switchingMetrics.totalSwitches) * 100)
           : 100
-      }%\n`;
+        }%\n`;
       response += `**Framework Switch Time**: ${Math.round(
         switchingMetrics.averageResponseTime
       )}ms\n`;
@@ -2158,8 +2152,7 @@ class MaintenanceActionHandler extends ActionHandler {
         response += `\n\n🔄 **Tool descriptions updated** - MCP clients will receive updated tool descriptions with ${framework.id} methodology guidance.`;
       } catch (error) {
         this.logger.error(
-          `Failed to update tool descriptions after framework switch: ${
-            error instanceof Error ? error.message : String(error)
+          `Failed to update tool descriptions after framework switch: ${error instanceof Error ? error.message : String(error)
           }`
         );
         response += `\n\n⚠️ **Note**: Tool descriptions may need manual refresh for some clients.`;
@@ -2255,24 +2248,22 @@ class MaintenanceActionHandler extends ActionHandler {
     Object.entries(executionsByMode).forEach(([mode, count]) => {
       const percentage =
         totalModeExecutions > 0 ? Math.round((count / totalModeExecutions) * 100) : 0;
-      response += `- **${
-        mode.charAt(0).toUpperCase() + mode.slice(1)
-      } Mode**: ${count} executions (${percentage}%)\n`;
+      response += `- **${mode.charAt(0).toUpperCase() + mode.slice(1)
+        } Mode**: ${count} executions (${percentage}%)\n`;
     });
     response += '\n';
 
     // Quality Gates (Enhanced with advanced analytics)
     response += '## 🛡️ Quality Gate Analytics\n\n';
     response += `**Gate Validations**: ${this.systemControl.systemAnalytics.gateValidationCount}\n`;
-    response += `**Gate Adoption Rate**: ${
-      this.systemControl.systemAnalytics.totalExecutions > 0
+    response += `**Gate Adoption Rate**: ${this.systemControl.systemAnalytics.totalExecutions > 0
         ? Math.round(
-            (this.systemControl.systemAnalytics.gateValidationCount /
-              this.systemControl.systemAnalytics.totalExecutions) *
-              100
-          )
+          (this.systemControl.systemAnalytics.gateValidationCount /
+            this.systemControl.systemAnalytics.totalExecutions) *
+          100
+        )
         : 0
-    }%\n`;
+      }%\n`;
 
     // System Resources
     if (this.systemControl.systemAnalytics.memoryUsage) {
@@ -2341,14 +2332,13 @@ class MaintenanceActionHandler extends ActionHandler {
     // Performance Health
     response += '## 📊 Performance Health\n\n';
     response += `**Framework Switches**: ${health.switchingMetrics.totalSwitches}\n`;
-    response += `**Framework Switch Success Rate**: ${
-      health.switchingMetrics.totalSwitches > 0
+    response += `**Framework Switch Success Rate**: ${health.switchingMetrics.totalSwitches > 0
         ? Math.round(
-            (health.switchingMetrics.successfulSwitches / health.switchingMetrics.totalSwitches) *
-              100
-          )
+          (health.switchingMetrics.successfulSwitches / health.switchingMetrics.totalSwitches) *
+          100
+        )
         : 100
-    }%\n`;
+      }%\n`;
     response += `**Framework Switch Time**: ${Math.round(
       health.switchingMetrics.averageResponseTime
     )}ms\n`;
@@ -2473,8 +2463,8 @@ class MaintenanceActionHandler extends ActionHandler {
     if (
       this.systemControl.systemAnalytics.memoryUsage &&
       this.systemControl.systemAnalytics.memoryUsage.heapUsed /
-        this.systemControl.systemAnalytics.memoryUsage.heapTotal >
-        0.8
+      this.systemControl.systemAnalytics.memoryUsage.heapTotal >
+      0.8
     ) {
       recommendations.push('Monitor memory usage - heap utilization is high');
     }
@@ -2587,8 +2577,8 @@ class MaintenanceActionHandler extends ActionHandler {
     if (!this.configManager) {
       return createStructuredResponse(
         '❌ **Configuration Manager Unavailable**\n\n' +
-          'ConfigManager is not initialized. This indicates a system initialization issue.\n' +
-          'Configuration management requires proper system startup.',
+        'ConfigManager is not initialized. This indicates a system initialization issue.\n' +
+        'Configuration management requires proper system startup.',
         { operation: 'config', error: 'config_manager_unavailable' },
         true
       );
@@ -2636,7 +2626,7 @@ class MaintenanceActionHandler extends ActionHandler {
     const transportMode = config.transport ?? 'stdio';
     response += `**Transport Mode**: ${transportMode}\n`;
     if (transportMode === 'both') {
-      response += '  - STDIO: ✅ Active (Claude Desktop/CLI)\n';
+      response += '  - STDIO: ✅ Active (Agent Desktop/CLI)\n';
       response += '  - SSE: ✅ Active (Web clients on port ' + config.server.port + ')\n';
     } else if (transportMode === 'stdio') {
       response += '  - STDIO: ✅ Active\n';
@@ -2650,9 +2640,8 @@ class MaintenanceActionHandler extends ActionHandler {
     // Analysis Configuration
     if (config.analysis) {
       response += '## 🔍 Analysis Configuration\n\n';
-      response += `**LLM Integration**: ${
-        config.analysis.semanticAnalysis.llmIntegration.enabled ? '✅' : '❌'
-      }\n`;
+      response += `**LLM Integration**: ${config.analysis.semanticAnalysis.llmIntegration.enabled ? '✅' : '❌'
+        }\n`;
       if (config.analysis.semanticAnalysis.llmIntegration.enabled) {
         response += `**Model**: ${config.analysis.semanticAnalysis.llmIntegration.model}\n`;
         response += `**Max Tokens**: ${config.analysis.semanticAnalysis.llmIntegration.maxTokens}\n`;
@@ -2670,9 +2659,8 @@ class MaintenanceActionHandler extends ActionHandler {
 
     // Runtime Status
     response += '## 📊 Runtime Status\n\n';
-    response += `**Framework System**: ${
-      this.systemControl.frameworkStateManager ? '✅ Enabled' : '❌ Disabled'
-    }\n`;
+    response += `**Framework System**: ${this.systemControl.frameworkStateManager ? '✅ Enabled' : '❌ Disabled'
+      }\n`;
     response += `**Analytics Collection**: ✅ Enabled\n`;
     response += `**Performance Monitoring**: ✅ Enabled\n`;
     response += `**System Uptime**: ${this.formatUptime(
@@ -2714,8 +2702,8 @@ class MaintenanceActionHandler extends ActionHandler {
     if (value === undefined) {
       return createStructuredResponse(
         `❌ **Configuration Key Not Found**\n\n` +
-          `The key \`${key}\` does not exist in the configuration.\n\n` +
-          `Use the \`list\` operation to see available configuration keys.`,
+        `The key \`${key}\` does not exist in the configuration.\n\n` +
+        `Use the \`list\` operation to see available configuration keys.`,
         { operation: 'config_get', key, error: 'key_not_found' },
         true
       );
@@ -2750,11 +2738,11 @@ class MaintenanceActionHandler extends ActionHandler {
     if (!this.safeConfigWriter) {
       return createStructuredResponse(
         `⚠️ **Configuration Writing Unavailable**\n\n` +
-          `Configuration writing is not available (SafeConfigWriter not initialized).\n` +
-          `This may indicate a file system permission issue or invalid configuration path.\n\n` +
-          `**Key**: \`${key}\`\n` +
-          `**Value**: \`${value}\`\n\n` +
-          `**Fallback**: Use the \`validate\` operation to check if your change would be valid.`,
+        `Configuration writing is not available (SafeConfigWriter not initialized).\n` +
+        `This may indicate a file system permission issue or invalid configuration path.\n\n` +
+        `**Key**: \`${key}\`\n` +
+        `**Value**: \`${value}\`\n\n` +
+        `**Fallback**: Use the \`validate\` operation to check if your change would be valid.`,
         {
           operation: 'config_set',
           key,
@@ -3050,10 +3038,9 @@ class MaintenanceActionHandler extends ActionHandler {
                 `**Backup Path**: \`${args.backup_path}\`\n` +
                 `**Error**: ${restoreResult.error || restoreResult.message}\n\n` +
                 `**Status**: Original configuration unchanged\n` +
-                `${
-                  fs.existsSync(emergencyBackupPath)
-                    ? `**Emergency Backup**: ${emergencyBackupPath}\n`
-                    : ''
+                `${fs.existsSync(emergencyBackupPath)
+                  ? `**Emergency Backup**: ${emergencyBackupPath}\n`
+                  : ''
                 }` +
                 `**Action**: Verify the backup file exists and is readable.`,
             },
@@ -3196,9 +3183,8 @@ class MaintenanceActionHandler extends ActionHandler {
       let response = '✅ **Framework System Enabled**\n\n';
       response += `**Status**: ${status ? 'Enabled' : 'Disabled'}\n`;
       response += `**Reason**: ${reason}\n`;
-      response += `**Active Framework**: ${
-        this.systemControl.frameworkStateManager.getActiveFramework().name
-      }\n`;
+      response += `**Active Framework**: ${this.systemControl.frameworkStateManager.getActiveFramework().name
+        }\n`;
       response += `**Timestamp**: ${new Date().toISOString()}\n\n`;
       response += 'Framework injection will now be active for template and chain executions.\n\n';
       response +=
@@ -3271,9 +3257,8 @@ class MaintenanceActionHandler extends ActionHandler {
       const isEnabled = state.frameworkSystemEnabled;
       const injectionStatus = isEnabled ? '✅ Active' : '🚫 Inactive';
 
-      response += `**System Status**: ${
-        state.frameworkSystemEnabled ? '✅ Enabled' : '🚫 Disabled'
-      }\n`;
+      response += `**System Status**: ${state.frameworkSystemEnabled ? '✅ Enabled' : '🚫 Disabled'
+        }\n`;
       response += `**Selected Framework**: ${state.activeFramework}\n`;
       response += `**Framework Injection**: ${injectionStatus}\n`;
       response += `**Health Status**: ${this.getHealthEmoji(
@@ -3381,10 +3366,10 @@ class InjectionActionHandler extends ActionHandler {
       default:
         return this.createMinimalSystemResponse(
           `❌ Unknown injection operation: ${operation}\n\n` +
-            'Valid operations:\n' +
-            '- `status` - Show injection configuration and active overrides\n' +
-            '- `override` - Set a session override for an injection type\n' +
-            '- `reset` - Clear all session overrides',
+          'Valid operations:\n' +
+          '- `status` - Show injection configuration and active overrides\n' +
+          '- `override` - Set a session override for an injection type\n' +
+          '- `reset` - Clear all session overrides',
           'injection_error'
         );
     }
@@ -3466,7 +3451,7 @@ class InjectionActionHandler extends ActionHandler {
     if (!type || !INJECTION_TYPES.includes(type)) {
       return this.createMinimalSystemResponse(
         `❌ Invalid injection type: \`${type}\`\n\n` +
-          `Valid types: ${INJECTION_TYPES.map((t) => `\`${t}\``).join(', ')}`,
+        `Valid types: ${INJECTION_TYPES.map((t) => `\`${t}\``).join(', ')}`,
         'injection_override_error'
       );
     }
@@ -3475,7 +3460,7 @@ class InjectionActionHandler extends ActionHandler {
     if (enabled === undefined) {
       return this.createMinimalSystemResponse(
         '❌ Missing `enabled` parameter.\n\n' +
-          'Specify `enabled:true` to enable injection or `enabled:false` to disable.',
+        'Specify `enabled:true` to enable injection or `enabled:false` to disable.',
         'injection_override_error'
       );
     }
@@ -3521,8 +3506,8 @@ class InjectionActionHandler extends ActionHandler {
 
     return this.createMinimalSystemResponse(
       `✅ **Injection Overrides Cleared**\n\n` +
-        `Cleared ${count} override${count === 1 ? '' : 's'}.\n\n` +
-        '_Injection decisions will now use default configuration._',
+      `Cleared ${count} override${count === 1 ? '' : 's'}.\n\n` +
+      '_Injection decisions will now use default configuration._',
       'injection_reset'
     );
   }
