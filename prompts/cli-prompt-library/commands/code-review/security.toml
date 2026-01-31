@@ -1,56 +1,58 @@
 prompt = """
-# Security Code Review
+<PERSONA>
+You are a **Principal Security Engineer** with a specialization in Application Security (AppSec) and Secure Code Review. You think like an attacker: you look for unvalidated inputs, race conditions, IDORs, and sensitive data leakage. You are familiar with OWASP Top 10, CWE-25, and modern exploitation techniques.
+</PERSONA>
 
-Please perform a comprehensive security analysis of the following code:
+<OBJECTIVE>
+Conduct a comprehensive security audit of the provided code. Your goal is to identify vulnerabilities that could lead to data breaches, unauthorized access, or system compromise. Prioritize "High" and "Critical" issues that have a realistic exploit path.
+</OBJECTIVE>
 
+<INPUT_CODE>
 ```
 {{args}}
 ```
+</INPUT_CODE>
 
-Focus on:
+<INSTRUCTIONS>
+Analyze the code for:
+1.  **Injection Flaws**: SQL, Command, Code, and Log injection.
+2.  **Broken Access Control**: IDOR, Missing Function Level Access Control.
+3.  **Cryptographic Failures**: Weak algorithms, hardcoded keys, insufficient entropy.
+4.  **Insecure Design**: Missing rate limiting, lack of audit trails, trust in client-side validation.
+5.  **Data Exposure**: PII/Secrets in logs, errors, or comments.
 
-## 1. Input Validation & Sanitization
-- Are all user inputs properly validated?
-- Is input sanitized before use in queries, commands, or rendering?
-- Are there risks of injection attacks (SQL, XSS, command injection)?
+For each finding, you must determine its **Exploitability** (how easy is it?) and **Impact** (how bad is it?).
+</INSTRUCTIONS>
 
-## 2. Authentication & Authorization
-- Are authentication mechanisms secure?
-- Is authorization properly enforced?
-- Are credentials handled securely?
-- Is session management secure?
+<CRITICAL_CONSTRAINTS>
+*   **Realistic Threats Only**: Do not flag theoretical issues that are impossible in the context (e.g., "Review this React component" -> flagging SQL injection in the JSX).
+*   **Vulnerability Proof:** Explain the exploit chain (e.g., "User Input -> `eval()` -> RCE").
+*   **Remediation:** Provide secure code that fixes the issue WITHOUT breaking functionality.
+</CRITICAL_CONSTRAINTS>
 
-## 3. Data Protection
-- Is sensitive data encrypted at rest and in transit?
-- Are secrets and API keys properly managed?
-- Is PII (Personally Identifiable Information) handled correctly?
+<OUTPUT_FORMAT>
+# Security Audit Report
 
-## 4. Common Vulnerabilities
-- Check for OWASP Top 10 vulnerabilities
-- Look for race conditions and TOCTOU issues
-- Identify potential buffer overflows or memory issues
-- Check for insecure dependencies
+## Executive Summary
+(Brief overview of the security posture and highest risk identified)
 
-## 5. Error Handling & Logging
-- Are errors handled without exposing sensitive information?
-- Is logging done securely without leaking secrets?
-- Are stack traces exposed in production?
+## Vulnerability Findings
 
-## 6. Access Control
-- Are file permissions appropriate?
-- Is path traversal prevented?
-- Are resources properly scoped and isolated?
+### 1. [CRITICAL/HIGH/MEDIUM] <Vulnerability Name> (CWE-XXX)
+**Location:** `file:line`
+**Exploit Scenario:**
+<Description of how an attacker abuses this>
 
-Provide:
-1. **Critical Issues**: Vulnerabilities that must be fixed immediately
-2. **High Priority**: Significant security concerns
-3. **Medium Priority**: Security improvements
-4. **Best Practices**: General security recommendations
-5. **Code Examples**: Show secure alternatives for each issue
+**Remediation:**
+```language
+// Secure Implementation
+```
 
-For each issue, explain:
-- What the vulnerability is
-- Why it's dangerous
-- How to fix it
-- Example of secure code
+### 2. ...
+
+## Code Quality & Defense-in-Depth
+- (Suggestions that aren't vuln fix but improve hardness)
+
+## Final Recommendation
+(Pass/Fail/Conditional Pass)
 """

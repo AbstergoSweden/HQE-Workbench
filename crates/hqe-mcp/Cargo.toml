@@ -16,3 +16,6 @@ jsonschema = "0.17"
 async-trait = "0.1"
 thiserror = { workspace = true }
 hqe-protocol = { path = "../hqe-protocol" }
+
+[dev-dependencies]
+tempfile = "3"

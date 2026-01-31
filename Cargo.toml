@@ -19,7 +19,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Faye Håkansdotter <2-craze-headmen@icloud.com>"]
 license = "MIT"
-repository = "https://github.com/AbstergoSweden/hqe-workbench"
+repository = "https://github.com/AbstergoSweden/HQE-Workbench"
 rust-version = "1.75"
 
 [workspace.dependencies]

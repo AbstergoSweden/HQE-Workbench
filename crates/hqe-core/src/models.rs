@@ -620,6 +620,12 @@ pub struct ScanConfig {
     /// Timeout in seconds for LLM operations (0 means no timeout)
     #[serde(default = "default_scan_timeout_seconds")]
     pub timeout_seconds: u64,
+    /// Venice-specific parameters (forwarded to chat request)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub venice_parameters: Option<serde_json::Value>,
+    /// Whether to enable parallel tool calls (provider-specific)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parallel_tool_calls: Option<bool>,
 }
 
 fn default_scan_timeout_seconds() -> u64 {
@@ -634,6 +640,8 @@ impl Default for ScanConfig {
             limits: ScanLimits::default(),
             local_only: true,
             timeout_seconds: default_scan_timeout_seconds(), // 2 minute default for LLM operations
+            venice_parameters: None,
+            parallel_tool_calls: None,
         }
     }
 }

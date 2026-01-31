@@ -45,6 +45,9 @@ impl ProviderKindExt for ProviderKind {
         if host == "api.openai.com" {
             return ProviderKind::OpenAI;
         }
+        if host.ends_with(".openai.azure.com") {
+            return ProviderKind::Azure;
+        }
         ProviderKind::Generic
     }
 }
@@ -86,6 +89,8 @@ pub struct DiscoveredModel {
     pub name: String,
     /// The detected provider kind (e.g. OpenAI, OpenRouter)
     pub provider_kind: ProviderKind,
+    /// Model type/modality when provided by the API (e.g. text, code, image)
+    pub model_type: Option<String>,
     /// Context window size in tokens, if known
     pub context_length: Option<u32>,
     /// Capabilities of the model
@@ -222,6 +227,11 @@ impl ProviderDiscoveryClient {
         if self.provider_kind == ProviderKind::Venice {
             // Fetch all model types, then filter to text/code locally.
             url.query_pairs_mut().append_pair("type", "all");
+        } else if self.provider_kind == ProviderKind::Azure {
+            return Err(DiscoveryError::Provider(
+                400,
+                "Azure OpenAI discovery is not supported. Please enter model names manually.".to_string(),
+            ));
         }
 
         info!(%url, "Fetching models from provider");
@@ -255,7 +265,10 @@ impl ProviderDiscoveryClient {
         if self.provider_kind == ProviderKind::Venice {
             models.retain(|m| m.provider_kind == ProviderKind::Venice);
         } else {
-            models.retain(|m| is_chat_model_id(&m.id));
+            models.retain(|m| match m.model_type.as_deref() {
+                Some(t) => is_text_model_type(t),
+                None => is_chat_model_id(&m.id),
+            });
         }
         let filtered_count = original_count.saturating_sub(models.len());
         if filtered_count > 0 {
@@ -341,10 +354,11 @@ pub fn sanitize_base_url(input: &str) -> Result<Url, DiscoveryError> {
 
     let host = url.host_str().unwrap_or_default().to_lowercase();
     let is_local = host == "localhost" || host == "127.0.0.1" || host == "::1";
+    let is_private = is_private_host(&host);
 
     match url.scheme() {
         "https" => {}
-        "http" if is_local => {}
+        "http" if is_local || is_private => {}
         other => {
             return Err(DiscoveryError::InvalidBaseUrl(format!(
                 "unsupported scheme: {other}"
@@ -352,8 +366,15 @@ pub fn sanitize_base_url(input: &str) -> Result<Url, DiscoveryError> {
         }
     }
 
-    // Normalize path so join("models") hits `.../v1/models` for typical providers
-    let path = url.path().trim_end_matches('/').to_string();
+    // Normalize path so join("models") hits `.../v1/models` for typical providers.
+    // If user pasted a full endpoint like `/v1/chat/completions` or `/v1/models`,
+    // trim it back to the base API path.
+    let mut path = url.path().trim_end_matches('/').to_string();
+    for suffix in ["/chat/completions", "/models"] {
+        if path.ends_with(suffix) {
+            path = path.trim_end_matches(suffix).to_string();
+        }
+    }
     let normalized_path = if path.is_empty() || path == "/" {
         if host.ends_with("venice.ai") {
             "/api/v1".to_string()
@@ -375,6 +396,48 @@ pub fn sanitize_base_url(input: &str) -> Result<Url, DiscoveryError> {
 
     url.set_path(&normalized_path);
     Ok(url)
+}
+
+/// Returns true when the URL points to localhost or a private IP range.
+pub fn is_local_or_private_url(url: &Url) -> bool {
+    let host = url.host_str().unwrap_or_default().to_lowercase();
+    let is_local = host == "localhost" || host == "127.0.0.1" || host == "::1";
+    is_local || is_private_host(&host)
+}
+
+/// Parses and checks whether a base URL is local/private (useful for optional API keys).
+pub fn is_local_or_private_base_url(input: &str) -> Result<bool, DiscoveryError> {
+    let url = sanitize_base_url(input)?;
+    Ok(is_local_or_private_url(&url))
+}
+
+fn is_private_host(host: &str) -> bool {
+    let ip: std::net::IpAddr = match host.parse() {
+        Ok(ip) => ip,
+        Err(_) => return false,
+    };
+
+    match ip {
+        std::net::IpAddr::V4(ipv4) => {
+            let octets = ipv4.octets();
+            match octets {
+                [10, _, _, _] => true,
+                [172, b, _, _] if (16..=31).contains(&b) => true,
+                [192, 168, _, _] => true,
+                _ => false,
+            }
+        }
+        std::net::IpAddr::V6(ipv6) => {
+            if ipv6.is_loopback() {
+                return true;
+            }
+
+            // Unique local addresses are fc00::/7. We avoid `Ipv6Addr::is_unique_local()`
+            // to keep MSRV at Rust 1.75.
+            let first = ipv6.octets()[0];
+            (first & 0xfe) == 0xfc
+        }
+    }
 }
 
 /// Sanitize user-configured headers (excluding secrets)
@@ -491,8 +554,12 @@ fn parse_model_item(
 
     // Venice schema has model_spec and type
     if item.get("model_spec").is_some() {
-        if let Some(model_type) = item.get("type").and_then(|x| x.as_str()) {
-            if model_type != "text" && model_type != "code" {
+        let model_type = item
+            .get("type")
+            .and_then(|x| x.as_str())
+            .map(|s| s.to_string());
+        if let Some(model_type_str) = model_type.as_deref() {
+            if model_type_str != "text" && model_type_str != "code" {
                 return Ok(None);
             }
         }
@@ -545,6 +612,7 @@ fn parse_model_item(
             id,
             name,
             provider_kind: ProviderKind::Venice,
+            model_type,
             context_length: ctx,
             traits,
             pricing,
@@ -564,10 +632,13 @@ fn parse_model_item(
             .map(|n| n as u32);
         let pricing = extract_openrouter_pricing(item);
 
+        let model_type = extract_model_type(item);
+
         return Ok(Some(DiscoveredModel {
             id,
             name,
             provider_kind: ProviderKind::OpenRouter,
+            model_type,
             context_length: ctx,
             traits: ProviderModelTraits::default(),
             pricing,
@@ -575,10 +646,12 @@ fn parse_model_item(
     }
 
     // OpenAI/xAI generic schema: only id is reliable
+    let model_type = extract_model_type(item);
     Ok(Some(DiscoveredModel {
         name: id.clone(),
         id,
         provider_kind: kind,
+        model_type,
         context_length: None,
         traits: ProviderModelTraits::default(),
         pricing: ProviderModelPricing {
@@ -599,10 +672,7 @@ fn extract_model_type(item: &Value) -> Option<String> {
 }
 
 fn is_text_model_type(model_type: &str) -> bool {
-    matches!(
-        model_type,
-        "text" | "chat" | "code" | "completion" | "llm"
-    )
+    matches!(model_type, "text" | "chat" | "code" | "completion" | "llm")
 }
 
 fn join_path(base: &Url, segment: &str) -> Result<Url, url::ParseError> {
@@ -784,6 +854,12 @@ mod tests {
 
         let u = sanitize_base_url("https://openrouter.ai/api/v1/")?;
         assert_eq!(u.as_str(), "https://openrouter.ai/api/v1");
+
+        let u = sanitize_base_url("https://api.openai.com/v1/chat/completions")?;
+        assert_eq!(u.as_str(), "https://api.openai.com/v1");
+
+        let u = sanitize_base_url("https://api.openai.com/v1/models")?;
+        assert_eq!(u.as_str(), "https://api.openai.com/v1");
         Ok(())
     }
 
@@ -797,6 +873,17 @@ mod tests {
     #[test]
     fn sanitize_base_url_rejects_http_for_non_local() {
         assert!(sanitize_base_url("http://api.openai.com").is_err());
+    }
+
+    #[test]
+    fn sanitize_base_url_allows_private_http() -> anyhow::Result<()> {
+        let u = sanitize_base_url("http://192.168.1.10:8000")?;
+        assert_eq!(u.as_str(), "http://192.168.1.10:8000/v1");
+        let u = sanitize_base_url("http://10.0.0.5")?;
+        assert_eq!(u.as_str(), "http://10.0.0.5/v1");
+        let u = sanitize_base_url("http://172.16.5.9")?;
+        assert_eq!(u.as_str(), "http://172.16.5.9/v1");
+        Ok(())
     }
 
     #[test]
@@ -856,6 +943,7 @@ mod tests {
     fn test_parse_model_item_venice_schema() -> anyhow::Result<()> {
         let json = serde_json::json!({
             "id": "venice-model-1",
+            "type": "text",
             "model_spec": {
                 "name": "Venice Model",
                 "availableContextTokens": 8192,
@@ -880,6 +968,7 @@ mod tests {
         assert_eq!(model.id, "venice-model-1");
         assert_eq!(model.name, "Venice Model");
         assert_eq!(model.provider_kind, ProviderKind::Venice);
+        assert_eq!(model.model_type.as_deref(), Some("text"));
         assert_eq!(model.context_length, Some(8192));
         assert!(model.traits.supports_vision);
         assert!(model.traits.supports_tools);
@@ -905,6 +994,7 @@ mod tests {
         let json = serde_json::json!({
             "id": "openrouter-model-1",
             "name": "OpenRouter Model",
+            "type": "text",
             "context_length": 4096,
             "pricing": {
                 "prompt": "0.000001",
@@ -918,6 +1008,7 @@ mod tests {
         assert_eq!(model.id, "openrouter-model-1");
         assert_eq!(model.name, "OpenRouter Model");
         assert_eq!(model.provider_kind, ProviderKind::OpenRouter);
+        assert_eq!(model.model_type.as_deref(), Some("text"));
         assert_eq!(model.context_length, Some(4096));
         // Compare with tolerance for floating point precision
         let input_val = model.pricing.input_usd_per_million.unwrap();
@@ -938,7 +1029,8 @@ mod tests {
     #[test]
     fn test_parse_model_item_generic_schema() -> anyhow::Result<()> {
         let json = serde_json::json!({
-            "id": "generic-model-1"
+            "id": "generic-model-1",
+            "type": "text"
         });
 
         let result = parse_model_item(ProviderKind::OpenAI, &json)?;
@@ -947,6 +1039,7 @@ mod tests {
         assert_eq!(model.id, "generic-model-1");
         assert_eq!(model.name, "generic-model-1");
         assert_eq!(model.provider_kind, ProviderKind::OpenAI);
+        assert_eq!(model.model_type.as_deref(), Some("text"));
         assert_eq!(model.context_length, None);
         Ok(())
     }

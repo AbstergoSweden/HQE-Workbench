@@ -3,10 +3,10 @@ title: HQE-Workbench
 message: "If you use this software, please cite it as below."
 type: software
 authors:
-  - name: AbstergoSweden
-    website: https://gravatar.com/swingstoccata3h
-repository-code: https://github.com/AbstergoSweden/hqe-workbench
-url: https://github.com/AbstergoSweden/hqe-workbench
+  - name: Faye Hakansdotter
+    website: https://github.com/AbstergoSweden
+repository-code: https://github.com/AbstergoSweden/HQE-Workbench
+url: https://github.com/AbstergoSweden/HQE-Workbench
 license: MIT
 version: 0.1.0
 date-released: 2026-01-30

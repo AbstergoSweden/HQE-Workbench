@@ -1,140 +1,195 @@
-# How-To Guide: Getting Started with HQE Workbench
+# How To: Install, Configure, and Use HQE Workbench
 
-Welcome to the HQE Workbench! This guide is designed to take you from "zero" to "hero," regardless of your experience level. We'll verify your system, install the tools, and run your first scan.
+HQE Workbench ships as:
+
+- a CLI (`hqe`) for scanning repositories and exporting run artifacts
+- a macOS desktop app (Tauri + React) for configuring providers, running scans, viewing reports, and exporting artifacts
+
+This guide focuses on the current app behavior (text models only; no image/audio/video).
 
 ## Table of Contents
 
-1. [Step 1: System Readiness](#step-1-system-readiness)
-2. [Step 2: Installation](#step-2-installation)
-3. [Step 3: Configuration](#step-3-configuration)
-4. [Step 4: Your First Scan](#step-4-your-first-scan)
-5. [Step 5: Using the Desktop App](#step-5-using-the-desktop-app)
-6. [Troubleshooting](#troubleshooting)
+1. [Prerequisites](#prerequisites)
+2. [Install](#install)
+3. [Run Your First Scan (Local-Only)](#run-your-first-scan-local-only)
+4. [Add a Provider Profile (Venice/OpenAI/Local)](#add-a-provider-profile-veniceopenailocal)
+5. [Run an LLM-Enabled Scan](#run-an-llm-enabled-scan)
+6. [Use the Desktop App](#use-the-desktop-app)
+7. [Troubleshooting](#troubleshooting)
 
----
+## Prerequisites
 
-## Step 1: System Readiness
+- macOS 12+ recommended (desktop app)
+- Rust 1.75+
+- Node.js 20+ (desktop UI)
+- Python 3.11+ (protocol validation scripts)
 
-Before we begin, let's make sure your Mac is ready.
-
-1. **Check macOS Version**:
-    - Click the Apple Menu () > About This Mac.
-    - Ensure you are on **macOS Monterey (12.0)** or newer.
-
-2. **Open Terminal**:
-    - Press `Cmd + Space` (Spotlight).
-    - Type `Terminal` and press Enter.
-
-3. **Check for Git**:
-    - Type `git --version` and press Enter.
-    - If it says "git version ...", you're good. If not, a popup will ask to install it—say yes!
-
----
-
-## Step 2: Installation
-
-We have a script that handles everything for you (Rust, Node.js, Python dependencies).
-
-1. **Clone the Repository** (Download the code):
-
-    ```bash
-    git clone https://github.com/AbstergoSweden/hqe-workbench.git
-    cd hqe-workbench
-    ```
-
-2. **Run the Bootstrap Script**:
-
-    ```bash
-    ./scripts/bootstrap_macos.sh
-    ```
-
-    *Note: This might take a few minutes as it downloads compiler tools.*
-
-3. **Build the Tool**:
-
-    ```bash
-    cargo build --release -p hqe
-    ```
-
-    - Once done, you have a working CLI tool in `target/release/hqe`.
-
----
-
-## Step 3: Configuration
-
-HQE Workbench uses "Profiles" to manage connection to AI providers (like OpenAI).
-
-**To use Local-Only Mode (Recommended for high privacy):**
-Title says it all—no configuration needed! You can skip to Step 4.
-
-**To use OpenAI (Optional):**
-
-1. Get your API Key from [OpenAI Platform](https://platform.openai.com/api-keys).
-2. Run the configuration command:
-
-    ```bash
-    ./target/release/hqe config add "openai-main" --url "https://api.openai.com/v1" --key "sk-..." --model "gpt-4"
-    ```
-
-    *Your key is safely stored in the macOS Keychain, not in a text file.*
-
----
-
-## Step 4: Your First Scan
-
-Let's scan this repository itself to see how it works.
-
-**Run a Local Scan:**
+## Install
 
 ```bash
-./target/release/hqe scan --repo . --local-only
+git clone https://github.com/AbstergoSweden/HQE-Workbench.git
+cd HQE-Workbench
+
+./scripts/bootstrap_macos.sh
+cargo build --release -p hqe
 ```
 
-**What happens?**
+## Run Your First Scan (Local-Only)
 
-1. **Ingestion**: Finds all readable files (ignoring gitignore).
-2. **Analysis**: Scans for "TODO" comments, fixmes, and basic heuristics.
-3. **Reporting**: Generates a health report.
+```bash
+./target/release/hqe scan . --local-only
+```
 
-**View the Report:**
-Look in the `hqe-output/` folder created in your current directory. You'll find a Markdown file (like `hqe_report_...md`) that you can open in any text editor.
+Local-only mode:
 
----
+- performs no external API calls
+- runs local heuristics and produces a full report structure
+- still writes the same artifact bundle as an LLM scan
 
-## Step 5: Using the Desktop App
+Artifacts are written to `./hqe-output` by default:
 
-Prefer a GUI? We've got you covered.
+```text
+hqe-output/
+  run-manifest.json
+  report.json
+  report.md
+  session-log.json
+  session-log.json
+  redaction-log.json   (when redaction runs)
+```
 
-1. **Start the App (Dev Mode)**:
+## Privacy & Caching
 
-    ```bash
-    cd apps/workbench
-    npm run tauri:dev
-    ```
+HQE Workbench implements a **Privacy-First Architecture** inspired by Venice.ai.
 
-    *This will launch a native macOS window.*
+### Local Database
 
-2. **Navigate**:
-    - **Dashboard**: See recent scans.
-    - **New Scan**: Point to a folder on your Mac and click "Start".
-    - **Settings**: Manage your AI profiles visually.
+All interactions are logged locally to a SQLite database (`~/.local/share/hqe-workbench/hqe.db` on macOS). This typically includes:
 
----
+- **Session Logs**: Audit trails of what was sent to the LLM (after redaction) and what was received.
+- **Request Cache**: Hashed keys of prompts and responses.
+
+### Semantic Caching
+
+To save on API costs and improve speed, the app caches LLM responses by default. If you run the exact same scan or prompt again, the result is served locally from `hqe.db`.
+
+To **disable caching** (e.g., if you changed a prompt template or want a fresh non-deterministic answer):
+
+```bash
+hqe scan ... --no-cache
+# or
+hqe prompt ... --no-cache
+```
+
+## Add a Provider Profile (Venice/OpenAI/Local)
+
+HQE Workbench supports OpenAI-compatible chat completion providers. It filters out non-text
+modalities and focuses on text models (including "code" text models where applicable).
+
+You can add profiles via:
+
+- CLI: `hqe config ...`
+- Desktop app: Settings screen (recommended; includes model discovery)
+
+### CLI Examples
+
+Venice.ai (OpenAI-compatible, with Venice extensions):
+
+```bash
+export VENICE_API_KEY="..."
+export VENICE_MODEL_ID="(copy from Settings > Discover Models)"
+
+./target/release/hqe config add venice \
+  --url "https://api.venice.ai/api/v1" \
+  --key "$VENICE_API_KEY" \
+  --model "$VENICE_MODEL_ID"
+```
+
+OpenAI:
+
+```bash
+./target/release/hqe config add openai \
+  --url "https://api.openai.com/v1" \
+  --key "sk-..." \
+  --model "gpt-4o-mini"
+```
+
+Local OpenAI-schema server (LM Studio / LocalAI / gateway):
+
+```bash
+export LOCAL_MODEL_ID="(from your local server /v1/models)"
+
+./target/release/hqe config add local \
+  --url "http://127.0.0.1:1234/v1" \
+  --key "local-not-required" \
+  --model "$LOCAL_MODEL_ID"
+```
+
+Test a profile:
+
+```bash
+./target/release/hqe config test venice
+```
+
+### Model Discovery (Desktop App)
+
+In Settings, use "Discover Models" to call the provider's `/models` endpoint and populate the model
+dropdown. For Venice, discovery uses `/models?type=all` and filters down to text-capable models.
+
+## Run an LLM-Enabled Scan
+
+```bash
+./target/release/hqe scan /path/to/repo --profile venice
+```
+
+Scan pipeline (high level):
+
+```mermaid
+flowchart TD
+  A[Ingest repo] --> B[Local heuristics]
+  B --> C[Redact secrets]
+  C -->|optional| D[LLM analysis (text model)]
+  D --> E[Generate report]
+  E --> F[Write artifacts]
+```
+
+### Venice Advanced Options
+
+The CLI supports passing Venice-specific advanced knobs:
+
+```bash
+./target/release/hqe scan /path/to/repo \
+  --profile venice \
+  --venice-parameters '{"some_option": true}' \
+  --parallel-tool-calls false
+```
+
+## Use the Desktop App
+
+Development mode:
+
+```bash
+./scripts/dev.sh
+```
+
+What to expect:
+
+- Settings: create/edit provider profiles, store API keys in Keychain, run model discovery
+- Scan: choose local-only vs LLM-enabled; for Venice profiles, advanced fields appear
+- Report: view findings with evidence; export artifacts to a folder for sharing
 
 ## Troubleshooting
 
-### "Command not found: cargo"
+### Rust or Node not found
 
-- Restart your terminal. Rust updates your PATH, but it needs a restart to take effect.
+Re-run `./scripts/bootstrap_macos.sh` and restart your terminal session.
 
-### "Python not found"
+### Model discovery returns no models
 
-- Ensure you have Python 3.11+. run `python3 --version`.
+- Verify base URL ends with `/v1` (OpenAI) or `/api/v1` (Venice).
+- Confirm your API key works (`hqe config test ...`).
+- Some providers require extra headers; use the desktop Settings screen to configure them.
 
-### "Permission denied"
+### Protocol validation fails in CI
 
-- Try running commands with `sudo` only if absolutely necessary, but usually `chmod +x scripts/*.sh` fixes script permission issues.
-
-### Still stuck?
-
-Open an issue on [GitHub](https://github.com/AbstergoSweden/hqe-workbench/issues) or check `README.md` for community links.
+Protocol validation uses Python packages `pyyaml` and `jsonschema`.

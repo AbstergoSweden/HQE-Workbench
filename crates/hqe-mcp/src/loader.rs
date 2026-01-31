@@ -101,6 +101,9 @@ impl PromptLoader {
         for entry in WalkDir::new(&self.root_path)
             .follow_links(true)
             .into_iter()
+            // Avoid scanning vendored/build outputs that can explode runtime and log volume
+            // (e.g. `node_modules` after installing prompt-server deps).
+            .filter_entry(|e| !should_ignore_dir_entry(e))
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
@@ -223,5 +226,60 @@ impl PromptLoader {
             },
             template: prompt_file.prompt,
         })
+    }
+}
+
+fn should_ignore_dir_entry(entry: &walkdir::DirEntry) -> bool {
+    if !entry.file_type().is_dir() {
+        return false;
+    }
+
+    let name = entry.file_name().to_string_lossy();
+    // In this repo, `prompts/prompts/**` is a vendored MCP server project
+    // (not Workbench prompt templates). Skipping it avoids parse noise and keeps
+    // Thinktank prompt listing fast and relevant.
+    if entry.depth() == 1 && name.as_ref() == "prompts" {
+        return true;
+    }
+    matches!(
+        name.as_ref(),
+        ".git" | "node_modules" | "dist" | "build" | "target" | "__pycache__"
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn loader_skips_node_modules() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+
+        fs::write(
+            root.join("valid.toml"),
+            r#"
+description = "Valid"
+prompt = "Hello {{args}}"
+"#,
+        )
+        .expect("write valid");
+
+        fs::create_dir_all(root.join("node_modules/somepkg")).expect("mkdir node_modules");
+        fs::write(
+            root.join("node_modules/somepkg/should_not_load.toml"),
+            r#"
+description = "Should not load"
+prompt = "NOPE"
+"#,
+        )
+        .expect("write ignored");
+
+        let loader = PromptLoader::new(root);
+        let tools = loader.load().expect("load prompts");
+
+        assert_eq!(tools.len(), 1);
+        assert_eq!(tools[0].definition.name, "valid");
     }
 }

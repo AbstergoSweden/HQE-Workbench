@@ -49,6 +49,7 @@ pub struct OpenAIClient {
     organization: Option<String>,
     project: Option<String>,
     max_retries: u32,
+    local_db: Option<hqe_core::persistence::LocalDb>,
 }
 
 /// Configuration for the client
@@ -75,6 +76,8 @@ pub struct ClientConfig {
     pub max_retries: u32,
     /// Optional rate limiter configuration
     pub rate_limit_config: Option<rate_limiter::RateLimitConfig>,
+    /// Enable local decision cache and logging (Privacy-First)
+    pub cache_enabled: bool,
 }
 
 impl Default for ClientConfig {
@@ -90,6 +93,7 @@ impl Default for ClientConfig {
             timeout_seconds: get_default_timeout(),
             max_retries: 3,
             rate_limit_config: None,
+            cache_enabled: true,
         }
     }
 }
@@ -110,15 +114,116 @@ pub struct ChatRequest {
     pub model: String,
     /// List of messages in the conversation
     pub messages: Vec<Message>,
+    /// Number between -2.0 and 2.0 to penalize frequent tokens
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency_penalty: Option<f32>,
+    /// Number between -2.0 and 2.0 to penalize repeated topics
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub presence_penalty: Option<f32>,
+    /// Repetition penalty; 1.0 means no penalty
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repetition_penalty: Option<f32>,
+    /// Whether to include log probabilities in the response
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub logprobs: Option<bool>,
+    /// Number of top logprobs to return (if enabled)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_logprobs: Option<u32>,
     /// Sampling temperature (0.0 to 2.0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
+    /// Minimum temperature for dynamic temperature scaling
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_temp: Option<f32>,
+    /// Maximum temperature for dynamic temperature scaling
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_temp: Option<f32>,
+    /// Nucleus sampling parameter (0.0 to 1.0)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f32>,
+    /// Top-k sampling parameter
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_k: Option<u32>,
     /// Maximum number of tokens to generate
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
+    /// Preferred max tokens (OpenAI/Venice); supersedes max_tokens when supported
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_completion_tokens: Option<u32>,
+    /// How many choices to generate
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub n: Option<u32>,
+    /// Stop sequence(s)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop: Option<Stop>,
+    /// Stop token IDs
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop_token_ids: Option<Vec<u32>>,
+    /// Deterministic seed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seed: Option<u64>,
+    /// Optional end-user identifier
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user: Option<String>,
+    /// Prompt cache routing key
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt_cache_key: Option<String>,
+    /// Prompt cache retention policy
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt_cache_retention: Option<String>,
+    /// Reasoning effort (OpenAI/Venice compatible)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_effort: Option<String>,
+    /// Reasoning configuration object
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<ReasoningConfig>,
+    /// Whether to stream responses
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stream: Option<bool>,
+    /// Stream options
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stream_options: Option<StreamOptions>,
+    /// Tool choice configuration (OpenAI-compatible)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_choice: Option<serde_json::Value>,
+    /// Tools available to the model (OpenAI-compatible)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<serde_json::Value>>,
+    /// Venice-specific parameters (optional, forwarded as-is)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub venice_parameters: Option<serde_json::Value>,
+    /// Whether to enable parallel tool calls
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parallel_tool_calls: Option<bool>,
     /// Desired format for the response
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_format: Option<ResponseFormat>,
+}
+
+/// Stop sequences for chat completion
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum Stop {
+    /// Single stop string
+    String(String),
+    /// Multiple stop strings
+    Array(Vec<String>),
+}
+
+/// Streaming options
+#[derive(Debug, Clone, Serialize)]
+pub struct StreamOptions {
+    /// Include usage info in the stream
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_usage: Option<bool>,
+}
+
+/// Reasoning configuration
+#[derive(Debug, Clone, Serialize)]
+pub struct ReasoningConfig {
+    /// Effort level for reasoning models
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effort: Option<String>,
 }
 
 /// Format of the response
@@ -128,12 +233,84 @@ pub enum ResponseFormat {
     /// JSON object response
     #[serde(rename = "json_object")]
     JsonObject,
+    /// JSON schema response
+    #[serde(rename = "json_schema")]
+    JsonSchema {
+        /// JSON schema to enforce in the response
+        json_schema: serde_json::Value,
+    },
     /// Plain text response
     #[serde(rename = "text")]
     Text,
 }
 
-/// Chat message
+/// Message content can be either a plain string or an array of content parts (OpenAI/Venice schema).
+///
+/// We keep parts as raw JSON to tolerate provider extensions while still being able to extract the
+/// text-only payload when needed.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MessageContent {
+    /// Plain string message content.
+    Text(String),
+    /// Array of structured content parts (text/image/audio/etc).
+    Parts(Vec<serde_json::Value>),
+}
+
+impl MessageContent {
+    /// Best-effort text extraction for downstream parsing (e.g. JSON-mode responses).
+    pub fn to_text_lossy(&self) -> Option<String> {
+        match self {
+            MessageContent::Text(s) => Some(s.clone()),
+            MessageContent::Parts(parts) => {
+                let mut out = String::new();
+                for part in parts {
+                    // Venice spec uses: { type: "text", text: "..." }
+                    if let Some(text) = part
+                        .get("type")
+                        .and_then(|t| t.as_str())
+                        .filter(|t| *t == "text")
+                        .and_then(|_| part.get("text"))
+                        .and_then(|t| t.as_str())
+                    {
+                        if !out.is_empty() {
+                            out.push('\n');
+                        }
+                        out.push_str(text);
+                        continue;
+                    }
+
+                    // Some providers may omit the "type" field for simple parts.
+                    if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
+                        if !out.is_empty() {
+                            out.push('\n');
+                        }
+                        out.push_str(text);
+                    }
+                }
+
+                if out.is_empty() {
+                    None
+                } else {
+                    Some(out)
+                }
+            }
+        }
+    }
+}
+
+impl From<String> for MessageContent {
+    fn from(value: String) -> Self {
+        MessageContent::Text(value)
+    }
+}
+
+impl From<&str> for MessageContent {
+    fn from(value: &str) -> Self {
+        MessageContent::Text(value.to_string())
+    }
+}
+
 /// Chat message
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
@@ -141,7 +318,7 @@ pub struct Message {
     pub role: Role,
     /// Content of the message
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub content: Option<String>,
+    pub content: Option<MessageContent>,
     /// Tool call details (OpenAI-compatible responses may omit content)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<serde_json::Value>>,
@@ -161,7 +338,7 @@ pub enum Role {
 
 /// Chat completion response
 /// Chat completion response
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatResponse {
     /// Unique ID of the response
     pub id: String,
@@ -178,7 +355,7 @@ pub struct ChatResponse {
 }
 
 /// Generated choice
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Choice {
     /// Index of the choice
     pub index: i32,
@@ -190,7 +367,7 @@ pub struct Choice {
 }
 
 /// Token usage statistics
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Usage {
     /// Tokens in the prompt
     #[serde(rename = "prompt_tokens")]
@@ -205,14 +382,14 @@ pub struct Usage {
 
 /// API error response
 /// API error response
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiError {
     /// Detailed error information
     pub error: ErrorDetail,
 }
 
 /// Detailed error information
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrorDetail {
     /// Error message
     pub message: String,
@@ -238,9 +415,8 @@ impl OpenAIClient {
             base_url.domain().unwrap_or("unknown")
         );
 
-        let mut builder = reqwest::Client::builder().timeout(Duration::from_secs(
-            config.timeout_seconds,
-        ));
+        let mut builder =
+            reqwest::Client::builder().timeout(Duration::from_secs(config.timeout_seconds));
         if config.disable_system_proxy {
             builder = builder.no_proxy();
         }
@@ -259,6 +435,17 @@ impl OpenAIClient {
             organization: config.organization,
             project: config.project,
             max_retries: config.max_retries,
+            local_db: if config.cache_enabled {
+                match hqe_core::persistence::LocalDb::init() {
+                    Ok(db) => Some(db),
+                    Err(e) => {
+                        error!("Failed to initialize local DB for caching: {}", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            },
         })
     }
 
@@ -321,7 +508,7 @@ impl OpenAIClient {
         // Apply rate limiting before making the request
         if let Some(limiter) = &self.rate_limiter {
             // Estimate tokens: max_tokens + rough estimate of input size
-            let estimated_tokens = request.max_tokens;
+            let estimated_tokens = request.max_completion_tokens.or(request.max_tokens);
             limiter.acquire(estimated_tokens).await;
         }
 
@@ -342,14 +529,41 @@ impl OpenAIClient {
         let mut last_error: Option<anyhow::Error> = None;
         let max_attempts = self.max_retries.saturating_add(1).max(1);
 
+        // Calculate hash for caching
+        let request_hash = if self.local_db.is_some() {
+            match serde_json::to_string(&request) {
+                Ok(prompt_json) => {
+                    // Create a deterministic hash from the request
+                    // We use prompt_json as both hash input + raw input
+                    let hash = hqe_core::persistence::LocalDb::calculate_hash(
+                        &request.model,
+                        &prompt_json, // simplifying: using full json as messages input for now
+                        ""
+                    );
+                    
+                    // Check cache
+                    if let Some(db) = &self.local_db {
+                        if let Ok(Some(cached_resp)) = db.get_cached_response(&hash) {
+                            if let Ok(response) = serde_json::from_str::<ChatResponse>(&cached_resp) {
+                                info!("Cache HIT for model {}", request.model);
+                                return Ok(response);
+                            }
+                        }
+                    }
+                    Some((hash, prompt_json))
+                }
+                Err(_) => None,
+            }
+        } else {
+            None
+        };
+
         for attempt in 0..max_attempts {
             let headers = self.build_headers()?;
 
             debug!(
                 attempt = attempt + 1,
-                max_attempts,
-                "Sending chat request to {}",
-                url
+                max_attempts, "Sending chat request to {}", url
             );
 
             let response = self
@@ -373,6 +587,28 @@ impl OpenAIClient {
                                 .map(|u| u.total_tokens)
                                 .unwrap_or(0)
                         );
+                        
+                        // Cache the response and log interaction
+                        if let Some((hash, prompt_json)) = &request_hash {
+                            if let Some(db) = &self.local_db {
+                                if let Ok(resp_json) = serde_json::to_string(&chat_response) {
+                                    // Store in cache
+                                    let _ = db.cache_response(hash, &request.model, prompt_json, &resp_json);
+                                    
+                                    // Log session interaction (audit)
+                                    // Extract last user message content for preview
+                                    let user_content = request.messages.last()
+                                        .and_then(|m| m.content.as_ref())
+                                        .and_then(|c| c.to_text_lossy())
+                                        .unwrap_or_default();
+                                        
+                                    let id = uuid::Uuid::new_v4().to_string();
+                                    let _ = db.log_interaction(&id, "user", &user_content, Some(prompt_json));
+                                    let _ = db.log_interaction(&id, "assistant", "Response received", Some(&resp_json));
+                                }
+                            }
+                        }
+                        
                         return Ok(chat_response);
                     }
 
@@ -408,8 +644,7 @@ impl OpenAIClient {
                         let backoff = retry_backoff(attempt);
                         debug!(
                             backoff_ms = backoff.as_millis(),
-                            "Retrying chat request after transport error: {}",
-                            err
+                            "Retrying chat request after transport error: {}", err
                         );
                         tokio::time::sleep(backoff).await;
                         continue;
@@ -430,17 +665,42 @@ impl OpenAIClient {
             messages: vec![
                 Message {
                     role: Role::System,
-                    content: Some(system.to_string()),
+                    content: Some(system.to_string().into()),
                     tool_calls: None,
                 },
                 Message {
                     role: Role::User,
-                    content: Some(user.to_string()),
+                    content: Some(user.to_string().into()),
                     tool_calls: None,
                 },
             ],
+            frequency_penalty: None,
+            presence_penalty: None,
+            repetition_penalty: None,
+            logprobs: None,
+            top_logprobs: None,
             temperature: Some(0.1),
+            min_temp: None,
+            max_temp: None,
+            top_p: None,
+            top_k: None,
             max_tokens: Some(4000),
+            max_completion_tokens: None,
+            n: None,
+            stop: None,
+            stop_token_ids: None,
+            seed: None,
+            user: None,
+            prompt_cache_key: None,
+            prompt_cache_retention: None,
+            reasoning_effort: None,
+            reasoning: None,
+            stream: None,
+            stream_options: None,
+            tool_choice: None,
+            tools: None,
+            venice_parameters: None,
+            parallel_tool_calls: None,
             response_format: None,
         };
 
@@ -450,7 +710,7 @@ impl OpenAIClient {
             .choices
             .into_iter()
             .next()
-            .and_then(|c| c.message.content)
+            .and_then(|c| c.message.content.and_then(|c| c.to_text_lossy()))
             .ok_or_else(|| anyhow::anyhow!("No response content"))
     }
 
@@ -461,11 +721,36 @@ impl OpenAIClient {
             model: self.default_model.clone(),
             messages: vec![Message {
                 role: Role::User,
-                content: Some("Hi".to_string()),
+                content: Some("Hi".into()),
                 tool_calls: None,
             }],
+            frequency_penalty: None,
+            presence_penalty: None,
+            repetition_penalty: None,
+            logprobs: None,
+            top_logprobs: None,
             temperature: Some(0.0),
+            min_temp: None,
+            max_temp: None,
+            top_p: None,
+            top_k: None,
             max_tokens: Some(5),
+            max_completion_tokens: None,
+            n: None,
+            stop: None,
+            stop_token_ids: None,
+            seed: None,
+            user: None,
+            prompt_cache_key: None,
+            prompt_cache_retention: None,
+            reasoning_effort: None,
+            reasoning: None,
+            stream: None,
+            stream_options: None,
+            tool_choice: None,
+            tools: None,
+            venice_parameters: None,
+            parallel_tool_calls: None,
             response_format: None,
         };
 

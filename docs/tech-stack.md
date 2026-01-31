@@ -13,9 +13,9 @@ The application is structured as a cargo workspace with decoupled crates acting 
 - **`hqe-protocol`**: Shared domain models (`Entity`, `TopicManifest`) and schemas.
 - **`hqe-mcp`**: The Model Context Protocol orchestrator. Handles tool registration and routing.
 - **`hqe-ingest`**: Data ingestion engine. Watches file systems and ingests data into the system.
-- **`hqe-vector`**: Vector memory management (placeholder for Qdrant/LanceDB).
-- **`hqe-flow`**: Workflow runtime engine (placeholder for Genkit-like flows).
-- **`hqe-core`**: Legacy core logic (to be refactored/migrated).
+- **`hqe-vector`**: Vector memory management (reserved for future vector-store integration).
+- **`hqe-flow`**: Workflow runtime engine (reserved for future flow/agent runtimes).
+- **`hqe-core`**: Core scan pipeline and shared models.
 
 ## Frontend (Tauri)
 - **Framework:** Tauri v2

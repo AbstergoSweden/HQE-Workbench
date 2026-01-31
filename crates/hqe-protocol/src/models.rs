@@ -18,6 +18,8 @@ pub enum ProviderKind {
     XAI,
     /// Generic OpenAI-compatible provider
     Generic,
+    /// Azure OpenAI provider
+    Azure,
 }
 
 impl std::fmt::Display for ProviderKind {
@@ -28,6 +30,7 @@ impl std::fmt::Display for ProviderKind {
             ProviderKind::OpenRouter => write!(f, "openrouter"),
             ProviderKind::XAI => write!(f, "xai"),
             ProviderKind::Generic => write!(f, "generic"),
+            ProviderKind::Azure => write!(f, "azure"),
         }
     }
 }

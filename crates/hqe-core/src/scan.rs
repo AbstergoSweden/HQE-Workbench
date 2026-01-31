@@ -716,6 +716,8 @@ mod tests {
             limits: ScanLimits::default(),
             local_only: true,
             timeout_seconds: 30,
+            venice_parameters: None,
+            parallel_tool_calls: None,
         };
 
         let mut pipeline = ScanPipeline::new(temp.path(), config)?;

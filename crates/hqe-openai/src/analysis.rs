@@ -24,12 +24,30 @@ struct LlmAnalysisPayload {
 #[derive(Debug, Clone)]
 pub struct OpenAIAnalyzer {
     client: OpenAIClient,
+    venice_parameters: Option<serde_json::Value>,
+    parallel_tool_calls: Option<bool>,
 }
 
 impl OpenAIAnalyzer {
     /// Create a new analyzer from an OpenAI-compatible client.
     pub fn new(client: OpenAIClient) -> Self {
-        Self { client }
+        Self {
+            client,
+            venice_parameters: None,
+            parallel_tool_calls: None,
+        }
+    }
+
+    /// Attach Venice-specific parameters to chat requests.
+    pub fn with_venice_parameters(mut self, params: Option<serde_json::Value>) -> Self {
+        self.venice_parameters = params;
+        self
+    }
+
+    /// Override parallel tool calls setting when supported by provider.
+    pub fn with_parallel_tool_calls(mut self, value: Option<bool>) -> Self {
+        self.parallel_tool_calls = value;
+        self
     }
 }
 
@@ -38,33 +56,71 @@ impl LlmAnalyzer for OpenAIAnalyzer {
     async fn analyze(&self, bundle: EvidenceBundle) -> hqe_core::Result<AnalysisResult> {
         let prompt = build_analysis_json_prompt(&bundle);
 
-        let response = self
-            .client
-            .chat(ChatRequest {
-                model: self.client.default_model().to_string(),
-                messages: vec![
-                    Message {
-                        role: Role::System,
-                        content: Some(HQE_SYSTEM_PROMPT.to_string()),
-                        tool_calls: None,
-                    },
-                    Message {
-                        role: Role::User,
-                        content: Some(prompt),
-                        tool_calls: None,
-                    },
-                ],
-                temperature: Some(0.2),
-                max_tokens: Some(2000),
-                response_format: Some(ResponseFormat::JsonObject),
-            })
-            .await
-            .map_err(|e| HqeError::Provider(e.to_string()))?;
+        let request = ChatRequest {
+            model: self.client.default_model().to_string(),
+            messages: vec![
+                Message {
+                    role: Role::System,
+                    content: Some(HQE_SYSTEM_PROMPT.to_string().into()),
+                    tool_calls: None,
+                },
+                Message {
+                    role: Role::User,
+                    content: Some(prompt.into()),
+                    tool_calls: None,
+                },
+            ],
+            frequency_penalty: None,
+            presence_penalty: None,
+            repetition_penalty: None,
+            logprobs: None,
+            top_logprobs: None,
+            temperature: Some(0.2),
+            min_temp: None,
+            max_temp: None,
+            top_p: None,
+            top_k: None,
+            max_tokens: Some(2000),
+            max_completion_tokens: None,
+            n: None,
+            stop: None,
+            stop_token_ids: None,
+            seed: None,
+            user: None,
+            prompt_cache_key: None,
+            prompt_cache_retention: None,
+            reasoning_effort: None,
+            reasoning: None,
+            stream: None,
+            stream_options: None,
+            tool_choice: None,
+            tools: None,
+            venice_parameters: self.venice_parameters.clone(),
+            parallel_tool_calls: self.parallel_tool_calls,
+            response_format: Some(ResponseFormat::JsonObject),
+        };
+
+        let response = match self.client.chat(request.clone()).await {
+            Ok(resp) => resp,
+            Err(err) => {
+                let message = err.to_string();
+                if should_retry_without_format(&message) {
+                    let mut fallback = request;
+                    fallback.response_format = None;
+                    self.client
+                        .chat(fallback)
+                        .await
+                        .map_err(|e| HqeError::Provider(e.to_string()))?
+                } else {
+                    return Err(HqeError::Provider(message));
+                }
+            }
+        };
 
         let content = response
             .choices
             .first()
-            .and_then(|c| c.message.content.clone())
+            .and_then(|c| c.message.content.as_ref().and_then(|c| c.to_text_lossy()))
             .ok_or_else(|| HqeError::Provider("Empty response content".to_string()))?;
 
         let json_str = extract_json_object(&content)
@@ -80,6 +136,16 @@ impl LlmAnalyzer for OpenAIAnalyzer {
             blockers: payload.blockers,
         })
     }
+}
+
+fn should_retry_without_format(error: &str) -> bool {
+    let msg = error.to_lowercase();
+    msg.contains("response_format")
+        || msg.contains("json_schema")
+        || msg.contains("json object")
+        || msg.contains("json_object")
+        || msg.contains("unsupported")
+        || msg.contains("not supported")
 }
 
 fn extract_json_object(input: &str) -> Option<String> {

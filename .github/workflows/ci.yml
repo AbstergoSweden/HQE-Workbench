@@ -37,6 +37,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev pkg-config
 
       - name: Cache Cargo
         uses: actions/cache@v3
@@ -67,13 +71,22 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
 
       - name: Build CLI
         run: cargo build --release -p hqe
 
+      - name: Setup Python (for full protocol validation)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies (protocol validation)
+        run: pip install pyyaml jsonschema
+
       - name: Test CLI commands
         run: |
-          ./target/release/hqe --version
           ./target/release/hqe --version
           ./target/release/hqe validate-protocol
 
@@ -96,6 +109,26 @@ jobs:
       - name: Run ESLint
         working-directory: apps/workbench
         run: npm run lint
+
+  test-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/workbench/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/workbench
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: apps/workbench
+        run: npm test
 
   build-macos:
     runs-on: macos-latest

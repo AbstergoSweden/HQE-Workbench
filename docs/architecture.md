@@ -1,10 +1,16 @@
 # HQE Workbench Architecture
 
+This document is the canonical architecture entrypoint. For additional notes and iterations, see:
+
+- `docs/architecture.md`
+- `docs/architecture_v2.md`
+
 ## Overview
 
-HQE Workbench is a local-first macOS desktop application built with Tauri v2, providing a native interface for the HQE Engineer Protocol.
+HQE Workbench is a local-first macOS desktop application built with Tauri v2, providing a native UI
+for the HQE Engineer Protocol while sharing the same Rust scan pipeline as the CLI.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                     HQE Workbench                           │
 │  ┌──────────────────────────────────────────────────────┐  │
@@ -29,121 +35,89 @@ HQE Workbench is a local-first macOS desktop application built with Tauri v2, pr
     └─────────────┘    │     └─────────────┘    │
                        │                        │
                   ┌────┴────┐            ┌─────┴─────┐
-                  │OpenAI   │            │Artifacts  │
-                  │Provider │            │(MD/JSON)  │
-                  └─────────┘            └───────────┘
+                  │Provider │            │Artifacts  │
+                  │(OpenAI  │            │(MD/JSON)  │
+                  │ schema) │            └───────────┘
+                  └─────────┘
 ```
 
 ## Module Boundaries
 
 ### hqe-core
-**Purpose:** Core scan pipeline and data models
 
-**Responsibilities:**
-- Data models (RunManifest, HqeReport, etc.)
-- Scan pipeline orchestration
-- Content redaction engine
-- Repository scanning and analysis
-- Local heuristics
+Purpose: scan pipeline orchestration and shared data models.
 
-**Key Types:**
-- `ScanPipeline` - Main orchestrator
-- `RedactionEngine` - Secret detection and masking
-- `RepoScanner` - File system analysis
+Responsibilities:
+
+- Scan orchestration
+- Repo walking + ingestion
+- Redaction (secret detection + masking)
+- Local-only analysis heuristics
+- Producing a complete `HqeReport` + `RunManifest`
 
 ### hqe-openai
-**Purpose:** OpenAI-compatible LLM provider client
 
-**Responsibilities:**
-- HTTP client for chat completions
-- Request/response serialization
-- Authentication handling
-- Retry logic with exponential backoff
-- Prompt templates
+Purpose: OpenAI-compatible chat completion client used for text-model analysis and Thinktank prompt
+execution. This is where provider discovery and compatibility layers live (Venice/OpenAI/local
+schema servers).
 
-**Key Types:**
-- `OpenAIClient` - Main client
-- `ProviderProfile` - Configuration
-- `ChatRequest/ChatResponse` - API types
+Responsibilities:
+
+- Provider profiles + keychain storage
+- `/models` discovery + filtering to text models
+- Request/response serialization (including JSON/schema response formats where supported)
+- Retry logic and error classification
 
 ### hqe-git
-**Purpose:** Git operations wrapper
 
-**Responsibilities:**
+Purpose: git operations wrapper.
+
+Responsibilities:
+
 - Repository detection
-- Clone, status, branch operations
-- Patch application (dry-run + actual)
-- Commit creation
-
-**Key Types:**
-- `GitRepo` - Repository handle
-- Shells out to system `git` binary
+- Patch generation/apply flows (CLI)
+- Shelling out to system `git`
 
 ### hqe-artifacts
-**Purpose:** Report and manifest generation
 
-**Responsibilities:**
-- Markdown report rendering
-- JSON serialization
-- File output management
+Purpose: artifact and report generation.
 
-**Key Types:**
-- `ArtifactWriter` - Output coordinator
+Responsibilities:
+
+- Writing `run-manifest.json`
+- Writing `report.json`
+- Writing `report.md`
+- Writing `session-log.json` (+ redaction logs where applicable)
 
 ## Data Flow
 
-### Scan Flow
+```mermaid
+flowchart TD
+  U[User] -->|CLI| C[cli/hqe]
+  U -->|UI| T[Tauri app]
 
-```
-1. User selects repository
-   ↓
-2. Phase A: Ingestion
-   - Walk directory tree
-   - Detect tech stack
-   - Read key files
-   - Run local risk checks
-   ↓
-3. Redaction
-   - Scan content for secrets
-   - Replace with REDACTED_*
-   - Generate redaction log
-   ↓
-4. Phase B: Analysis
-   IF local-only:
-     - Use heuristics only
-     - Generate partial report
-   ELSE:
-     - Build evidence bundle
-     - Send to LLM provider
-     - Parse response
-   ↓
-5. Phase C: Report Generation
-   - Build HqeReport struct
-   - Populate all 8 sections
-   ↓
-6. Phase D: Artifact Export
-   - Write run-manifest.json
-   - Write report.json
-   - Write report.md
-   - Write session-log.json
+  C --> P[hqe-core ScanPipeline]
+  T --> P
+
+  P --> R[Repo ingest + local heuristics]
+  P --> S[Secret redaction]
+  P -->|optional| L[LLM analysis via hqe-openai]
+  P --> A[hqe-artifacts]
+
+  A --> M[report.md]
+  A --> J[report.json]
+  A --> X[run-manifest.json]
 ```
 
 ## Security Considerations
 
-1. **API Keys:** Stored in macOS Keychain, never in config files
-2. **Redaction:** All content scanned for secrets before LLM transmission
-3. **Local Mode:** Full functionality without external API calls
-4. **Preview:** User sees exactly what will be sent to provider
+- API keys are stored in macOS Keychain (not committed to disk in plaintext).
+- In LLM-enabled scans, evidence is redacted before transmission.
+- Local-only mode performs no external calls.
 
 ## Threading Model
 
-- **Tauri Commands:** Async Tokio runtime
-- **UI:** Single-threaded JavaScript (main thread)
-- **Git Operations:** Spawned processes
-- **File I/O:** Async Tokio
+- Rust code runs async on Tokio.
+- UI is single-threaded JS/React, calling async Tauri commands.
+- Git operations run as child processes.
 
-## Error Handling
-
-- Rust: `anyhow` for application errors, `thiserror` for library errors
-- JavaScript: Try/catch with user-friendly messages
-- Tauri: Serialized errors sent to frontend

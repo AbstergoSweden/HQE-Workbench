@@ -1,51 +1,35 @@
+description = "Improves a prompt for clarity, constraints, and output formatting"
 prompt = """
 # Improve This Prompt
 
-Analyze and improve the following prompt:
+You will be given a prompt. Rewrite it to be clearer, safer, and more effective while preserving its original intent.
 
-```
+Original prompt:
+```text
 {{args}}
 ```
 
-## Evaluation Criteria:
+## What to Improve
 
-### 1. Clarity & Specificity
-**Current State:**
-- Is the prompt clear and unambiguous?
-- Are the instructions specific enough?
-- Is there room for misinterpretation?
+1) Clarity & Specificity
+- Remove ambiguity and undefined terms.
+- Prefer concrete requirements and measurable constraints.
 
-**Improvements:**
-- Make objectives crystal clear
-- Add specific requirements
-- Remove ambiguity
+2) Context & Assumptions
+- If critical context is missing, add a short “Assumptions” section and/or up to 5 clarifying questions.
 
-### 2. Structure & Organization
-**Current State:**
-- Is the prompt well-organized?
-- Does it use headers, lists, or sections?
-- Is information presented logically?
+3) Output Specification
+- Specify an explicit output format (headings, bullet points, JSON schema, etc.) that matches the task.
+- Specify desired depth (e.g., “3-5 bullets”, “one paragraph”, “include examples”).
 
-**Improvements:**
-- Add clear structure with headers
-- Use numbered steps for processes
-- Group related information
+4) Safety & Scope
+- Add guardrails to avoid hallucinated claims and to ask for missing inputs.
+- Prevent the model from inventing access to tools/files/network unless explicitly provided.
 
-### 3. Context & Constraints
-**Current State:**
-- Does it provide enough context?
-- Are constraints clearly defined?
-- Are assumptions stated?
+## Output (exact order)
 
-**Improvements:**
-- Add relevant background information
-- Specify limitations and boundaries
-- State assumptions explicitly
+1) Improved prompt (ready to copy/paste)
+2) Change log (5-10 bullets, each bullet describes one improvement)
+3) Clarifying questions (optional; only if needed)
+"""
 
-### 4. Output Specification
-**Current State:**
-- Is the desired output format specified?
-- Are examples provided?
-- Is the level of detail clear?
-
-**

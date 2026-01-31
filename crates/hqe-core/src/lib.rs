@@ -14,11 +14,13 @@
 #![warn(clippy::expect_used)]
 
 pub mod models;
+pub mod persistence;
 pub mod redaction;
 pub mod repo;
 pub mod scan;
 
 pub use models::*;
+pub use persistence::*;
 pub use redaction::*;
 pub use repo::*;
 pub use scan::*;

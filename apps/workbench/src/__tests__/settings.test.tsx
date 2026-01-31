@@ -39,4 +39,59 @@ describe('SettingsScreen', () => {
       expect(screen.getByRole('option', { name: 'Venice Text 1' })).not.toBeNull()
     })
   })
+
+  it('uses stored API key and headers for model discovery when available', async () => {
+    const profile = {
+      name: 'Venice',
+      base_url: 'https://api.venice.ai/api/v1',
+      api_key_id: 'api_key:Venice',
+      default_model: 'venice-text-1',
+      headers: { 'X-Test': '1' },
+      organization: null,
+      project: null,
+      provider_kind: 'venice',
+      timeout_s: 60,
+    }
+
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === 'list_provider_profiles') {
+        return Promise.resolve([profile])
+      }
+      if (cmd === 'get_provider_profile') {
+        return Promise.resolve([profile, 'stored-secret'])
+      }
+      if (cmd === 'discover_models') {
+        return Promise.resolve({ models: [] })
+      }
+      return Promise.resolve(undefined)
+    })
+
+    renderWithProviders(<SettingsScreen />)
+
+    const profileOption = await screen.findByRole('option', { name: /select a profile/i })
+    const profileSelect = profileOption.closest('select')
+    if (!profileSelect) {
+      throw new Error('Profile select not found')
+    }
+    await userEvent.selectOptions(profileSelect, 'Venice')
+
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith('get_provider_profile', { name: 'Venice' })
+    })
+
+    const discover = screen.getByRole('button', { name: /discover models/i })
+    await userEvent.click(discover)
+
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith('discover_models', {
+        input: {
+          base_url: 'https://api.venice.ai/api/v1',
+          headers: { 'X-Test': '1' },
+          api_key: 'stored-secret',
+          timeout_s: 60,
+          no_cache: false,
+        },
+      })
+    })
+  })
 })

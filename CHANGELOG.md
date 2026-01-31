@@ -10,10 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial repository scaffold with governance documents
-- CI/CD workflows for build, test, security scanning
-- Pre-commit hooks and code quality tooling
-- Comprehensive documentation structure
+- Repository scaffold with community docs (Contributing, Code of Conduct, Security)
+- CI workflows for build/test/lint and a security audit workflow
+- Documentation structure (architecture, threat model, provider setup)
 
 ## [0.1.0] - 2026-01-30
 
@@ -32,10 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contributing guidelines
 - Security policy
 - Issue and PR templates
-- GitHub Actions workflows (CI, Security, Release, Stale)
-- Dependabot configuration
-- Pre-commit hooks
-- EditorConfig and language-specific formatting configs
+- GitHub Actions workflows (CI, Security)
 
-[Unreleased]: https://github.com/AbstergoSweden/hqe-workbench/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/AbstergoSweden/hqe-workbench/releases/tag/v0.1.0
+[Unreleased]: https://github.com/AbstergoSweden/HQE-Workbench/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/AbstergoSweden/HQE-Workbench/releases/tag/v0.1.0

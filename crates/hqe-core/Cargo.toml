@@ -31,6 +31,13 @@ tempfile = { workspace = true }
 # Security
 regex = { workspace = true }
 secrecy = { workspace = true }
+sha2 = "0.10"
+
+# Filesystem
+dirs = { workspace = true }
+
+# Persistence
+rusqlite = { version = "0.30", features = ["bundled"] }
 
 # HQE internal
 hqe-protocol = { path = "../hqe-protocol" }

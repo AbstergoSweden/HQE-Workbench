@@ -1,13 +1,23 @@
-<img width="1536" height="1024" alt="README_banner" src="https://github.com/user-attachments/assets/1c762e08-59c0-4451-90cf-bdd474d933cd" />
-
 # HQE-Workbench
 
-[![CI Status](https://github.com/AbstergoSweden/hqe-workbench/workflows/CI/badge.svg)](https://github.com/AbstergoSweden/hqe-workbench/actions/workflows/ci.yml)
-[![Security](https://github.com/AbstergoSweden/hqe-workbench/workflows/Security/badge.svg)](https://github.com/AbstergoSweden/hqe-workbench/actions/workflows/security.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AbstergoSweden/hqe-workbench/badge)](https://securityscorecards.dev/viewer/?uri=github.com/AbstergoSweden/hqe-workbench)
+![HQE Workbench banner](https://github.com/user-attachments/assets/1c762e08-59c0-4451-90cf-bdd474d933cd)
 
-A local-first macOS desktop application and CLI tool for running the HQE (High Quality Engineering) Engineer Protocol. Automates codebase health auditing, security scanning, and technical leadership tasks using a combination of local heuristics and LLM-powered analysis.
+[![CI](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/ci.yml)
+[![Security](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/security.yml/badge.svg)](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/security.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AbstergoSweden/HQE-Workbench/badge)](https://securityscorecards.dev/viewer/?uri=github.com/AbstergoSweden/HQE-Workbench)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A local-first macOS desktop application + CLI for running the HQE (High Quality Engineering) Engineer
+Protocol. It automates codebase health auditing and produces actionable, evidence-backed TODOs using
+a combination of local heuristics and (optional) LLM-powered analysis.
+
+Key features:
+
+- Local-only mode (no external API calls)
+- Privacy-First Architecture: Local SQLite database for audit logs and semantic caching
+- Optional LLM analysis via OpenAI-compatible chat completion APIs (text models only)
+- Provider profiles + model discovery (desktop app)
+- Artifact bundle output (`report.md`, `report.json`, `run-manifest.json`, logs)
 
 ## Table of Contents
 
@@ -18,14 +28,11 @@ A local-first macOS desktop application and CLI tool for running the HQE (High Q
   - [Installation](#installation)
   - [Usage](#usage)
 - [Development](#development)
-  - [Building from Source](#building-from-source)
-  - [Running Tests](#running-tests)
-  - [Code Quality](#code-quality)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
+- [Credits](#credits)
 - [Security](#security)
 - [License](#license)
-- [Community](#community)
 
 ## Overview
 
@@ -34,8 +41,9 @@ HQE Workbench is a hybrid Rust/Python/TypeScript application that provides:
 - **Repository Scanning**: Automated codebase health auditing
 - **Secret Redaction**: Intelligent detection and removal of sensitive data
 - **Local-Only Mode**: Privacy-first operation without external API calls
-- **Report Generation**: Comprehensive Markdown and JSON reports
-- **Multi-Runtime Support**: Python 3.11-3.13, Node 20/22
+- **Semantic Caching**: Locally stores LLM responses in SQLite to reduce costs and latency
+- **Report Generation**: Comprehensive Markdown and JSON reports (plus run manifests and session logs)
+- **Provider-agnostic LLM mode**: Any OpenAI-compatible chat completion API (text models only)
 
 ### File Structure
 
@@ -59,6 +67,12 @@ hqe-workbench/
 ```
 
 ## Architecture
+
+High-level architecture is documented in `docs/ARCHITECTURE.md`. The core idea:
+
+- `hqe-core` runs the scan pipeline.
+- `hqe-openai` provides an OpenAI-compatible chat client (used for optional LLM analysis and Thinktank prompts).
+- `hqe-artifacts` writes `run-manifest.json`, `report.json`, and `report.md`.
 
 ```mermaid
 graph TB
@@ -93,15 +107,15 @@ graph TB
 
 - **macOS**: 12.0+ (Monterey)
 - **Rust**: 1.75+
-- **Python**: 3.11, 3.12, or 3.13
-- **Node.js**: 20 or 22
+- **Python**: 3.11+ (used for protocol validation)
+- **Node.js**: 20+ (Workbench UI)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/AbstergoSweden/hqe-workbench.git
-cd hqe-workbench
+git clone https://github.com/AbstergoSweden/HQE-Workbench.git
+cd HQE-Workbench
 
 # Bootstrap the environment (macOS)
 ./scripts/bootstrap_macos.sh
@@ -116,72 +130,34 @@ cargo build --release -p hqe
 
 ```bash
 # Run a local-only scan
-./target/release/hqe scan --repo /path/to/repo --local-only
+./target/release/hqe scan /path/to/repo --local-only
 
-# Generate a report
-./target/release/hqe report --format markdown --output report.md
+# LLM-enabled scan (any OpenAI-compatible provider; text models only)
+./target/release/hqe scan /path/to/repo --profile my-provider
 
-# Start the desktop application (development mode)
-cd apps/workbench
-npm run tauri:dev
+# Disable local semantic caching
+./target/release/hqe scan /path/to/repo --profile my-provider --no-cache
+
+# Export an existing run to a folder
+./target/release/hqe export RUN_ID --out ./hqe-exports
 ```
 
 ## Development
 
-### Building from Source
-
 ```bash
-# Build all Rust crates
-cargo build --workspace
-
-# Build the desktop app
-cd apps/workbench
-npm install
-npm run build
-
-# Build Python components (if applicable)
-cd python
-pip install -e .
-```
-
-### Running Tests
-
-```bash
-# Rust tests
-cargo test --workspace
-
-# TypeScript tests
-cd apps/workbench
-npm test
-
-# Python tests (if applicable)
-pytest
-```
-
-### Code Quality
-
-```bash
-# Format code
-cargo fmt --all
-black .
-npm run format
-
-# Lint code
-cargo clippy --workspace -- -D warnings
-ruff check .
-npm run lint
-
-# Run all quality checks
-npm run preflight  # If using the existing preflight script
+# Run the full local CI-equivalent checks (Rust + Workbench)
+npm run preflight
 ```
 
 ## Documentation
 
-- [Architecture Documentation](docs/ARCHITECTURE.md)
-- [Development Guide](docs/DEVELOPMENT.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Development](docs/DEVELOPMENT.md)
 - [How-To Guide](docs/HOW_TO.md)
 - [About the Project](ABOUT.md)
 - [Legal & License](LEGAL.md)
+- [Privacy](PRIVACY.md)
+- [Support](SUPPORT.md)
 - [API Reference](docs/API.md)
 - [HQE Protocol v3](protocol/README.md)
 
@@ -196,6 +172,10 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 Please note that this project is released with a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to abide by its terms.
 
+## Credits
+
+- Venice.ai integration is supported via its OpenAI-compatible API interface. See `CREDITS.md` for details.
+
 ## Security
 
 Security is a top priority for HQE Workbench. Please see our [Security Policy](SECURITY.md) for:
@@ -209,10 +189,3 @@ Security is a top priority for HQE Workbench. Please see our [Security Policy](S
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Community
-
-- **Maintainer**: AbstergoSweden
-- **Community Profile**: <https://gravatar.com/swingstoccata3h>
-- **Issues**: [GitHub Issues](https://github.com/AbstergoSweden/hqe-workbench/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/AbstergoSweden/hqe-workbench/discussions)

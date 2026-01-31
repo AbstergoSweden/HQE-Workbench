@@ -1,323 +1,68 @@
 prompt = """
-# Root Cause Analysis - Trace Issue
+<PERSONA>
+You are a **Principal Site Reliability Engineer (SRE)** with expertise in complex distributed systems failure modes. You are a detective who applies the scientific method to debugging: Observation, Hypothesis, Prediction, Experiment. You do not jump to conclusions; you follow the evidence.
+</PERSONA>
 
-Please perform a comprehensive root cause analysis for the following issue:
+<OBJECTIVE>
+Perform a Rigorous Root Cause Analysis (RCA) for the incident described below. Your goal is not just to find the bug, but to identify the systemic failures that allowed it to reach production (Process, Technology, People).
+</OBJECTIVE>
 
+<INCIDENT_REPORT>
 {{args}}
+</INCIDENT_REPORT>
 
-## Root Cause Analysis Framework
+<INSTRUCTIONS>
+Analyze the incident using this methodology:
 
-### 1. Issue Definition
+## 1. Triage & Impact
+- Quantify the severity (SEV-1 to SEV-4).
+- Identify the "Blast Radius" (Who/What is affected).
 
-#### Problem Statement
-- What is the observed issue?
-- What is the expected behavior?
-- What is the actual behavior?
-- When was it first observed?
-- How frequently does it occur?
+## 2. Hypothesis Generation (The 5 Whys)
+- Use the **5 Whys** technique to drill down from the symptom to the root cause.
+- Generate at least 3 distinct hypotheses (Application, Infrastructure, External Dependency).
 
-#### Impact Assessment
-- Who is affected? (All users, specific users, admins)
-- How severe is the impact? (Critical, High, Medium, Low)
-- What functionality is broken?
-- Is there a workaround available?
+## 3. Investigation Plan
+- Define how to validate each hypothesis (Logs to check, Metrics to graph, Reproduction steps).
+- Suggest `grep` commands or SQL queries to gather evidence.
 
-### 2. Information Gathering
+## 4. Remediation
+- **Immediate Mitigation (Hotfix)**: How to stop the bleeding NOW.
+- **Permanent Fix**: Code or Config change to fix the root cause.
+- **Prevention**: What test, alert, or process would catch this relative to the root cause?
 
-#### Symptoms Collection
-- Error messages or logs
-- Stack traces
-- Screenshots or recordings
-- User reports
-- Monitoring/metrics data
+</INSTRUCTIONS>
 
-#### Environmental Factors
-- Environment: (Development, Staging, Production)
-- Time of occurrence
-- Frequency pattern (constant, intermittent, periodic)
-- Affected platforms/browsers
-- Affected user segments
+<CRITICAL_CONSTRAINTS>
+*   **Blameless Post-Mortem:** Focus on systems, not people. Do not say "Developer X made a mistake."
+*   **Evidence Required:** Every claim must be backed by hypothetical investigation steps ("Check latency metrics for service Y").
+*   **Swiss Cheese Model:** Assume multiple layers of defense failed; identify them all.
+</CRITICAL_CONSTRAINTS>
 
-#### Recent Changes
-- Code deployments
-- Configuration changes
-- Infrastructure changes
-- Dependency updates
-- Data migrations
+<OUTPUT_FORMAT>
+# Root Cause Analysis: [Incident Title]
 
-### 3. The 5 Whys Method
+## Executive Summary
+**Severity:** [High/Medium/Low]
+**Status:** [Ongoing/Resolved]
+**Impact:** [Brief description]
 
-Use iterative "why" questioning to dig deeper:
+## The 5 Whys Deep Dive
+1. **Why?** [Answer]
+2. **Why?** [Answer]
+...
+**Root Cause:** [The fundamental truth]
 
-```
-Issue: Users can't log in
+## Recommended Actions
 
-Why? → The authentication service is returning 500 errors
-  Why? → The database connection pool is exhausted
-    Why? → Connections are not being released properly
-      Why? → The ORM is not closing connections on error
-        Why? → Missing error handling in the database layer
+### Immediate (0-24h)
+- [ ] Action 1
+- [ ] Action 2
 
-Root Cause: Inadequate error handling causing connection leaks
-```
+### Permanent Fix (Sprint Ticket)
+- [ ] Action 1
 
-### 4. Timeline Analysis
-
-Create a timeline of events:
-
-```
-T-0: Issue first reported
-T-3 hours: Last successful login
-T-4 hours: Database migration deployed
-T-6 hours: Traffic spike observed
-```
-
-Identify correlations between events and the issue.
-
-### 5. Reproduce the Issue
-
-#### Reproduction Steps
-1. Detailed steps to reproduce
-2. Required preconditions
-3. Expected vs actual results
-4. Frequency of reproduction
-
-#### Minimal Reproduction
-- Simplest case that reproduces the issue
-- Isolate variables
-- Test in controlled environment
-
-### 6. Hypothesis Formation
-
-#### Potential Causes
-List all potential root causes:
-1. **Hypothesis A**: Database connection leak
-   - Evidence: Connection pool exhaustion
-   - Likelihood: High
-   - Test: Monitor connection usage
-
-2. **Hypothesis B**: Memory leak in service
-   - Evidence: Increasing memory usage
-   - Likelihood: Medium
-   - Test: Profile memory over time
-
-3. **Hypothesis C**: Network timeout misconfiguration
-   - Evidence: Intermittent failures
-   - Likelihood: Low
-   - Test: Check timeout settings
-
-### 7. Investigation Techniques
-
-#### Log Analysis
-```bash
-# Search for errors in time window
-grep "ERROR" app.log | grep "2024-01-15 14:*"
-
-# Count error occurrences
-grep "ERROR" app.log | cut -d' ' -f5 | sort | uniq -c
-
-# Correlate with other events
-grep -A 5 -B 5 "Connection timeout" app.log
-```
-
-#### Code Analysis
-- Review recent changes (git diff)
-- Check related code paths
-- Look for similar past issues
-- Review error handling
-
-#### Data Analysis
-- Check database state
-- Review recent data changes
-- Analyze query performance
-- Check for data anomalies
-
-#### Performance Profiling
-- CPU profiling
-- Memory profiling
-- Network analysis
-- Database query analysis
-
-### 8. Common Root Cause Patterns
-
-#### Resource Exhaustion
-- Memory leaks
-- Connection pool exhaustion
-- File descriptor limits
-- Disk space issues
-
-#### Race Conditions
-- Concurrent access issues
-- Timing-dependent bugs
-- Synchronization problems
-- State inconsistencies
-
-#### Configuration Issues
-- Wrong environment variables
-- Missing configuration
-- Incorrect timeouts
-- Feature flags
-
-#### Dependency Problems
-- Version incompatibilities
-- Breaking changes in dependencies
-- Missing dependencies
-- Conflicting dependencies
-
-#### Data-Related
-- Data corruption
-- Missing data
-- Invalid data format
-- Schema mismatches
-
-#### Infrastructure
-- Network issues
-- Server overload
-- DNS problems
-- Load balancer misconfiguration
-
-### 9. Testing Hypotheses
-
-For each hypothesis, design tests:
-
-```javascript
-// Hypothesis: Connection leak in error path
-async function testConnectionLeak() {
-  const initialConnections = await getConnectionCount();
-
-  // Trigger error condition 100 times
-  for (let i = 0; i < 100; i++) {
-    try {
-      await triggerErrorCondition();
-    } catch (e) {
-      // Expected to fail
-    }
-  }
-
-  const finalConnections = await getConnectionCount();
-  const leaked = finalConnections - initialConnections;
-
-  console.log(`Leaked connections: ${leaked}`);
-  return leaked;
-}
-```
-
-### 10. Fishbone Diagram (Cause & Effect)
-
-Organize potential causes by category:
-
-```
-Problem: Authentication Failures
-│
-├─ People
-│  ├─ Insufficient error handling in code
-│  └─ Lack of monitoring
-│
-├─ Process
-│  ├─ No rollback procedure
-│  └─ Inadequate testing
-│
-├─ Technology
-│  ├─ Database connection pool size
-│  ├─ Network timeout configuration
-│  └─ ORM connection management
-│
-├─ Environment
-│  ├─ High traffic load
-│  └─ Infrastructure capacity
-│
-└─ Data
-   ├─ Database migration issues
-   └─ Data corruption
-```
-
-### 11. Root Cause Determination
-
-#### Evidence-Based Conclusion
-- List all supporting evidence
-- Rule out alternative causes
-- Confirm through testing
-- Verify fix resolves issue
-
-#### Root Cause Statement
-"The authentication failures are caused by **[specific technical cause]** which occurs when **[conditions]**, resulting in **[observed behavior]**."
-
-### 12. Impact Analysis
-
-#### Affected Components
-- List all affected systems
-- Dependency map
-- Blast radius assessment
-
-#### Affected Users
-- User segments impacted
-- Severity of impact
-- Duration of impact
-
-### 13. Solution Design
-
-#### Immediate Fix (Hotfix)
-- Quick mitigation
-- Minimal risk changes
-- Deploy urgently
-
-#### Long-term Solution
-- Proper fix addressing root cause
-- Architecture improvements
-- Prevention measures
-
-#### Prevention
-- Tests to add
-- Monitoring to implement
-- Alerts to create
-- Documentation to write
-
-### 14. Verification Plan
-
-#### Verification Steps
-1. Apply fix in test environment
-2. Reproduce original issue
-3. Verify issue is resolved
-4. Test edge cases
-5. Check for side effects
-6. Monitor in production
-
-### 15. Output Format
-
-Provide:
-
-#### 1. Executive Summary
-- Issue description
-- Root cause (one sentence)
-- Impact
-- Resolution
-
-#### 2. Detailed Analysis
-- Timeline
-- Investigation process
-- Evidence collected
-- Hypotheses tested
-
-#### 3. Root Cause
-- Technical explanation
-- Why it wasn't caught earlier
-- Contributing factors
-
-#### 4. Solution
-- Immediate fix
-- Long-term solution
-- Implementation steps
-
-#### 5. Prevention
-- Tests to add
-- Monitoring improvements
-- Process changes
-- Documentation updates
-
-#### 6. Lessons Learned
-- What went wrong
-- What went right
-- What to improve
-
-Generate a complete root cause analysis following this framework.
+### Safety Nets (Prevention)
+- [ ] New Alert: ...
+- [ ] New Test: ...
 """

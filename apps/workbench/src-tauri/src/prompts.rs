@@ -1,4 +1,8 @@
-use hqe_openai::{profile::ProfileManager, ClientConfig, OpenAIClient};
+use hqe_openai::{
+    profile::ProfileManager, provider_discovery::is_local_or_private_base_url, ClientConfig,
+    OpenAIClient,
+};
+use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -82,7 +86,12 @@ pub async fn execute_prompt(
         .map_err(|e| e.to_string())?
         .ok_or("Profile not found")?;
 
-    let api_key = api_key.ok_or("API key not found for profile")?;
+    let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
+    let api_key = match api_key {
+        Some(key) => key,
+        None if allow_missing_key => SecretString::new(String::new()),
+        None => return Err("API key not found for profile".to_string()),
+    };
 
     let config = ClientConfig {
         base_url: profile.base_url,
@@ -92,9 +101,10 @@ pub async fn execute_prompt(
         organization: profile.organization.clone(),
         project: profile.project.clone(),
         disable_system_proxy: false,
-        timeout_seconds: 120,
+        timeout_seconds: profile.timeout_s,
         max_retries: 1,
         rate_limit_config: None,
+        cache_enabled: true,
     };
 
     let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;
@@ -107,11 +117,36 @@ pub async fn execute_prompt(
             model: client.default_model().to_string(),
             messages: vec![hqe_openai::Message {
                 role: hqe_openai::Role::User,
-                content: Some(prompt_text),
+                content: Some(prompt_text.into()),
                 tool_calls: None,
             }],
+            frequency_penalty: None,
+            presence_penalty: None,
+            repetition_penalty: None,
+            logprobs: None,
+            top_logprobs: None,
             temperature: Some(0.2),
+            min_temp: None,
+            max_temp: None,
+            top_p: None,
+            top_k: None,
             max_tokens: None,
+            max_completion_tokens: None,
+            n: None,
+            stop: None,
+            stop_token_ids: None,
+            seed: None,
+            user: None,
+            prompt_cache_key: None,
+            prompt_cache_retention: None,
+            reasoning_effort: None,
+            reasoning: None,
+            stream: None,
+            stream_options: None,
+            tool_choice: None,
+            tools: None,
+            venice_parameters: None,
+            parallel_tool_calls: None,
             response_format: None,
         })
         .await
@@ -125,7 +160,8 @@ pub async fn execute_prompt(
     let content = first
         .message
         .content
-        .clone()
+        .as_ref()
+        .and_then(|c| c.to_text_lossy())
         .ok_or_else(|| "No content returned in response".to_string())?;
 
     Ok(ExecutePromptResponse { result: content })

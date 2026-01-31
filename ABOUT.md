@@ -10,11 +10,14 @@ To build the "Jarvis" of software engineering: a proactive, intelligent, and sec
 
 ## Team
 
-**Maintainer**: AbstergoSweden
+**Maintainer**: Faye Hakansdotter (GitHub: <https://github.com/AbstergoSweden>)
 
 We are an open-source initiative driven by the belief that high-quality code is a right, not a privilege.
 
 ## Contact
 
-- **Issues**: [GitHub Issues](https://github.com/AbstergoSweden/hqe-workbench/issues)
+- **Issues**: [GitHub Issues](https://github.com/AbstergoSweden/HQE-Workbench/issues)
 - **Security**: <2-craze-headmen@icloud.com>
+- **Profile**: <https://github.com/AbstergoSweden>
+- **Secondary Profile**: <https://github.com/Fayeblade1488>
+- **Gravatar**: <https://gravatar.com/swingstoccata3h>

@@ -1,22 +1,24 @@
 //! Tauri commands for the workbench UI
 
 use crate::AppState;
+use hqe_artifacts::ArtifactWriter;
 use hqe_core::models::*;
 use hqe_core::scan::ScanPipeline;
-use hqe_artifacts::ArtifactWriter;
 use hqe_openai::profile::{
     ApiKeyStore, DefaultProfilesStore, KeychainStore, ProfileManager, ProfilesStore,
     ProviderProfile,
 };
-use hqe_openai::provider_discovery::{DiskCache, ProviderDiscoveryClient, ProviderModelList};
+use hqe_openai::provider_discovery::{
+    is_local_or_private_base_url, DiskCache, ProviderDiscoveryClient, ProviderModelList,
+};
 use hqe_openai::OpenAIAnalyzer;
+use hqe_openai::ProviderKindExt;
 use secrecy::{ExposeSecret, SecretString};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{command, Manager, State};
-use hqe_openai::ProviderKindExt;
 use tauri_plugin_dialog::DialogExt;
 use url::Url;
 
@@ -71,7 +73,12 @@ pub async fn scan_repo(
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Profile not found".to_string())?;
 
-        let api_key = api_key.ok_or_else(|| "No API key stored for profile".to_string())?;
+        let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
+        let api_key = match api_key {
+            Some(key) => key,
+            None if allow_missing_key => SecretString::new(String::new()),
+            None => return Err("No API key stored for profile".to_string()),
+        };
 
         pipeline.set_provider_info(ProviderInfo {
             name: profile.name.clone(),
@@ -91,10 +98,13 @@ pub async fn scan_repo(
             timeout_seconds: profile.timeout_s,
             max_retries: 1,
             rate_limit_config: None,
+            cache_enabled: true,
         })
         .map_err(|e| e.to_string())?;
 
-        let analyzer = OpenAIAnalyzer::new(llm_client);
+        let analyzer = OpenAIAnalyzer::new(llm_client)
+            .with_venice_parameters(config.venice_parameters.clone())
+            .with_parallel_tool_calls(config.parallel_tool_calls);
         pipeline = pipeline.with_llm_analyzer(Arc::new(analyzer));
     }
 
@@ -178,7 +188,10 @@ pub async fn get_repo_info(repo_path: String) -> Result<RepoInfo, String> {
 
 /// Load a report by run ID
 #[command]
-pub async fn load_report(app: tauri::AppHandle, run_id: String) -> Result<Option<HqeReport>, String> {
+pub async fn load_report(
+    app: tauri::AppHandle,
+    run_id: String,
+) -> Result<Option<HqeReport>, String> {
     // Validate the run_id to prevent path traversal
     if !is_valid_run_id(&run_id) {
         return Err("Invalid run ID format".to_string());
@@ -267,11 +280,7 @@ pub async fn export_artifacts(
     // Copy artifacts
     for entry in std::fs::read_dir(&canonical_source).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
-        if entry
-            .file_type()
-            .map_err(|e| e.to_string())?
-            .is_dir()
-        {
+        if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
             continue;
         }
         let target_file = target.join(entry.file_name());
@@ -285,10 +294,7 @@ pub async fn export_artifacts(
 }
 
 fn get_output_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let base = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?;
+    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
     Ok(base.join("hqe-output"))
 }
 
@@ -401,7 +407,12 @@ pub async fn test_provider_connection(profile_name: String) -> Result<bool, Stri
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Profile not found".to_string())?;
 
-    let api_key = api_key.ok_or_else(|| "No API key stored for profile".to_string())?;
+    let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
+    let api_key = match api_key {
+        Some(key) => key,
+        None if allow_missing_key => SecretString::new(String::new()),
+        None => return Err("No API key stored for profile".to_string()),
+    };
 
     let config = hqe_openai::ClientConfig {
         base_url: profile.base_url.clone(),
@@ -414,6 +425,7 @@ pub async fn test_provider_connection(profile_name: String) -> Result<bool, Stri
         timeout_seconds: profile.timeout_s,
         max_retries: 1,
         rate_limit_config: None,
+        cache_enabled: true,
     };
 
     let client = hqe_openai::OpenAIClient::new(config).map_err(|e| e.to_string())?;

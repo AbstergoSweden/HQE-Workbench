@@ -496,7 +496,13 @@ mod tests {
 
         // Create initial commit so HEAD exists
         let commit = Command::new("git")
-            .args(["-c", "commit.gpgsign=false", "commit", "-m", "Initial commit"])
+            .args([
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-m",
+                "Initial commit",
+            ])
             .current_dir(temp.path())
             .output()
             .await?;

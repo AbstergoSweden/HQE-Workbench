@@ -7,9 +7,11 @@ Thank you for your interest in contributing! We are building the future of auton
 1. **Fork & Clone**:
 
     ```bash
-    git clone https://github.com/YOUR_USERNAME/hqe-workbench.git
-    cd hqe-workbench
+    git clone https://github.com/AbstergoSweden/HQE-Workbench.git
+    cd HQE-Workbench
     ```
+
+    If you are contributing from a fork, replace the clone URL with your fork URL.
 
 2. **Bootstrap**:
 
@@ -33,7 +35,9 @@ Thank you for your interest in contributing! We are building the future of auton
     This runs:
     - Rust tests & formatting (`cargo test`, `cargo fmt`)
     - TypeScript linting & testing (`npm run lint`, `npm test`)
-    - Security audits (`cargo audit`)
+
+    Optional (recommended) security audit:
+    - `cargo audit`
 
 2. **Commit Messages**: We follow [Conventional Commits](https://www.conventionalcommits.org/):
     - `feat(core): add new scanner`

@@ -4,6 +4,13 @@ HQE Workbench supports any OpenAI-compatible API provider.
 
 ## Supported Providers
 
+### Venice.ai
+```
+Name: venice
+Base URL: https://api.venice.ai/api/v1
+Models: Discover via Settings; filters to text/code models only
+```
+
 ### OpenAI
 ```
 Name: openai
@@ -14,9 +21,9 @@ Models: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
 ### Azure OpenAI
 ```
 Name: azure-openai
-Base URL: https://YOUR_RESOURCE.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT
-Models: Your deployment name
-Headers: api-key: YOUR_API_KEY
+Base URL: https://my-resource.openai.azure.com/openai/deployments/my-deployment
+Models: Use your deployment name from the Azure OpenAI portal
+Headers: api-key: (Azure OpenAI key from the portal)
 ```
 
 ### LocalAI / LM Studio

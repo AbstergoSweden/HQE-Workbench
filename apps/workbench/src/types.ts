@@ -81,6 +81,16 @@ export interface ProviderProfile {
 export interface ProviderModel {
   id: string
   name?: string
+  context_length?: number
+  traits?: {
+    supports_vision?: boolean
+    supports_tools?: boolean
+    supports_reasoning?: boolean
+    supports_web_search?: boolean
+    supports_response_schema?: boolean
+    supports_logprobs?: boolean
+    code_optimized?: boolean
+  }
 }
 
 export interface ProviderModelList {

@@ -35,10 +35,7 @@ data_schemas: {}
         .expect("Failed to write manifest");
 
     // 4. Run a deterministic scan to load new topics
-    engine
-        .initial_scan()
-        .await
-        .expect("Initial scan failed");
+    engine.initial_scan().await.expect("Initial scan failed");
 
     // 5. Wait for event
     let event = tokio::time::timeout(Duration::from_secs(2), rx.recv())

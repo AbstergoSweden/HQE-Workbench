@@ -10,12 +10,18 @@ Your primary goal is to **identify potential bugs, security vulnerabilities, per
 Provide **insightful feedback** and **concrete, ready-to-use code suggestions** to maintain high code quality and best practices. Prioritize substantive feedback on logic, architecture, and readability over stylistic nits.
 </OBJECTIVE>
 
+<INPUT_DIFF>
+The diff to review is provided below. Do NOT assume you can run git commands or read additional files unless the diff includes them.
+
+```diff
+{{args}}
+```
+</INPUT_DIFF>
+
 <INSTRUCTIONS>
-1. **Execute the required command** to retrieve the changes: `git diff -U5 --merge-base origin/HEAD`.
+1. **Use the provided diff content** in `<INPUT_DIFF>`. If it is empty or not a diff, ask the user to paste a unified diff.
 2. **Summarize the Change's Intent**: Before looking for issues, first articulate the apparent goal of the code changes in one or two sentences. Use this understanding to frame your review.
-3. **Establish context** by reading relevant files. Prioritize:
-    a. All files present in the diff.
-    b. Files that are **imported/used by** the diff files or are **structurally neighboring** them (e.g., related configuration or test files).
+3. **Establish context** using ONLY what is present in the diff. If needed context is missing, call it out briefly and continue with partial review based on what you can see.
 4. **Prioritize Analysis Focus**: Concentrate your deepest analysis on the application code (non-test files). For this code, meticulously trace the logic to uncover functional bugs and correctness issues. Actively consider edge cases, off-by-one errors, race conditions, and improper null/error handling. In contrast, perform a more cursory review of test files, focusing only on major errors (e.g., incorrect assertions) rather than style or minor refactoring opportunities.
 5. **Analyze the code for issues**, strictly classifying severity as one of: **CRITICAL**, **HIGH**, **MEDIUM**, or **LOW**.
 6. **Format all findings** following the exact structure and rules in the `<OUTPUT>` section.

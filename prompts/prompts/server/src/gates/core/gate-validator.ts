@@ -197,41 +197,48 @@ export class GateValidator {
   /**
    * Run a single validation check
    *
-   * NOTE: String-based checks (content_check, pattern_check, methodology_compliance)
-   * have been intentionally removed. These naive checks (length validation, substring
-   * matching, regex patterns) don't provide meaningful signal for LLM-generated content.
-   *
-   * The only valuable validation for LLM output is LLM-based evaluation, which requires
-   * a separate LLM call. This is the focus of future implementation.
-   */
+ * NOTE: String-based checks (content_check, pattern_check) are retained as a
+ * baseline for validation when LLM self-check is not configured. When LLM
+ * integration is enabled, llm_self_check provides the strongest signal.
+ */
   private async runValidationCheck(
     criteria: GatePassCriteria,
-    _context: ValidationContext
+    context: ValidationContext
   ): Promise<ValidationCheck> {
     try {
-      // Only LLM self-check provides meaningful validation for LLM content
-      if (criteria.type === 'llm_self_check') {
-        return await this.runLLMSelfCheck(criteria);
+      switch (criteria.type) {
+        case 'llm_self_check':
+          return await this.runLLMSelfCheck(criteria, context);
+
+        case 'content_check':
+          return this.runContentCheck(criteria, context);
+
+        case 'pattern_check':
+          return this.runPatternCheck(criteria, context);
+
+        case 'methodology_compliance':
+          return {
+            type: criteria.type,
+            passed: true,
+            score: 1.0,
+            message: 'Methodology compliance check deferred to framework system',
+            details: {
+              skipped: true,
+              reason: 'Methodology compliance validation not implemented in gate validator',
+            },
+          };
+
+        default:
+          return {
+            type: criteria.type,
+            passed: true,
+            score: 1.0,
+            message: `Unknown check type '${criteria.type}' skipped`,
+            details: {
+              skipped: true,
+            },
+          };
       }
-
-      // Other check types auto-pass with explanation
-      // These were removed because string-based checks don't validate LLM output quality
-      this.logger.debug(
-        `[GATE VALIDATOR] Check type '${criteria.type}' auto-passed (string-based validation removed)`
-      );
-
-      return {
-        type: criteria.type,
-        passed: true,
-        score: 1.0,
-        message: `Check type '${criteria.type}' skipped - string-based validation removed (use llm_self_check for meaningful LLM validation)`,
-        details: {
-          skipped: true,
-          reason:
-            'String-based checks removed as they do not provide meaningful signal for LLM content',
-          recommendation: 'Use llm_self_check with LLM integration for semantic validation',
-        },
-      };
     } catch (error) {
       this.logger.error(`Validation check failed for ${criteria.type}:`, error);
       return {
@@ -267,7 +274,10 @@ export class GateValidator {
    *
    * Current behavior: Gracefully skips when LLM not configured
    */
-  private async runLLMSelfCheck(criteria: GatePassCriteria): Promise<ValidationCheck> {
+  private async runLLMSelfCheck(
+    criteria: GatePassCriteria,
+    context: ValidationContext
+  ): Promise<ValidationCheck> {
     // Check if LLM integration is configured and enabled
     const llmConfig = this.llmConfig;
     if (llmConfig?.enabled !== true) {
@@ -301,24 +311,251 @@ export class GateValidator {
       };
     }
 
-    // TODO: Once LLM API client is available, implement actual validation here
-    this.logger.warn('[LLM GATE] LLM self-check requested but API client not yet implemented');
-    this.logger.debug(`[LLM GATE] Would validate with template: ${criteria.prompt_template}`);
+    const prompt = this.buildSelfCheckPrompt(criteria, context);
+    const threshold = criteria.pass_threshold ?? 0.7;
+
+    try {
+      const responseText = await this.callLLMSelfCheck(llmConfig, prompt);
+      const parsed = this.parseSelfCheckResponse(responseText);
+
+      const score = parsed.score ?? 0;
+      const passed = parsed.passed ?? score >= threshold;
+
+      return {
+        type: 'llm_self_check',
+        passed,
+        score,
+        message: parsed.feedback ?? 'LLM self-check completed',
+        details: {
+          threshold,
+          raw: parsed.raw,
+        },
+      };
+    } catch (error) {
+      this.logger.error('[LLM GATE] LLM self-check failed:', error);
+      return {
+        type: 'llm_self_check',
+        passed: false,
+        message: `LLM self-check failed: ${error instanceof Error ? error.message : String(error)}`,
+        details: {
+          threshold,
+        },
+      };
+    }
+  }
+
+  private runContentCheck(criteria: GatePassCriteria, context: ValidationContext): ValidationCheck {
+    const content = context.content ?? '';
+    const messages: string[] = [];
+    let passed = true;
+
+    if (criteria.min_length !== undefined && content.length < criteria.min_length) {
+      passed = false;
+      messages.push(`Content too short: ${content.length} < ${criteria.min_length} characters`);
+    }
+
+    if (criteria.max_length !== undefined && content.length > criteria.max_length) {
+      passed = false;
+      messages.push(`Content too long: ${content.length} > ${criteria.max_length} characters`);
+    }
+
+    if (criteria.required_patterns && criteria.required_patterns.length > 0) {
+      for (const pattern of criteria.required_patterns) {
+        try {
+          const regex = new RegExp(pattern, 'i');
+          if (!regex.test(content)) {
+            passed = false;
+            messages.push(`Missing required pattern: ${pattern}`);
+          }
+        } catch {
+          messages.push(`Invalid regex pattern: ${pattern}`);
+        }
+      }
+    }
+
+    if (criteria.forbidden_patterns && criteria.forbidden_patterns.length > 0) {
+      for (const pattern of criteria.forbidden_patterns) {
+        try {
+          const regex = new RegExp(pattern, 'i');
+          if (regex.test(content)) {
+            passed = false;
+            messages.push(`Contains forbidden pattern: ${pattern}`);
+          }
+        } catch {
+          messages.push(`Invalid regex pattern: ${pattern}`);
+        }
+      }
+    }
 
     return {
-      type: 'llm_self_check',
-      passed: true, // Auto-pass until implementation complete
-      score: 1.0,
-      message: 'LLM validation not yet implemented (API client integration pending)',
-      details: {
-        skipped: true,
-        reason: 'LLM API client not yet implemented',
-        configEnabled: llmConfig.enabled,
-        endpoint: llmConfig.endpoint,
-        templateRequested: criteria.prompt_template || 'default',
-        implementation: 'TODO: Wire LLM client from semantic analyzer',
-      },
+      type: 'content_check',
+      passed,
+      score: passed ? 1.0 : 0.0,
+      message: messages.length > 0 ? messages.join('; ') : 'Content check passed',
     };
+  }
+
+  private runPatternCheck(criteria: GatePassCriteria, context: ValidationContext): ValidationCheck {
+    const content = context.content ?? '';
+    const messages: string[] = [];
+    let passed = true;
+
+    if (criteria.regex_patterns && criteria.regex_patterns.length > 0) {
+      for (const pattern of criteria.regex_patterns) {
+        try {
+          const regex = new RegExp(pattern, 'i');
+          if (!regex.test(content)) {
+            passed = false;
+            messages.push(`Missing regex pattern: ${pattern}`);
+          }
+        } catch {
+          messages.push(`Invalid regex pattern: ${pattern}`);
+        }
+      }
+    }
+
+    if (criteria.keyword_count) {
+      for (const [keyword, count] of Object.entries(criteria.keyword_count)) {
+        const found = (content.match(new RegExp(keyword, 'gi')) || []).length;
+        if (found < count) {
+          passed = false;
+          messages.push(`Keyword '${keyword}' appears ${found}/${count} times`);
+        }
+      }
+    }
+
+    return {
+      type: 'pattern_check',
+      passed,
+      score: passed ? 1.0 : 0.0,
+      message: messages.length > 0 ? messages.join('; ') : 'Pattern check passed',
+    };
+  }
+
+  private buildSelfCheckPrompt(criteria: GatePassCriteria, context: ValidationContext): string {
+    const metadata = context.metadata ? JSON.stringify(context.metadata, null, 2) : '{}';
+    const executionContext = context.executionContext
+      ? JSON.stringify(context.executionContext, null, 2)
+      : '{}';
+
+    const defaultTemplate = `You are a strict quality gate for LLM outputs.
+Evaluate the content and return JSON: {"passed": boolean, "score": number, "feedback": string}.
+Score must be between 0 and 1. Use the "feedback" field for concise rationale.
+
+Content:
+{{content}}
+
+Metadata:
+{{metadata}}
+
+ExecutionContext:
+{{execution_context}}`;
+
+    const template = criteria.prompt_template?.trim().length
+      ? criteria.prompt_template
+      : defaultTemplate;
+
+    return template
+      .replace('{{content}}', context.content ?? '')
+      .replace('{{metadata}}', metadata)
+      .replace('{{execution_context}}', executionContext);
+  }
+
+  private async callLLMSelfCheck(
+    llmConfig: LLMIntegrationConfig,
+    prompt: string
+  ): Promise<string> {
+    const endpoint = llmConfig.endpoint ?? 'https://api.openai.com/v1/chat/completions';
+    const lower = endpoint.toLowerCase();
+
+    if (lower.includes('api.anthropic.com')) {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${llmConfig.apiKey ?? ''}`,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: llmConfig.model,
+          max_tokens: llmConfig.maxTokens,
+          temperature: llmConfig.temperature,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as any;
+      const content = data.content?.[0]?.text;
+      if (!content) {
+        throw new Error('No content in Anthropic response');
+      }
+      return content;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (llmConfig.apiKey) {
+      headers.Authorization = `Bearer ${llmConfig.apiKey}`;
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: llmConfig.model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a strict validator. Return only valid JSON with passed/score/feedback.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        max_tokens: llmConfig.maxTokens,
+        temperature: llmConfig.temperature,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`LLM API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as any;
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('No content in LLM response');
+    }
+
+    return content;
+  }
+
+  private parseSelfCheckResponse(responseText: string): {
+    passed?: boolean;
+    score?: number;
+    feedback?: string;
+    raw?: string;
+  } {
+    try {
+      const parsed = JSON.parse(responseText);
+      return {
+        passed: typeof parsed.passed === 'boolean' ? parsed.passed : undefined,
+        score: typeof parsed.score === 'number' ? parsed.score : undefined,
+        feedback: typeof parsed.feedback === 'string' ? parsed.feedback : undefined,
+        raw: responseText,
+      };
+    } catch {
+      return {
+        raw: responseText,
+      };
+    }
   }
 
   /**

@@ -1,0 +1,85 @@
+name: Bug report
+description: Report a reproducible bug in HQE Workbench (CLI or Desktop app)
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - Desktop app (Tauri)
+        - CLI (hqe)
+        - Provider integration (OpenAI-compatible / Venice / local LLM)
+        - Prompt library / Thinktank
+        - Docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, in one or two sentences?
+      placeholder: "Example: Model discovery fails when using a saved profile without re-entering the API key."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Provide exact steps. Include commands and config values (redact secrets).
+      placeholder: |
+        1. Go to Settings
+        2. Select profile "venice"
+        3. Click "Discover Models"
+        4. Observe error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Models list should populate with Venice text models."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: "UI shows toast: Failed to discover models."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / error output
+      description: Paste relevant logs. Redact tokens and secrets.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version / Commit
+      description: Output of `hqe --version` or the git commit hash.
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node/Rust versions, provider info (redact secrets).
+      placeholder: |
+        - OS: macOS 14.6
+        - Rust: 1.75.0
+        - Node: 20.11
+        - Provider: Venice (https://api.venice.ai/api/v1)
+    validations:
+      required: false
+

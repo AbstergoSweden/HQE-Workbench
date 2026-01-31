@@ -105,6 +105,7 @@ export const ThinktankScreen: FC = () => {
   const location = useLocation()
   const [prompts, setPrompts] = useState<PromptTool[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [showAgentPrompts, setShowAgentPrompts] = useState(false)
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTool | null>(null)
   const [args, setArgs] = useState<Record<string, unknown>>({})
   const [result, setResult] = useState<string>('')
@@ -112,6 +113,10 @@ export const ThinktankScreen: FC = () => {
   const [executing, setExecuting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const toast = useToast()
+
+  const isAgentPrompt = useCallback((name: string) => {
+    return name.startsWith('conductor_') || name.startsWith('cli_security_')
+  }, [])
 
   const handleSelectPrompt = useCallback((prompt: PromptTool, initialArgs?: Record<string, unknown>) => {
     setSelectedPrompt(prompt)
@@ -153,6 +158,9 @@ export const ThinktankScreen: FC = () => {
       if (state?.promptName) {
         const target = loaded.find(p => p.name === state.promptName || `prompts__${p.name}` === state.promptName)
         if (target) {
+          if (isAgentPrompt(target.name)) {
+            setShowAgentPrompts(true)
+          }
           handleSelectPrompt(target, state.args)
         }
       }
@@ -163,7 +171,7 @@ export const ThinktankScreen: FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [handleSelectPrompt, location.state])
+  }, [handleSelectPrompt, isAgentPrompt, location.state, toast])
 
   useEffect(() => {
     loadPrompts()
@@ -195,10 +203,13 @@ export const ThinktankScreen: FC = () => {
     }
   }
 
-  const filteredPrompts = prompts.filter(p =>
+  const searchFilteredPrompts = prompts.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.description.toLowerCase().includes(searchQuery.toLowerCase())
   )
+  const visiblePrompts = searchFilteredPrompts.filter((p) => showAgentPrompts || !isAgentPrompt(p.name))
+  const hiddenAgentCount =
+    showAgentPrompts ? 0 : searchFilteredPrompts.filter((p) => isAgentPrompt(p.name)).length
 
   return (
     <div className="flex h-full gap-6">
@@ -218,6 +229,15 @@ export const ThinktankScreen: FC = () => {
               {loading ? <span role="img" aria-label="loading">⏳</span> : <span role="img" aria-label="refresh">🔃</span>}
             </button>
           </div>
+          <label className="inline-flex items-center gap-2 text-xs text-emerald-200/70">
+            <input
+              type="checkbox"
+              checked={showAgentPrompts}
+              onChange={(e) => setShowAgentPrompts(e.target.checked)}
+              className="w-4 h-4 rounded border-emerald-500/50 bg-black/20 text-emerald-500 focus:ring-emerald-500"
+            />
+            Show agent/tool prompts (advanced)
+          </label>
           <input
             type="text"
             placeholder="Search prompts..."
@@ -234,11 +254,11 @@ export const ThinktankScreen: FC = () => {
             </div>
           ) : prompts.length === 0 ? (
             <div className="p-8 text-center text-sm text-emerald-200/40">No prompts found in /prompts</div>
-          ) : filteredPrompts.length === 0 ? (
+          ) : visiblePrompts.length === 0 ? (
             <div className="p-8 text-center text-sm text-emerald-200/40">No matching prompts</div>
           ) : (
             <div className="flex flex-col">
-              {filteredPrompts.map(p => (
+              {visiblePrompts.map(p => (
                 <button
                   key={p.name}
                   onClick={() => handleSelectPrompt(p)}
@@ -249,6 +269,11 @@ export const ThinktankScreen: FC = () => {
                 >
                   <div className="font-bold mb-1 truncate flex items-center gap-2 text-emerald-50">
                     {p.name.replace(/_/g, ' ')}
+                    {isAgentPrompt(p.name) && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200/80 border border-amber-500/20">
+                        AGENT
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-emerald-200/60 line-clamp-2">{p.description}</div>
                 </button>
@@ -257,7 +282,7 @@ export const ThinktankScreen: FC = () => {
           )}
         </div>
         <div className="p-2 border-t border-emerald-500/10 text-center text-xs text-emerald-200/40 bg-black/10">
-          {filteredPrompts.length} prompts available
+          {visiblePrompts.length} prompts available{hiddenAgentCount > 0 ? ` (${hiddenAgentCount} hidden)` : ''}
         </div>
       </Card>
 
@@ -278,6 +303,12 @@ export const ThinktankScreen: FC = () => {
                 <span>{selectedPrompt.name.replace(/_/g, ' ')}</span>
                 <span className="text-xs font-normal text-emerald-200/40">({selectedPrompt.name})</span>
               </h2>
+              {isAgentPrompt(selectedPrompt.name) && (
+                <div className="mb-4 text-sm rounded border border-amber-500/20 bg-amber-500/10 text-amber-200/90 p-3">
+                  This prompt is designed for an agent runtime with tool/file access. Thinktank will only send text to the model.
+                  Expect partial output unless you paste all required context into the inputs.
+                </div>
+              )}
               <p className="text-sm mb-6 text-emerald-200/80">{selectedPrompt.description}</p>
 
               <div className="flex flex-col gap-4">

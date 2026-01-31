@@ -11,7 +11,7 @@ Legend:
 - P2: Important quality gaps (DX/UX/perf) with real risk
 - P3: Minor issues / cleanup
 
-Status: ✅ All items below have been completed as of 2026-01-31.
+Status: ✅ Docs/CI sweep completed as of 2026-01-31; remaining open items tracked below.
 
 Summary of Completed Work
 
@@ -21,15 +21,185 @@ Summary of Completed Work
 - Hardened path safety and error handling (`read_file`, `load_report`, run_id validation) plus Windows path filtering.
 - UI upgrades: dynamic scan progress, evidence rendering by type, HashRouter for Tauri, better Thinktank typing + accessibility, provider profile list/edit/delete, and toast error surfacing.
 - Test suite stabilized: fixed git test signing, ingestion integration test timing, prompts server test shim, and added real UI tests.
+- Repo/community hygiene: fixed CI workflows, added GitHub templates and standard docs, and ensured `npm run preflight` passes (Rust tests/clippy/fmt + Workbench lint/tests).
 
 Where to Continue (for future AI)
 
-- No open TODOs remain in this file. Start by reviewing git status and recent changes, then re-run:
+- No remaining open TODOs in this file.
+- If you change provider/client behavior, re-run `npm run preflight`.
+
+---
+
+## Open TODO (Starting 2026-01-31 Sweep 2)
+
+These items were discovered during a repo-wide bug sweep focused on provider discovery,
+Venice/OpenAI compatibility, and UI model population.
+
+## Sweep 2: P1 (Major Correctness / Reliability)
+
+1) P1 - Model discovery cannot use stored API keys/headers; auto-population fails for saved profiles ✅
+
+- Evidence:
+  - Selecting a profile wipes the API key and ignores stored headers: `apps/workbench/src/screens/SettingsScreen.tsx:54-63`
+  - Discovery always calls `discover_models` with `headers: {}` and `api_key` from input only: `apps/workbench/src/screens/SettingsScreen.tsx:103-113`
+  - Profile manager only writes keys when `api_key` is provided: `crates/hqe-openai/src/profile.rs:359-377`
+- Why it matters: users with saved keys (or providers requiring extra headers) cannot discover models unless they re-enter secrets; renaming a profile can orphan the key.
+- Fix:
+  - Load stored API key via `get_provider_profile` when selecting a profile.
+  - Preserve profile headers in state and forward them to `discover_models`.
+  - Preserve key on rename by re-saving with the stored key when no new key is provided.
+- Verify:
+  - `apps/workbench/src/__tests__/settings.test.tsx` covers stored key/headers discovery path.
+
+1) P1 - Local LLMs on LAN (http) are rejected by URL sanitization ✅
+
+- Evidence: `crates/hqe-openai/src/provider_discovery.rs:342-351` only allows `http` for `localhost/127.0.0.1/::1`.
+- Why it matters: the product requirement includes “localized LLMs”; many are hosted on LAN IPs (`http://192.168.x.x:8000/v1`) and are currently blocked.
+- Fix:
+  - Allow `http` for RFC1918/private IPv4 ranges and IPv6 unique-local addresses.
+- Verify:
+  - New unit tests in `crates/hqe-openai/src/provider_discovery.rs`.
+
+1) P1 - LLM scan forces JSON response format with no capability gating ✅
+
+- Evidence:
+  - Analyzer always uses `response_format: json_object`: `crates/hqe-openai/src/analysis.rs:41-60`
+  - Model capabilities are discovered but not surfaced to the UI: `crates/hqe-openai/src/provider_discovery.rs:90-107` and `apps/workbench/src/types.ts:81-90`
+- Why it matters: selecting a model that doesn’t support JSON/schema responses can cause hard failures on scan.
+- Fix:
+  - Added fallback in `OpenAIAnalyzer` to retry without `response_format` when the provider rejects JSON mode.
+- Verify:
+  - Models without JSON mode return output via fallback path (no hard failure).
+
+1) P1 - Venice/OpenAI JSON schema response format is unsupported in the client ✅
+
+- Evidence:
+  - Venice spec includes `response_format: { type: "json_schema", json_schema: ... }`: `docs/swagger.yaml:821-849`
+  - Client only supports `json_object` and `text`: `crates/hqe-openai/src/lib.rs:124-134`
+- Fix:
+  - Added `ResponseFormat::JsonSchema { json_schema }` to the client serializer.
+- Verify:
+  - JSON schema requests serialize per spec when used.
+
+## Sweep 2: P2 (Important Quality / UX / Perf)
+
+1) P2 - ChatRequest lacks several Venice/OpenAI text parameters ✅
+
+- Evidence:
+  - Spec supports `max_completion_tokens`, `logprobs`, `top_logprobs`, `frequency_penalty`, etc.: `docs/swagger.yaml:70-100`
+  - Client only exposes `temperature`, `max_tokens`, `response_format`: `crates/hqe-openai/src/lib.rs:108-121`
+- Fix:
+  - Added optional fields to `ChatRequest` (penalties, logprobs, top_p/top_k, max_completion_tokens, stop, seed, user, cache controls, reasoning, stream, tools, venice_parameters).
+  - Updated all ChatRequest call sites and rate-limit estimation to prefer `max_completion_tokens`.
+- Verify:
+  - `cargo test --workspace`
+  - `cargo clippy --workspace -- -D warnings`
+
+1) P2 - Venice-specific request parameters are not supported ✅
+
+- Evidence: spec defines `venice_parameters` and `parallel_tool_calls`: `docs/swagger.yaml:810-819`
+- Fix:
+  - Added Venice options to scan config and analyzer; UI/CLI can now pass `venice_parameters` and `parallel_tool_calls`.
+- Verify:
+  - Venice options visible in Scan UI when a Venice profile is selected.
+
+1) P2 - Message content only supports string; spec allows array content parts ✅
+
+- Evidence:
+  - Spec allows `content` to be a string or array of content objects: `docs/swagger.yaml:100-108`
+  - Previously, client `Message.content` was `Option<String>` which fails for array content.
+- Fix:
+  - Implemented `MessageContent` (serde untagged) supporting either `Text(String)` or `Parts(Vec<serde_json::Value>)`.
+  - Added `MessageContent::to_text_lossy()` to extract text from structured content arrays (text-only).
+  - Updated analyzers and prompt execution paths to build messages via `MessageContent` and extract response text safely:
+    - `crates/hqe-openai/src/analysis.rs`
+    - `crates/hqe-openai/src/lib.rs`
+    - `apps/workbench/src-tauri/src/prompts.rs`
+    - `cli/hqe/src/main.rs`
+- Verify:
+  - `npm run preflight`
+
+1) P2 - Model discovery output drops traits in UI, preventing “text-only / schema-capable” filtering ✅
+
+- Evidence:
+  - `DiscoveredModel` includes `traits` in Rust: `crates/hqe-openai/src/provider_discovery.rs:90-94`
+  - UI `ProviderModel` has only `id`/`name`: `apps/workbench/src/types.ts:81-84`
+- Fix:
+  - Extended UI model types to include `traits`.
+  - Settings UI now marks schema-capable models and warns when selected model lacks schema support.
+- Verify:
+  - Discover models shows “(JSON)” badges where applicable and warning text for non-schema models.
+
+1) P2 - Non-Venice providers rely on ID heuristics for text model filtering ✅
+
+- Evidence: `is_chat_model_id` heuristics only: `crates/hqe-openai/src/provider_discovery.rs:418-448`
+- Fix:
+  - Preserve `model_type` on discovered models and prefer explicit type/modality when filtering.
+- Verify:
+  - Unit tests updated in `crates/hqe-openai/src/provider_discovery.rs`.
+
+---
+
+## Open TODO (Starting 2026-01-31)
+
+These items were discovered after the initial stabilization pass.
+
+Status: ✅ All items in this section have been completed as of 2026-01-31.
+
+Summary of Work Completed (2026-01-31)
+
+- Fixed broken Thinktank prompts and TOML parsing; repaired/added `{{args}}` where needed:
+  - `prompts/code-review.toml`
+  - `prompts/criticalthink/criticalthink.toml`
+  - `prompts/cli-prompt-library/commands/prompts/improve.toml`
+  - `prompts/cli-prompt-library/commands/testing/edge-cases.toml`
+- Reduced prompt loader noise and runtime by skipping vendored directories:
+  - `crates/hqe-mcp/src/loader.rs`
+- Wrote an exhaustive prompt audit with intended vs actual behavior:
+  - `docs/PROMPTS_AUDIT.md`
+
+Where to Continue (next AI / next pass)
+
+- No open TODOs remain in this file again. Start by reviewing git status, then re-run:
   - `cargo test --workspace`
   - `cargo clippy --workspace -- -D warnings`
   - `cd apps/workbench && npm test`
   - `cd apps/workbench && npm run lint`
-- If new features are requested, create a fresh TODO section below and track new work items with evidence/fix/verify blocks.
+
+## Completed: P1 (Major Correctness / Reliability)
+
+1) P1 - Prompt library contains invalid or non-functional prompts (breaks Thinktank UX) ✅
+
+- Evidence:
+  - `prompts/cli-prompt-library/commands/prompts/improve.toml` (invalid TOML; missing closing string)
+  - `prompts/cli-prompt-library/commands/testing/edge-cases.toml` (invalid TOML escape sequence)
+  - `prompts/code-review.toml` (no `{{args}}`; cannot accept diff input)
+  - `prompts/criticalthink/criticalthink.toml` (references “previous response” but Thinktank executes as a single-shot prompt)
+- Fix:
+  - Repair TOML syntax.
+  - Update “code-review” to accept a pasted diff via `{{args}}`.
+  - Update “criticalthink” to accept the text-to-critique via `{{args}}`.
+- Verify:
+  - `apps/workbench` Thinktank shows these prompts and renders an args input.
+  - Executing each prompt produces sensible output without hallucinating missing context.
+
+1) P1 - Prompt loader scans vendored directories (log spam + perf) ✅
+
+- Evidence: `crates/hqe-mcp/src/loader.rs:90` scans all `.toml/.yaml/.yml` including `node_modules/` under `prompts/prompts/server/` once deps are installed.
+- Fix: add ignore filters (at least `node_modules`, `dist`, `.git`) via `WalkDir::filter_entry`.
+- Verify: `get_available_prompts` stays fast and doesn’t emit a wall of warnings after `npm i` in `prompts/prompts/server`.
+
+## Completed: P2 (Important Quality / UX / Perf)
+
+1) P2 - Prompt library has mixed “LLM-only” vs “agent-with-tools” prompts ✅
+
+- Evidence: `prompts/conductor/*.toml`, `prompts/cli-security/**` include instructions requiring tool execution, file writes, or GitHub Actions env.
+- Fix:
+  - Hide agent/tool prompts by default in Thinktank UI (heuristic by prompt name prefix), with an opt-in toggle to show them.
+  - Add an “AGENT” badge and an in-context warning banner when selecting one.
+- Verify:
+  - Thinktank shows only LLM-only prompts by default.
+  - Toggling “Show agent/tool prompts” reveals `conductor_*` and `cli_security_*` prompts.
 
 ## P0 (Ship / CI Blockers)
 
@@ -76,7 +246,7 @@ Where to Continue (for future AI)
   - Update `SessionLog` + UI banner logic.
 - Verify: LLM scan clearly displays provider name/model and no longer shows “Local-only” banner.
 
-## P1 (Major Correctness / Reliability)
+## Completed (Batch 2): P1 (Major Correctness / Reliability)
 
 1) P1 - `RepoScanner::read_file` returns an error for missing files (should be `Ok(None)`) ✅
 
@@ -166,7 +336,7 @@ Where to Continue (for future AI)
 - Fix: single source of truth for artifact writing and paths (either pipeline writes, or pipeline returns report and caller writes).
 - Verify: returned `ScanResult.artifacts` matches actual files on disk.
 
-## P2 (Important Quality / UX / Perf)
+## Completed (Batch 2): P2 (Important Quality / UX / Perf)
 
 1) P2 - Deep scan categorization is under-specified (stringly-typed) ✅
 
@@ -262,3 +432,201 @@ Where to Continue (for future AI)
 
 - Evidence: various UI screens catch and `console.error` only (e.g., `apps/workbench/src/screens/WelcomeScreen.tsx:20`)
 - Fix: route errors through Toast consistently; include actionable hints.
+
+---
+
+## Docs/CI Sweep (Completed 2026-01-31)
+
+- ✅ Added missing GitHub templates:
+  - `.github/pull_request_template.md`
+  - `.github/ISSUE_TEMPLATE/*`
+- ✅ Added/updated standard docs:
+  - `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CREDITS.md`, `LEGAL.md`, `protocol/README.md`, `docs/API.md`, `docs/PROMPTS_AUDIT.md`
+  - New: `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `PRIVACY.md`, `SUPPORT.md`
+- ✅ Updated README to be accurate:
+  - Correct repo URL (`AbstergoSweden/HQE-Workbench`), centered banner image, fixed badges/links, removed non-existent commands
+- ✅ CI reliability improvements:
+  - `.github/workflows/ci.yml` installs `rustfmt`/`clippy`, adds JS tests job, installs Python deps for protocol validation
+  - `.github/workflows/security.yml` uses `taiki-e/install-action` for `cargo-audit`
+- ✅ Lint/test gate is clean locally:
+  - `npm run preflight` passes (Rust tests + clippy + fmt; Workbench eslint + vitest)
+
+Where to Continue
+
+- No remaining open TODOs in this file. If new bugs are found, add a new dated sweep section with evidence/fix/verify blocks.
+
+---
+
+## Open TODO (Starting 2026-01-31 Sweep 3)
+
+These items were discovered during a new repo-wide sweep after the Docs/CI pass.
+
+## Sweep 3: P1 (Major Correctness / Reliability)
+
+1) P1 - CLI `export` command is a stub (prints “Not yet implemented”) ✅
+
+- Evidence: `cli/hqe/src/main.rs:737`
+- Why it matters: users can invoke `hqe export` but cannot actually export artifacts; CLI promises a feature that doesn't work.
+- Fix:
+  - Implemented export to locate `hqe_run_{run_id}` in `./hqe-output` or app data dir and copy all artifacts to `--out`.
+  - Added run_id validation and clear error when artifacts are missing.
+- Verify:
+  - `./target/release/hqe export RUN_ID --out ./hqe-exports` writes files.
+
+## Sweep 3: P2 (Important Quality / UX / Perf)
+
+1) P2 - Prompt server LLM self-check is stubbed (auto-pass), so validation gates are ineffective when enabled ✅
+
+- Evidence: `prompts/prompts/server/src/gates/core/gate-validator.ts:245-321`
+- Why it matters: enabling semantic validation claims to use LLM self-check, but it never calls an LLM and always passes.
+- Fix:
+  - Implemented LLM self-check in `GateValidator` using OpenAI-compatible (and Anthropic) endpoints.
+  - Restored content/pattern checks as baseline validation when LLM is not enabled.
+  - Added prompt template support (`{{content}}`, `{{metadata}}`, `{{execution_context}}`) and JSON parsing for pass/score/feedback.
+- Verify:
+  - Enable `analysis.semanticAnalysis.llmIntegration.enabled=true` and confirm LLM calls occur and gate results change.
+
+1) P2 - Tauri Thinktank prompt execution ignores profile timeout setting ✅
+
+- Evidence: `apps/workbench/src-tauri/src/prompts.rs:95` hardcodes `timeout_seconds: 120`
+- Why it matters: user-configured provider timeouts are ignored for prompt execution.
+- Fix:
+  - Use `profile.timeout_s` when constructing `ClientConfig` in the Tauri prompt executor.
+- Verify:
+  - A profile with low timeout causes prompt execution to time out as configured.
+
+Status: ✅ All items in Sweep 3 completed as of 2026-01-31.
+
+---
+
+## Open TODO (Starting 2026-01-31 Sweep 4)
+
+These items were added per latest CI and README findings.
+
+## Sweep 4: P1 (Major Correctness / Reliability)
+
+1) P1 - GitHub Actions `test-rust` fails on glib-sys (missing GLib dev packages) ✅
+
+- Evidence:
+  - CI run: `https://github.com/AbstergoSweden/HQE-Workbench/actions/runs/21536040437/job/62061863327`
+  - Log: `PKG_CONFIG_PATH` not set; `glib-2.0.pc` missing.
+- Fix:
+  - Install `libglib2.0-dev` and `pkg-config` before Rust build in `.github/workflows/ci.yml`.
+- Verify:
+  - CI `test-rust` job passes on Ubuntu runners.
+
+## P3 (Minor / Docs)
+
+1) P3 - README OpenSSF badge shows “invalid repo path” ✅
+
+- Evidence: README badge rendered as invalid path.
+- Fix:
+  - Updated OpenSSF Scorecard badge URL to use correct repo case (`AbstergoSweden/HQE-Workbench`).
+- Verify:
+  - Badge renders correctly for public repo.
+
+1) P3 - Placeholder scan across docs (contacts/links/examples) ✅
+
+- Evidence:
+  - Placeholder strings in `LEGAL.md`, `CONTRIBUTING.md`, `docs/provider-config.md`, `docs/HOW_TO.md`, `docs/tech-stack.md`.
+- Fix:
+  - Replaced maintainer identity/contact info with real values.
+  - Updated example URLs and commands to actionable, non-placeholder guidance.
+  - Clarified future/planned components without “placeholder” language.
+- Verify:
+  - `rg "YOUR_|replace with|placeholder" README.md ABOUT.md LEGAL.md SECURITY.md SUPPORT.md CODE_OF_CONDUCT.md CONTRIBUTING.md CITATION.cff docs/*.md` returns only non-actionable references (e.g., audit notes).
+
+Status: ✅ All items in Sweep 4 completed as of 2026-01-31.
+
+---
+
+## Open TODO (Starting 2026-01-31 Sweep 5)
+
+Scope: New repo-wide bug sweep (major → minor). Track evidence, fix, verify.
+
+Status: ✅ All items in Sweep 5 completed as of 2026-01-31.
+
+---
+
+## Open TODO (Starting 2026-01-31 Sweep 6)
+
+Scope: Provider edge cases + next-area deep dive.
+
+Status: ⏳ In progress.
+
+## Sweep 6: P2 (Important Quality / UX / Perf)
+
+1) P2 - Base URL normalization breaks when user pastes full chat/models endpoint ✅
+
+- Evidence: `sanitize_base_url` appends `/v1` even if path already includes `/v1/chat/completions` or `/v1/models`: `crates/hqe-openai/src/provider_discovery.rs:325-370`
+- Why it matters: providers fail if user pastes a full endpoint URL.
+- Fix:
+  - Trim `/chat/completions` or `/models` suffix before normalizing path.
+- Verify:
+  - `sanitize_base_url("https://api.openai.com/v1/chat/completions")` returns `https://api.openai.com/v1`.
+
+1) P2 - Azure OpenAI discovery likely fails (no `/models` support) ✅
+
+- Evidence:
+  - Discovery always calls `/models` (OpenAI-style): `crates/hqe-openai/src/provider_discovery.rs:213-265`
+  - Azure uses deployments API and requires `api-version` query; `/models` is not standard.
+- Why it matters: model discovery in Settings will fail for Azure users.
+- Fix:
+  - Added `ProviderKind::Azure` and skip discovery for Azure hosts with a friendly error message.
+- Verify:
+  - `npm run preflight` verifies `provider_discovery.rs` changes.
+
+1) P2 - CLI `export` cannot find runs created with custom `--out` directory ✅
+
+- Evidence: `export_run` searches only `./hqe-output` and app data dir: `cli/hqe/src/main.rs:780-815`
+- Why it matters: if a scan uses `--out /custom/path`, export will fail to find the run.
+- Fix:
+  - Added `--from <DIR>` arg to `hqe export` to specify the source directory for artifacts.
+- Verify:
+  - `npm run preflight` verifies CLI compilation and tests.
+
+1) P2 - CLI `patch` command is a stub (no patch generation) ✅
+
+- Evidence: `handle_patch` prints "not yet implemented": `cli/hqe/src/main.rs:815-850`
+- Why it matters: CLI advertises patching but provides no implementation.
+- Fix:
+  - Implemented `handle_patch` using system `patch` command to apply diffs from `hqe_report.json`.
+- Verify:
+  - `npm run preflight` verifies CLI compilation and tests.
+
+1) P2 - CLI `config add` requires `--key` even for local providers ✅
+
+- Evidence: `cli/hqe/src/main.rs` CLI args enforce `--key` for add.
+- Why it matters: local LLM servers often require no API key, but CLI cannot create such profiles.
+- Fix:
+  - Made `--key` optional when base URL is local/private; enforced for non-local providers.
+- Verify:
+  - `hqe config add local --url http://127.0.0.1:1234/v1 --model llama3` succeeds without a key.
+
+## Sweep 6: P1 (Major Correctness / Reliability)
+
+1) P1 - Local/OpenAI-compatible providers without API keys are blocked (LLM scans + prompts) ✅
+
+- Evidence:
+  - Tauri scan requires stored API key: `apps/workbench/src-tauri/src/commands.rs:70-88`
+  - Tauri prompts require stored API key: `apps/workbench/src-tauri/src/prompts.rs:80-90`
+  - CLI scan requires API key: `cli/hqe/src/main.rs:620-639`
+  - CLI prompt/test requires API key: `cli/hqe/src/main.rs:245-275`, `cli/hqe/src/main.rs:885-915`
+- Why it matters: local LLM servers typically do not require API keys; current flow blocks them.
+- Fix:
+  - Added `is_local_or_private_base_url` helper in `crates/hqe-openai/src/provider_discovery.rs`.
+  - Allowed empty API keys for local/private base URLs in CLI + Tauri scan/prompt/test flows.
+- Verify:
+  - Local LLM profile (localhost/LAN) works with no stored key; remote providers still require keys.
+
+1) P1 - Provider profiles cannot configure required headers/org/project/timeout (UI + CLI) ✅
+
+- Evidence:
+  - Settings UI has no fields for headers/org/project/timeout; values are preserved but not editable: `apps/workbench/src/screens/SettingsScreen.tsx`
+  - CLI `config add` only accepts name/url/key/model (no headers/org/project/timeout): `cli/hqe/src/main.rs:856-894`
+- Why it matters: Azure OpenAI requires `api-key` header; OpenRouter and enterprise OpenAI often require extra headers and org/project IDs.
+- Fix:
+  - UI: added advanced fields for custom headers (JSON), organization, project, and timeout in `SettingsScreen`.
+  - CLI: added `--header`, `--organization`, `--project`, `--timeout` flags in `hqe config add`.
+- Verify:
+  - Azure/OpenRouter profiles can be configured without manual JSON edits; discovery and scans succeed.

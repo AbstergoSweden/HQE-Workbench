@@ -18,6 +18,15 @@ export function ScanScreen() {
   const [profiles, setProfiles] = useState<ProviderProfile[]>([])
   const [selectedProfile, setSelectedProfile] = useState<string>('')
   const [loadingProfiles, setLoadingProfiles] = useState(false)
+  const [veniceParameters, setVeniceParameters] = useState('')
+  const [parallelToolCalls, setParallelToolCalls] = useState<'default' | 'true' | 'false'>('default')
+
+  const selectedProfileInfo = profiles.find((p) => p.name === selectedProfile)
+  const isVeniceProfile = Boolean(
+    selectedProfileInfo &&
+    (selectedProfileInfo.provider_kind === 'venice' ||
+      selectedProfileInfo.base_url.toLowerCase().includes('venice.ai'))
+  )
 
   useEffect(() => {
     if (localOnly) return
@@ -48,6 +57,23 @@ export function ScanScreen() {
       setPhase('Ingesting repository...')
       setProgress(10)
 
+      let veniceParamsValue: Record<string, unknown> | null = null
+      if (!localOnly && isVeniceProfile && veniceParameters.trim() !== '') {
+        try {
+          const parsed = JSON.parse(veniceParameters)
+          if (parsed && typeof parsed === 'object') {
+            veniceParamsValue = parsed
+          } else {
+            throw new Error('Venice parameters must be a JSON object')
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Invalid JSON'
+          toast.error(`Invalid Venice parameters: ${message}`)
+          setScanning(false)
+          return
+        }
+      }
+
       const config = {
         llm_enabled: !localOnly,
         provider_profile: localOnly ? null : (selectedProfile || null),
@@ -58,6 +84,11 @@ export function ScanScreen() {
         },
         local_only: localOnly,
         timeout_seconds: 120,
+        venice_parameters: !localOnly && isVeniceProfile ? veniceParamsValue : null,
+        parallel_tool_calls:
+          !localOnly && isVeniceProfile && parallelToolCalls !== 'default'
+            ? parallelToolCalls === 'true'
+            : null,
       }
 
       setPhase('Analyzing code with local heuristics...')
@@ -192,6 +223,46 @@ export function ScanScreen() {
                   No provider profiles found. Add one in Settings.
                 </p>
               )}
+            </div>
+          )}
+
+          {!localOnly && isVeniceProfile && (
+            <div className="space-y-3 rounded-lg border border-emerald-500/10 bg-black/20 p-4">
+              <h3 className="text-sm font-semibold text-emerald-50">
+                Venice Advanced Options
+              </h3>
+
+              <div>
+                <label className="block mb-2 text-emerald-50">
+                  Venice Parameters (JSON)
+                </label>
+                <textarea
+                  value={veniceParameters}
+                  onChange={(e) => setVeniceParameters(e.target.value)}
+                  placeholder='{"enable_web_search": "off", "include_venice_system_prompt": true}'
+                  className="input w-full min-h-[110px]"
+                />
+                <p className="text-sm mt-1 text-emerald-200/60">
+                  Optional. Provide a JSON object for Venice-specific request parameters.
+                </p>
+              </div>
+
+              <div>
+                <label className="block mb-2 text-emerald-50">
+                  Parallel Tool Calls
+                </label>
+                <select
+                  value={parallelToolCalls}
+                  onChange={(e) =>
+                    setParallelToolCalls(e.target.value as 'default' | 'true' | 'false')
+                  }
+                  className="input w-full"
+                >
+                  <option value="default">Use provider default</option>
+                  <option value="true">Enable</option>
+                  <option value="false">Disable</option>
+                </select>
+              </div>
             </div>
           )}
         </div>
