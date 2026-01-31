@@ -71,6 +71,8 @@ pub struct ProviderModelTraits {
     pub supports_web_search: bool,
     /// Whether the model supports structured outputs (JSON schema)
     pub supports_response_schema: bool,
+    /// Whether the model supports log probabilities
+    pub supports_logprobs: bool,
     /// Whether the model is optimized for code generation
     pub code_optimized: bool,
 }
@@ -215,10 +217,12 @@ impl ProviderDiscoveryClient {
             }
         }
 
-        let url = self
-            .base_url
-            .join("models")
+        let mut url = join_path(&self.base_url, "models")
             .map_err(|e| DiscoveryError::InvalidBaseUrl(e.to_string()))?;
+        if self.provider_kind == ProviderKind::Venice {
+            // Fetch all model types, then filter to text/code locally.
+            url.query_pairs_mut().append_pair("type", "all");
+        }
 
         info!(%url, "Fetching models from provider");
 
@@ -246,12 +250,16 @@ impl ProviderDiscoveryClient {
 
         let mut models = parse_models_response(self.provider_kind, &json)?;
 
-        // Chat-model-only filter (heuristic where schema is ambiguous)
+        // Text-model-only filter: use explicit model type when present, otherwise fallback to id heuristic.
         let original_count = models.len();
-        models.retain(|m| is_chat_model_id(&m.id));
-        let filtered_count = original_count - models.len();
+        if self.provider_kind == ProviderKind::Venice {
+            models.retain(|m| m.provider_kind == ProviderKind::Venice);
+        } else {
+            models.retain(|m| is_chat_model_id(&m.id));
+        }
+        let filtered_count = original_count.saturating_sub(models.len());
         if filtered_count > 0 {
-            debug!(filtered_count, "Filtered non-chat models");
+            debug!(filtered_count, "Filtered non-text models");
         }
 
         models.sort_by(|a, b| a.id.cmp(&b.id));
@@ -347,10 +355,16 @@ pub fn sanitize_base_url(input: &str) -> Result<Url, DiscoveryError> {
     // Normalize path so join("models") hits `.../v1/models` for typical providers
     let path = url.path().trim_end_matches('/').to_string();
     let normalized_path = if path.is_empty() || path == "/" {
-        "/v1".to_string()
+        if host.ends_with("venice.ai") {
+            "/api/v1".to_string()
+        } else {
+            "/v1".to_string()
+        }
     } else if path.contains("/openai/deployments/") {
         // Azure uses a different layout; keep it as-is
         path
+    } else if host.ends_with("venice.ai") && path == "/v1" {
+        "/api/v1".to_string()
     } else if path.ends_with("/api/v1") || path.ends_with("/api/v1/") {
         path.trim_end_matches('/').to_string()
     } else if path.ends_with("/v1") {
@@ -419,6 +433,14 @@ fn is_chat_model_id(id: &str) -> bool {
         "dall-e",
         "speech",
         "asr",
+        "vision",
+        "video",
+        "rerank",
+        "rank",
+        "ocr",
+        "inpaint",
+        "upscale",
+        "tokenizer",
     ];
     if deny.iter().any(|d| s.contains(d)) {
         return false;
@@ -449,6 +471,14 @@ fn parse_model_item(
     kind: ProviderKind,
     item: &Value,
 ) -> Result<Option<DiscoveredModel>, DiscoveryError> {
+    if item.get("model_spec").is_none() {
+        if let Some(model_type) = extract_model_type(item) {
+            if !is_text_model_type(&model_type) {
+                return Ok(None);
+            }
+        }
+    }
+
     let id = item
         .get("id")
         .and_then(|x| x.as_str())
@@ -461,6 +491,11 @@ fn parse_model_item(
 
     // Venice schema has model_spec and type
     if item.get("model_spec").is_some() {
+        if let Some(model_type) = item.get("type").and_then(|x| x.as_str()) {
+            if model_type != "text" && model_type != "code" {
+                return Ok(None);
+            }
+        }
         let model_spec = item.get("model_spec").unwrap_or(&Value::Null);
         let name = model_spec
             .get("name")
@@ -492,6 +527,10 @@ fn parse_model_item(
                 .unwrap_or(false),
             supports_response_schema: caps
                 .get("supportsResponseSchema")
+                .and_then(|x| x.as_bool())
+                .unwrap_or(false),
+            supports_logprobs: caps
+                .get("supportsLogProbs")
                 .and_then(|x| x.as_bool())
                 .unwrap_or(false),
             code_optimized: caps
@@ -547,6 +586,36 @@ fn parse_model_item(
             output_usd_per_million: None,
         },
     }))
+}
+
+fn extract_model_type(item: &Value) -> Option<String> {
+    let keys = ["type", "category", "modality", "model_type"];
+    for key in keys {
+        if let Some(value) = item.get(key).and_then(|v| v.as_str()) {
+            return Some(value.to_lowercase());
+        }
+    }
+    None
+}
+
+fn is_text_model_type(model_type: &str) -> bool {
+    matches!(
+        model_type,
+        "text" | "chat" | "code" | "completion" | "llm"
+    )
+}
+
+fn join_path(base: &Url, segment: &str) -> Result<Url, url::ParseError> {
+    let mut url = base.clone();
+    let mut path = url.path().to_string();
+    if !path.ends_with('/') {
+        path.push('/');
+    }
+    path.push_str(segment);
+    url.set_path(&path);
+    url.set_query(None);
+    url.set_fragment(None);
+    Ok(url)
 }
 
 fn extract_venice_pricing(model_spec: &Value) -> ProviderModelPricing {

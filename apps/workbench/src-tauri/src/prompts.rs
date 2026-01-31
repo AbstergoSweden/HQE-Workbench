@@ -1,6 +1,6 @@
 use hqe_openai::{profile::ProfileManager, ClientConfig, OpenAIClient};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use tauri::{command, AppHandle, Manager};
 
@@ -88,6 +88,10 @@ pub async fn execute_prompt(
         base_url: profile.base_url,
         api_key,
         default_model: profile.default_model.clone(),
+        headers: profile.headers.clone(),
+        organization: profile.organization.clone(),
+        project: profile.project.clone(),
+        disable_system_proxy: false,
         timeout_seconds: 120,
         max_retries: 1,
         rate_limit_config: None,
@@ -103,7 +107,8 @@ pub async fn execute_prompt(
             model: client.default_model().to_string(),
             messages: vec![hqe_openai::Message {
                 role: hqe_openai::Role::User,
-                content: prompt_text,
+                content: Some(prompt_text),
+                tool_calls: None,
             }],
             temperature: Some(0.2),
             max_tokens: None,
@@ -112,23 +117,30 @@ pub async fn execute_prompt(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ExecutePromptResponse {
-        result: response.choices[0].message.content.clone(),
-    })
+    let first = response
+        .choices
+        .first()
+        .ok_or_else(|| "No response choices returned".to_string())?;
+
+    let content = first
+        .message
+        .content
+        .clone()
+        .ok_or_else(|| "No content returned in response".to_string())?;
+
+    Ok(ExecutePromptResponse { result: content })
 }
 
 fn get_prompts_dir(app: &AppHandle) -> Option<PathBuf> {
-    // Logic to find prompts dir relative to app resource dir or executable
-    // For dev, it's in project root "prompts"
-    // For build, it might be in resource dir
-
-    // Check local dev path first
-    let dev_path = PathBuf::from("../../../prompts");
-    if dev_path.exists() {
-        return dev_path.canonicalize().ok();
+    // Allow explicit override via environment variable
+    if let Ok(dir) = std::env::var("HQE_PROMPTS_DIR") {
+        let path = PathBuf::from(dir);
+        if path.exists() {
+            return path.canonicalize().ok().or(Some(path));
+        }
     }
 
-    // Check resource path (production)
+    // Check resource path (production bundle)
     if let Ok(resource_path) = app.path().resource_dir() {
         let prompts = resource_path.join("prompts");
         if prompts.exists() {
@@ -136,13 +148,32 @@ fn get_prompts_dir(app: &AppHandle) -> Option<PathBuf> {
         }
     }
 
-    // Fallback: Check current dir
-    let cwd = std::env::current_dir().ok()?;
-    let local = cwd.join("prompts");
-    if local.exists() {
-        return Some(local);
+    // Check current working directory and its ancestors (dev)
+    if let Ok(cwd) = std::env::current_dir() {
+        if let Some(found) = find_prompts_dir(&cwd) {
+            return Some(found);
+        }
     }
 
+    // Check executable directory and its ancestors (packaged/dev)
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            if let Some(found) = find_prompts_dir(parent) {
+                return Some(found);
+            }
+        }
+    }
+
+    None
+}
+
+fn find_prompts_dir(start: &Path) -> Option<PathBuf> {
+    for ancestor in start.ancestors() {
+        let candidate = ancestor.join("prompts");
+        if candidate.exists() {
+            return Some(candidate);
+        }
+    }
     None
 }
 

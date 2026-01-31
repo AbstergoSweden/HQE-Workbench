@@ -335,6 +335,7 @@ mod tests {
     fn create_test_report() -> HqeReport {
         HqeReport {
             run_id: "test-123".to_string(),
+            provider: None,
             executive_summary: ExecutiveSummary {
                 health_score: 7,
                 top_priorities: vec!["Fix security issues".to_string()],

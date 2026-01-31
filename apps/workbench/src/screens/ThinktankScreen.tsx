@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react'
+import { FC, useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import ReactMarkdown from 'react-markdown'
@@ -7,12 +7,98 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Card } from '../components/ui/Card'
 import { Skeleton } from '../components/ui/Skeleton'
+import { useToast } from '../context/ToastContext'
 
 interface PromptTool {
   name: string
   description: string
-  input_schema: any
+  input_schema?: { properties?: Record<string, JSONSchemaProperty> }
   template: string
+}
+
+interface JSONSchemaProperty {
+  type?: string | string[]
+  description?: string
+  enum?: Array<string | number | boolean>
+  default?: unknown
+  [key: string]: unknown
+}
+
+const getSchemaType = (schema: JSONSchemaProperty): string => {
+  if (Array.isArray(schema.type)) {
+    return schema.type.find((t) => t !== 'null') || schema.type[0] || 'string'
+  }
+  if (typeof schema.type === 'string') {
+    return schema.type
+  }
+  if (schema.enum && schema.enum.length > 0) {
+    const first = schema.enum[0]
+    return typeof first
+  }
+  return 'string'
+}
+
+const buildTypedArgs = (
+  properties: Record<string, JSONSchemaProperty>,
+  rawArgs: Record<string, unknown>
+) => {
+  const typed: Record<string, unknown> = {}
+  Object.entries(properties).forEach(([key, schema]) => {
+    const type = getSchemaType(schema)
+    const raw = rawArgs[key]
+
+    if (raw === undefined || raw === null) {
+      return
+    }
+
+    if (type === 'boolean') {
+      if (typeof raw === 'boolean') {
+        typed[key] = raw
+      } else if (typeof raw === 'string') {
+        typed[key] = raw.toLowerCase() === 'true'
+      } else {
+        typed[key] = Boolean(raw)
+      }
+      return
+    }
+
+    if (type === 'number' || type === 'integer') {
+      if (typeof raw === 'number') {
+        typed[key] = type === 'integer' ? Math.trunc(raw) : raw
+        return
+      }
+      if (typeof raw === 'string') {
+        if (raw.trim() === '') {
+          return
+        }
+        const parsed = type === 'integer' ? parseInt(raw, 10) : parseFloat(raw)
+        if (Number.isNaN(parsed)) {
+          throw new Error(`Invalid number for "${key}"`)
+        }
+        typed[key] = parsed
+        return
+      }
+    }
+
+    if (type === 'object' || type === 'array') {
+      if (typeof raw === 'string') {
+        if (raw.trim() === '') {
+          return
+        }
+        try {
+          typed[key] = JSON.parse(raw)
+        } catch {
+          throw new Error(`Invalid JSON for "${key}"`)
+        }
+        return
+      }
+      typed[key] = raw
+      return
+    }
+
+    typed[key] = raw
+  })
+  return typed
 }
 
 export const ThinktankScreen: FC = () => {
@@ -20,17 +106,42 @@ export const ThinktankScreen: FC = () => {
   const [prompts, setPrompts] = useState<PromptTool[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTool | null>(null)
-  const [args, setArgs] = useState<Record<string, string>>({})
+  const [args, setArgs] = useState<Record<string, unknown>>({})
   const [result, setResult] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [executing, setExecuting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const toast = useToast()
 
-  useEffect(() => {
-    loadPrompts()
+  const handleSelectPrompt = useCallback((prompt: PromptTool, initialArgs?: Record<string, unknown>) => {
+    setSelectedPrompt(prompt)
+    setResult('')
+    setError(null)
+
+    // Initialize args from schema
+    const newArgs: Record<string, unknown> = {}
+    const properties = prompt.input_schema?.properties || {}
+    Object.entries(properties).forEach(([key, schema]) => {
+      const initial = initialArgs?.[key]
+      if (initial !== undefined) {
+        newArgs[key] = initial
+        return
+      }
+      if (schema.default !== undefined) {
+        newArgs[key] = schema.default
+        return
+      }
+      const type = getSchemaType(schema)
+      if (type === 'boolean') {
+        newArgs[key] = false
+      } else {
+        newArgs[key] = ''
+      }
+    })
+    setArgs(newArgs)
   }, [])
 
-  const loadPrompts = async () => {
+  const loadPrompts = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -38,33 +149,25 @@ export const ThinktankScreen: FC = () => {
       setPrompts(loaded)
 
       // Check if we have incoming state
-      if (location.state?.promptName) {
-        const target = loaded.find(p => p.name === location.state.promptName || `prompts__${p.name}` === location.state.promptName)
+      const state = location.state as { promptName?: string; args?: Record<string, unknown> } | null
+      if (state?.promptName) {
+        const target = loaded.find(p => p.name === state.promptName || `prompts__${p.name}` === state.promptName)
         if (target) {
-          handleSelectPrompt(target, location.state.args)
+          handleSelectPrompt(target, state.args)
         }
       }
     } catch (err) {
       console.error('Failed to load prompts:', err)
       setError(`Failed to load prompt library: ${err}`)
+      toast.error('Failed to load prompt library')
     } finally {
       setLoading(false)
     }
-  }
+  }, [handleSelectPrompt, location.state])
 
-  const handleSelectPrompt = (prompt: PromptTool, initialArgs?: Record<string, string>) => {
-    setSelectedPrompt(prompt)
-    setResult('')
-    setError(null)
-
-    // Initialize args from schema
-    const newArgs: Record<string, string> = {}
-    const properties = prompt.input_schema?.properties || {}
-    Object.keys(properties).forEach(key => {
-      newArgs[key] = initialArgs?.[key] || ''
-    })
-    setArgs(newArgs)
-  }
+  useEffect(() => {
+    loadPrompts()
+  }, [loadPrompts])
 
   const handleExecute = async () => {
     if (!selectedPrompt) return
@@ -72,10 +175,13 @@ export const ThinktankScreen: FC = () => {
     setExecuting(true)
     setError(null)
     try {
+      const properties = selectedPrompt.input_schema?.properties || {}
+      const typedArgs =
+        Object.keys(properties).length === 0 ? args : buildTypedArgs(properties, args)
       const response = await invoke<{ result: string }>('execute_prompt', {
         request: {
           tool_name: selectedPrompt.name,
-          args: args,
+          args: typedArgs,
           profile_name: null // will use default
         }
       })
@@ -83,6 +189,7 @@ export const ThinktankScreen: FC = () => {
     } catch (err) {
       console.error('Execution failed:', err)
       setError(`Execution failed: ${err}`)
+      toast.error('Prompt execution failed')
     } finally {
       setExecuting(false)
     }
@@ -174,27 +281,77 @@ export const ThinktankScreen: FC = () => {
               <p className="text-sm mb-6 text-emerald-200/80">{selectedPrompt.description}</p>
 
               <div className="flex flex-col gap-4">
-                {Object.entries(selectedPrompt.input_schema?.properties || {}).map(([key, schema]: [string, any]) => (
-                  <div key={key} className="flex flex-col gap-1">
-                    <label className="text-xs font-bold uppercase tracking-wider text-emerald-200/60">{key}</label>
-                    {key === 'args' || (schema.type === 'string' && !schema.description?.includes('short')) ? (
-                      <textarea
-                        value={args[key] || ''}
-                        onChange={(e) => setArgs({ ...args, [key]: e.target.value })}
-                        className="p-3 text-sm rounded border min-h-[120px] focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
-                        placeholder={schema.description || `Enter ${key}...`}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={args[key] || ''}
-                        onChange={(e) => setArgs({ ...args, [key]: e.target.value })}
-                        className="p-3 text-sm rounded border focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
-                        placeholder={schema.description || `Enter ${key}...`}
-                      />
-                    )}
-                  </div>
-                ))}
+                {Object.entries(selectedPrompt.input_schema?.properties || {}).map(([key, schema]) => {
+                  const type = getSchemaType(schema)
+                  const enumValues = Array.isArray(schema.enum) ? schema.enum : null
+                  const value = args[key]
+                  const inputId = `prompt-field-${key}`
+                  return (
+                    <div key={key} className="flex flex-col gap-1">
+                      <label
+                        htmlFor={inputId}
+                        className="text-xs font-bold uppercase tracking-wider text-emerald-200/60"
+                      >
+                        {key}
+                      </label>
+                      {enumValues ? (
+                        <select
+                          id={inputId}
+                          value={String(value ?? enumValues[0] ?? '')}
+                          onChange={(e) => {
+                            const selected = enumValues.find((opt) => String(opt) === e.target.value)
+                            setArgs((prev) => ({ ...prev, [key]: selected ?? e.target.value }))
+                          }}
+                          className="p-3 text-sm rounded border focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                        >
+                          {enumValues.map((opt) => (
+                            <option key={String(opt)} value={String(opt)}>
+                              {String(opt)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : type === 'boolean' ? (
+                        <div className="inline-flex items-center gap-2 text-sm text-emerald-200/80">
+                          <input
+                            id={inputId}
+                            type="checkbox"
+                            checked={Boolean(value)}
+                            onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.checked }))}
+                            className="w-4 h-4 rounded border-emerald-500/50 bg-black/20 text-emerald-500 focus:ring-emerald-500"
+                          />
+                          {schema.description || `Enable ${key}`}
+                        </div>
+                      ) : type === 'number' || type === 'integer' ? (
+                        <input
+                          id={inputId}
+                          type="number"
+                          step={type === 'integer' ? '1' : 'any'}
+                          value={value === undefined || value === null ? '' : String(value)}
+                          onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
+                          className="p-3 text-sm rounded border focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                          placeholder={schema.description || `Enter ${key}...`}
+                        />
+                      ) : type === 'object' || type === 'array' || key === 'args' || (type === 'string' && !schema.description?.includes('short')) ? (
+                        <textarea
+                          id={inputId}
+                          value={value === undefined ? '' : String(value)}
+                          onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
+                          className="p-3 text-sm rounded border min-h-[120px] focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                          placeholder={schema.description || `Enter ${key}...`}
+                        />
+                      ) : (
+                        <input
+                          id={inputId}
+                          type="text"
+                          value={value === undefined ? '' : String(value)}
+                          onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
+                          className="p-3 text-sm rounded border focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                          placeholder={schema.description || `Enter ${key}...`}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
 
                 <div className="flex justify-end mt-2">
                   <button
@@ -249,7 +406,7 @@ export const ThinktankScreen: FC = () => {
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
-                          code({ inline, className, children, ...props }: any) {
+                          code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
                             const match = /language-(\w+)/.exec(className || '')
                             return !inline && match ? (
                               <SyntaxHighlighter

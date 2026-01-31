@@ -40,6 +40,99 @@ ID prefixes (enforced):
 - DEPS-### - Dependencies
 "#;
 
+/// Build a JSON-only analysis prompt for structured findings/todos.
+pub fn build_analysis_json_prompt(bundle: &EvidenceBundle) -> String {
+    let mut prompt = String::new();
+
+    prompt.push_str("# HQE JSON Analysis Request\n\n");
+    prompt.push_str("Return ONLY a JSON object with this shape:\n");
+    prompt.push_str(
+        r#"{
+  "findings": [
+    {
+      "id": "SEC-001",
+      "severity": "high|medium|low|critical|info",
+      "risk": "high|medium|low",
+      "category": "Security|Bug|Perf|DX|UX|Docs|Debt|Deps",
+      "title": "Short title",
+      "evidence": {"type":"file_line","file":"path","line":1,"snippet":"..."},
+      "impact": "Why it matters",
+      "recommendation": "What to do"
+    }
+  ],
+  "todos": [
+    {
+      "id": "SEC-001",
+      "severity": "high|medium|low|critical|info",
+      "risk": "high|medium|low",
+      "category": "BOOT|SEC|BUG|PERF|DX|UX|DOC|DEBT|DEPS",
+      "title": "Actionable fix",
+      "root_cause": "Root cause",
+      "evidence": {"type":"file_line","file":"path","line":1,"snippet":"..."},
+      "fix_approach": "How to fix",
+      "verify": "How to verify",
+      "blocked_by": null
+    }
+  ],
+  "blockers": [
+    {"description":"...","reason":"...","how_to_obtain":"..."}
+  ],
+  "is_partial": false
+}"#,
+    );
+    prompt.push_str("\n\nRules:\n");
+    prompt.push_str("- Output JSON only. No markdown or extra text.\n");
+    prompt.push_str("- If evidence is missing, add a blocker and set is_partial=true.\n");
+    prompt
+        .push_str("- Prefer FileLine evidence; use FileFunction or Reproduction only if needed.\n");
+
+    prompt.push_str("\n## Repository Summary\n");
+    prompt.push_str(&format!("Name: {}\n", bundle.repo_summary.name));
+    if let Some(commit) = &bundle.repo_summary.commit_hash {
+        prompt.push_str(&format!("Commit: {}\n", commit));
+    }
+    prompt.push_str("\n## Directory Tree\n");
+    prompt.push_str(&bundle.repo_summary.directory_tree);
+    prompt.push('\n');
+
+    if !bundle.repo_summary.tech_stack.detected.is_empty() {
+        prompt.push_str("\n## Detected Technologies\n");
+        for tech in &bundle.repo_summary.tech_stack.detected {
+            prompt.push_str(&format!("- {} (evidence: {})\n", tech.name, tech.evidence));
+        }
+    }
+
+    if !bundle.repo_summary.entrypoints.is_empty() {
+        prompt.push_str("\n## Entrypoints\n");
+        for ep in &bundle.repo_summary.entrypoints {
+            prompt.push_str(&format!(
+                "- {} ({}): {}\n",
+                ep.file_path, ep.entry_type, ep.description
+            ));
+        }
+    }
+
+    if !bundle.files.is_empty() {
+        prompt.push_str("\n## File Snippets\n");
+        for file in &bundle.files {
+            prompt.push_str(&format!("--- file: {}\n", file.path));
+            prompt.push_str(&format!("```\n{}\n```\n\n", file.content));
+        }
+    }
+
+    if !bundle.local_findings.is_empty() {
+        prompt.push_str("\n## Local Findings\n");
+        for finding in &bundle.local_findings {
+            prompt.push_str(&format!(
+                "- [{}] {}: {}\n",
+                finding.severity, finding.finding_type, finding.description
+            ));
+        }
+    }
+
+    prompt
+}
+
 /// Build the user prompt for a scan
 pub fn build_scan_prompt(bundle: &EvidenceBundle) -> String {
     let mut prompt = String::new();

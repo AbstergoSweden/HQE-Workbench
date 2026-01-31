@@ -135,8 +135,6 @@ impl GitRepo {
 
     /// Run a git command
     #[instrument(skip(self))]
-    /// Run a git command
-    #[instrument(skip(self))]
     async fn run_git(&self, args: &[&str]) -> Result<GitResult, GitError> {
         let mut cmd = Command::new("git");
         cmd.current_dir(&self.path)
@@ -184,6 +182,16 @@ impl GitRepo {
 
     /// Get current branch name
     pub async fn current_branch(&self) -> Result<String, GitError> {
+        let symbolic = self
+            .run_git(&["symbolic-ref", "--short", "-q", "HEAD"])
+            .await?;
+        if symbolic.success {
+            let name = symbolic.stdout.trim().to_string();
+            if !name.is_empty() {
+                return Ok(name);
+            }
+        }
+
         let result = self.run_git(&["rev-parse", "--abbrev-ref", "HEAD"]).await?;
         if result.success {
             Ok(result.stdout.trim().to_string())
@@ -435,31 +443,69 @@ mod tests {
     async fn test_current_branch() -> anyhow::Result<()> {
         let temp = TempDir::new()?;
 
-        Command::new("git")
+        let init = Command::new("git")
             .args(["init"])
             .current_dir(temp.path())
             .output()
             .await?;
+        if !init.status.success() {
+            return Err(anyhow::anyhow!(
+                "git init failed: {}",
+                String::from_utf8_lossy(&init.stderr)
+            ));
+        }
 
         // Configure git for the test
-        Command::new("git")
+        let config_email = Command::new("git")
             .args(["config", "user.email", "test@test.com"])
             .current_dir(temp.path())
             .output()
             .await?;
+        if !config_email.status.success() {
+            return Err(anyhow::anyhow!(
+                "git config user.email failed: {}",
+                String::from_utf8_lossy(&config_email.stderr)
+            ));
+        }
 
-        Command::new("git")
+        let config_name = Command::new("git")
             .args(["config", "user.name", "Test"])
             .current_dir(temp.path())
             .output()
             .await?;
+        if !config_name.status.success() {
+            return Err(anyhow::anyhow!(
+                "git config user.name failed: {}",
+                String::from_utf8_lossy(&config_name.stderr)
+            ));
+        }
 
-        // Create initial commit so HEAD exists
-        Command::new("git")
-            .args(["commit", "--allow-empty", "-m", "Initial commit"])
+        tokio::fs::write(temp.path().join("README.md"), "# test\n").await?;
+
+        let add = Command::new("git")
+            .args(["add", "."])
             .current_dir(temp.path())
             .output()
             .await?;
+        if !add.status.success() {
+            return Err(anyhow::anyhow!(
+                "git add failed: {}",
+                String::from_utf8_lossy(&add.stderr)
+            ));
+        }
+
+        // Create initial commit so HEAD exists
+        let commit = Command::new("git")
+            .args(["-c", "commit.gpgsign=false", "commit", "-m", "Initial commit"])
+            .current_dir(temp.path())
+            .output()
+            .await?;
+        if !commit.status.success() {
+            return Err(anyhow::anyhow!(
+                "git commit failed: {}",
+                String::from_utf8_lossy(&commit.stderr)
+            ));
+        }
 
         let repo = GitRepo::open(temp.path()).await?;
         let branch = repo.current_branch().await?;

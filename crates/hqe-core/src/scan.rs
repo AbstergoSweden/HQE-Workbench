@@ -3,7 +3,9 @@
 use crate::models::*;
 use crate::redaction::RedactionEngine;
 use crate::repo::RepoScanner;
+use async_trait::async_trait;
 use std::path::Path;
+use std::sync::Arc;
 use tracing::{info, instrument, warn};
 
 /// Scan pipeline phases
@@ -30,12 +32,20 @@ impl std::fmt::Display for ScanPhase {
     }
 }
 
+/// Trait for LLM-backed analysis implementations.
+#[async_trait]
+pub trait LlmAnalyzer: Send + Sync {
+    /// Analyze the evidence bundle and return structured findings/todos.
+    async fn analyze(&self, bundle: EvidenceBundle) -> crate::Result<AnalysisResult>;
+}
+
 /// Pipeline for running an HQE scan
 pub struct ScanPipeline {
     config: ScanConfig,
     redaction: RedactionEngine,
     manifest: RunManifest,
     phase: ScanPhase,
+    llm_analyzer: Option<Arc<dyn LlmAnalyzer>>,
 }
 
 impl ScanPipeline {
@@ -45,17 +55,30 @@ impl ScanPipeline {
             .provider_profile
             .clone()
             .unwrap_or_else(|| "local".to_string());
-        let manifest = RunManifest::new(
+        let mut manifest = RunManifest::new(
             repo_path.as_ref().to_string_lossy().to_string(),
             provider_name,
         );
+        manifest.provider.llm_enabled = config.llm_enabled && !config.local_only;
 
         Ok(Self {
             config,
             redaction: RedactionEngine::new(),
             manifest,
             phase: ScanPhase::Ingestion,
+            llm_analyzer: None,
         })
+    }
+
+    /// Attach an LLM analyzer implementation.
+    pub fn with_llm_analyzer(mut self, analyzer: Arc<dyn LlmAnalyzer>) -> Self {
+        self.llm_analyzer = Some(analyzer);
+        self
+    }
+
+    /// Update provider metadata in the run manifest.
+    pub fn set_provider_info(&mut self, provider: ProviderInfo) {
+        self.manifest.provider = provider;
     }
 
     /// Get current phase
@@ -76,13 +99,56 @@ impl ScanPipeline {
         // Phase B: Analysis (local + optional LLM)
         self.phase = ScanPhase::Analysis;
         info!("Phase: {}", self.phase);
-        let analysis = if self.config.local_only {
-            self.run_local_analysis(&ingestion).await?
+        let analysis = if self.config.local_only || !self.config.llm_enabled {
+            self.run_local_analysis(
+                &ingestion,
+                Some(Blocker {
+                    description: "LLM analysis disabled - Local mode only".to_string(),
+                    reason: "Local-only mode provides static analysis without LLM insights"
+                        .to_string(),
+                    how_to_obtain:
+                        "Configure LLM provider in settings for AI-powered analysis and patch generation"
+                            .to_string(),
+                }),
+            )
+            .await?
         } else {
-            // This would call the LLM provider in real implementation
-            // For now, fall back to local-only
-            warn!("LLM mode not fully implemented, using local analysis");
-            self.run_local_analysis(&ingestion).await?
+            match &self.llm_analyzer {
+                Some(analyzer) => match analyzer
+                    .analyze(self.build_evidence_bundle(&ingestion))
+                    .await
+                {
+                    Ok(result) => result,
+                    Err(err) => {
+                        warn!(
+                            "LLM analysis failed, falling back to local analysis: {}",
+                            err
+                        );
+                        self.run_local_analysis(
+                            &ingestion,
+                            Some(Blocker {
+                                description: "LLM analysis failed".to_string(),
+                                reason: err.to_string(),
+                                how_to_obtain: "Verify provider configuration and retry"
+                                    .to_string(),
+                            }),
+                        )
+                        .await?
+                    }
+                },
+                None => {
+                    warn!("LLM analyzer not configured, using local analysis");
+                    self.run_local_analysis(
+                        &ingestion,
+                        Some(Blocker {
+                            description: "LLM analyzer not configured".to_string(),
+                            reason: "No LLM provider configured for this scan".to_string(),
+                            how_to_obtain: "Configure a provider profile and retry".to_string(),
+                        }),
+                    )
+                    .await?
+                }
+            }
         };
 
         // Phase C: Report Generation
@@ -90,9 +156,9 @@ impl ScanPipeline {
         info!("Phase: {}", self.phase);
         let report = self.generate_report(&ingestion, &analysis).await?;
 
-        // Phase D: Artifact Export
+        // Phase D: Artifact Export (delegated to caller)
         self.phase = ScanPhase::ArtifactExport;
-        info!("Phase: {}", self.phase);
+        info!("Phase: {} (delegated)", self.phase);
         let artifacts = self.export_artifacts(&report).await?;
 
         info!("Scan pipeline complete");
@@ -165,6 +231,7 @@ impl ScanPipeline {
     async fn run_local_analysis(
         &self,
         ingestion: &IngestionResult,
+        blocker: Option<Blocker>,
     ) -> crate::Result<AnalysisResult> {
         // Build partial report from local findings
         let mut findings = Vec::new();
@@ -225,13 +292,36 @@ impl ScanPipeline {
         Ok(AnalysisResult {
             findings,
             todos,
-            is_partial: true,
-            blockers: vec![Blocker {
-                description: "LLM analysis disabled - Local mode only".to_string(),
-                reason: "Local-only mode provides static analysis without LLM insights".to_string(),
-                how_to_obtain: "Configure LLM provider in settings for AI-powered analysis and patch generation".to_string(),
-            }],
+            is_partial: blocker.is_some(),
+            blockers: blocker.into_iter().collect(),
         })
+    }
+
+    fn build_evidence_bundle(&self, ingestion: &IngestionResult) -> EvidenceBundle {
+        let snippet_chars = self.config.limits.snippet_chars;
+        let files = ingestion
+            .files
+            .iter()
+            .map(|file| {
+                let content = if file.content.len() > snippet_chars {
+                    file.content[..snippet_chars].to_string()
+                } else {
+                    file.content.clone()
+                };
+                FileSnippet {
+                    path: file.path.clone(),
+                    content,
+                    start_line: None,
+                    end_line: None,
+                }
+            })
+            .collect();
+
+        EvidenceBundle {
+            repo_summary: ingestion.repo_summary.clone(),
+            files,
+            local_findings: ingestion.local_findings.clone(),
+        }
     }
 
     /// Phase C: Report generation
@@ -273,10 +363,13 @@ impl ScanPipeline {
         let health_score = (10.0 - penalty_scaled).max(0.0) as u8;
 
         // Build executive summary
+        let mut priority_findings: Vec<&Finding> = analysis.findings.iter().collect();
+        priority_findings.sort_by_key(|f| (severity_rank(&f.severity), risk_rank(&f.risk)));
+        priority_findings.reverse();
+
         let executive_summary = ExecutiveSummary {
             health_score,
-            top_priorities: analysis
-                .findings
+            top_priorities: priority_findings
                 .iter()
                 .take(3)
                 .map(|f| format!("{}: {}", f.id, f.title))
@@ -318,18 +411,18 @@ impl ScanPipeline {
         };
 
         // Build deep scan results (categorized)
-        let deep_scan_results = DeepScanResults {
-            security: analysis
-                .findings
-                .iter()
-                .filter(|f| f.category == "Security")
-                .cloned()
-                .collect(),
-            code_quality: vec![],
-            frontend: vec![],
-            backend: vec![],
-            testing: vec![],
-        };
+        let normalized_findings = normalize_findings(&analysis.findings);
+
+        let mut deep_scan_results = DeepScanResults::default();
+        for finding in &normalized_findings {
+            match categorize_finding(finding) {
+                DeepScanBucket::Security => deep_scan_results.security.push(finding.clone()),
+                DeepScanBucket::CodeQuality => deep_scan_results.code_quality.push(finding.clone()),
+                DeepScanBucket::Frontend => deep_scan_results.frontend.push(finding.clone()),
+                DeepScanBucket::Backend => deep_scan_results.backend.push(finding.clone()),
+                DeepScanBucket::Testing => deep_scan_results.testing.push(finding.clone()),
+            }
+        }
 
         // Build implementation plan
         let implementation_plan = ImplementationPlan {
@@ -353,24 +446,39 @@ impl ScanPipeline {
         };
 
         // Build session log
-        let session_log = SessionLog {
-            completed: vec!["Ingestion".to_string(), "Local Analysis".to_string()],
-            in_progress: if analysis.is_partial {
-                vec!["Waiting for LLM analysis".to_string()]
+        let mut completed = vec!["Ingestion".to_string()];
+        if self.manifest.provider.llm_enabled {
+            if analysis.is_partial {
+                completed.push("Local Analysis (fallback)".to_string());
             } else {
-                vec![]
-            },
+                completed.push("LLM Analysis".to_string());
+            }
+        } else {
+            completed.push("Local Analysis".to_string());
+        }
+
+        let mut in_progress = Vec::new();
+        let mut next_session = Vec::new();
+        if analysis.is_partial {
+            if self.manifest.provider.llm_enabled {
+                in_progress.push("Waiting for LLM analysis".to_string());
+                next_session.push("Retry LLM analysis".to_string());
+            } else {
+                next_session.push("Enable LLM provider for full analysis".to_string());
+            }
+        }
+
+        let session_log = SessionLog {
+            completed,
+            in_progress,
             discovered: analysis.findings.iter().map(|f| f.id.clone()).collect(),
             reprioritized: vec![],
-            next_session: if analysis.is_partial {
-                vec!["Enable LLM provider for full analysis".to_string()]
-            } else {
-                vec![]
-            },
+            next_session,
         };
 
         Ok(HqeReport {
             run_id: self.manifest.run_id.clone(),
+            provider: Some(self.manifest.provider.clone()),
             executive_summary,
             project_map,
             pr_harvest: None,
@@ -384,15 +492,118 @@ impl ScanPipeline {
 
     /// Phase D: Artifact export
     async fn export_artifacts(&self, _report: &HqeReport) -> crate::Result<ArtifactPaths> {
-        // Placeholder - actual export happens in hqe-artifacts crate
-        Ok(ArtifactPaths {
-            report_md: PathBuf::from(format!("hqe_run_{}/report.md", self.manifest.run_id)),
-            report_json: PathBuf::from(format!("hqe_run_{}/report.json", self.manifest.run_id)),
-            manifest_json: PathBuf::from(format!(
-                "hqe_run_{}/run-manifest.json",
-                self.manifest.run_id
-            )),
+        // Artifact writing is handled by callers (CLI/UI) via hqe-artifacts.
+        Ok(ArtifactPaths::empty())
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum DeepScanBucket {
+    Security,
+    CodeQuality,
+    Frontend,
+    Backend,
+    Testing,
+}
+
+fn categorize_finding(finding: &Finding) -> DeepScanBucket {
+    let category = finding.category.to_lowercase();
+    let file_hint = match &finding.evidence {
+        Evidence::FileLine { file, .. } => file.as_str(),
+        Evidence::FileFunction { file, .. } => file.as_str(),
+        Evidence::Reproduction { .. } => "",
+    };
+    let combined = format!("{} {}", category, file_hint.to_lowercase());
+
+    if combined.contains("sec") || combined.contains("security") {
+        return DeepScanBucket::Security;
+    }
+
+    if combined.contains("test")
+        || combined.contains("__tests__")
+        || combined.contains("spec")
+        || combined.contains("specs")
+    {
+        return DeepScanBucket::Testing;
+    }
+
+    if combined.contains("frontend")
+        || combined.contains("ui")
+        || combined.contains("ux")
+        || combined.contains("client")
+        || combined.contains("web")
+        || combined.contains("apps/workbench")
+    {
+        return DeepScanBucket::Frontend;
+    }
+
+    if combined.contains("backend")
+        || combined.contains("server")
+        || combined.contains("api")
+        || combined.contains("cli")
+        || combined.contains("crates/")
+    {
+        return DeepScanBucket::Backend;
+    }
+
+    DeepScanBucket::CodeQuality
+}
+
+fn normalize_findings(findings: &[Finding]) -> Vec<Finding> {
+    findings
+        .iter()
+        .map(|f| {
+            let mut normalized = f.clone();
+            normalized.category = normalize_finding_category(&normalized.category);
+            normalized
         })
+        .collect()
+}
+
+fn normalize_finding_category(raw: &str) -> String {
+    let s = raw.trim().to_lowercase();
+    if s.is_empty() {
+        return "Code Quality".to_string();
+    }
+
+    let mapped = if s.starts_with("sec") || s == "security" {
+        "Security"
+    } else if s.starts_with("bug") {
+        "Bug"
+    } else if s.starts_with("perf") || s == "performance" {
+        "Performance"
+    } else if s == "dx" || s.contains("developer") {
+        "DX"
+    } else if s == "ux" || s.contains("user") || s.contains("ui") {
+        "UX"
+    } else if s == "docs" || s == "documentation" || s == "doc" {
+        "Docs"
+    } else if s == "debt" || s.contains("technical debt") {
+        "Debt"
+    } else if s == "deps" || s.contains("dependency") {
+        "Deps"
+    } else {
+        return raw.trim().to_string();
+    };
+
+    mapped.to_string()
+}
+
+fn severity_rank(severity: &Severity) -> u8 {
+    match severity {
+        Severity::Critical => 4,
+        Severity::High => 3,
+        Severity::Medium => 2,
+        Severity::Low => 1,
+        Severity::Info => 0,
+    }
+}
+
+fn risk_rank(risk: &RiskLevel) -> u8 {
+    match risk {
+        RiskLevel::High => 3,
+        RiskLevel::Medium => 2,
+        RiskLevel::Low => 1,
     }
 }
 
@@ -442,6 +653,17 @@ pub struct ArtifactPaths {
     pub report_json: std::path::PathBuf,
     /// Path to the manifest JSON file
     pub manifest_json: std::path::PathBuf,
+}
+
+impl ArtifactPaths {
+    /// Empty artifact paths when export is handled externally.
+    pub fn empty() -> Self {
+        Self {
+            report_md: PathBuf::new(),
+            report_json: PathBuf::new(),
+            manifest_json: PathBuf::new(),
+        }
+    }
 }
 
 /// Detect language from file extension

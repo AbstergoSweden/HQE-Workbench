@@ -453,8 +453,13 @@ async fn handle_config(command: ConfigCommands) -> anyhow::Result<()> {
                     base_url: profile.base_url.clone(),
                     api_key: secrecy::SecretString::new(api_key.into()),
                     default_model: profile.default_model.clone(),
+                    headers: profile.headers.clone(),
+                    organization: profile.organization.clone(),
+                    project: profile.project.clone(),
+                    disable_system_proxy: false,
                     timeout_seconds: 30,
                     max_retries: 1,
+                    rate_limit_config: None,
                 };
                 
                 let client = hqe_openai::OpenAIClient::new(config)?;

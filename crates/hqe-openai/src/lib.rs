@@ -13,18 +13,26 @@
 #![warn(clippy::unwrap_used)]
 #![warn(clippy::expect_used)]
 
-use reqwest::header::{self, HeaderMap, HeaderValue};
+use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::time::Duration;
 use tracing::{debug, error, info, instrument};
 use url::Url;
 
+/// Analysis module for processing content with LLMs.
+pub mod analysis;
+/// Provider profile loading, saving, and keychain integration.
 pub mod profile;
+/// Prompt templates and helpers for LLM requests.
 pub mod prompts;
+/// Provider and model discovery utilities for OpenAI-compatible APIs.
 pub mod provider_discovery;
+/// Rate limiting utilities for outbound provider requests.
 pub mod rate_limiter;
 
+pub use analysis::*;
 pub use profile::*;
 pub use prompts::*;
 pub use provider_discovery::*;
@@ -37,6 +45,10 @@ pub struct OpenAIClient {
     http: reqwest::Client,
     default_model: String,
     rate_limiter: Option<rate_limiter::RateLimiter>,
+    additional_headers: HashMap<String, String>,
+    organization: Option<String>,
+    project: Option<String>,
+    max_retries: u32,
 }
 
 /// Configuration for the client
@@ -49,6 +61,14 @@ pub struct ClientConfig {
     pub api_key: SecretString,
     /// Default model to use for requests
     pub default_model: String,
+    /// Additional HTTP headers (excluding Authorization)
+    pub headers: Option<HashMap<String, String>>,
+    /// Organization identifier (OpenAI-compatible header)
+    pub organization: Option<String>,
+    /// Project identifier (OpenAI-compatible header)
+    pub project: Option<String>,
+    /// Disable use of system proxy configuration (macOS-safe)
+    pub disable_system_proxy: bool,
     /// Request timeout in seconds
     pub timeout_seconds: u64,
     /// Maximum number of retries for failed requests
@@ -63,6 +83,10 @@ impl Default for ClientConfig {
             base_url: "https://api.openai.com/v1".to_string(),
             api_key: SecretString::new("".into()),
             default_model: "gpt-4o-mini".to_string(),
+            headers: None,
+            organization: None,
+            project: None,
+            disable_system_proxy: false,
             timeout_seconds: get_default_timeout(),
             max_retries: 3,
             rate_limit_config: None,
@@ -116,7 +140,11 @@ pub struct Message {
     /// Role of the message author
     pub role: Role,
     /// Content of the message
-    pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
+    /// Tool call details (OpenAI-compatible responses may omit content)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_calls: Option<Vec<serde_json::Value>>,
 }
 
 /// Role of the message author
@@ -201,7 +229,8 @@ pub use hqe_protocol::models::{ProviderKind, ProviderProfile};
 impl OpenAIClient {
     /// Create a new client
     pub fn new(config: ClientConfig) -> anyhow::Result<Self> {
-        let base_url = Url::parse(&config.base_url)?;
+        let base_url = provider_discovery::sanitize_base_url(&config.base_url)
+            .map_err(|e| anyhow::anyhow!("Invalid base URL: {e}"))?;
 
         // Log security-relevant information (without exposing the API key)
         info!(
@@ -209,9 +238,14 @@ impl OpenAIClient {
             base_url.domain().unwrap_or("unknown")
         );
 
-        let http = reqwest::Client::builder()
-            .timeout(Duration::from_secs(config.timeout_seconds))
-            .build()?;
+        let mut builder = reqwest::Client::builder().timeout(Duration::from_secs(
+            config.timeout_seconds,
+        ));
+        if config.disable_system_proxy {
+            builder = builder.no_proxy();
+        }
+
+        let http = builder.build()?;
 
         let rate_limiter = config.rate_limit_config.map(rate_limiter::RateLimiter::new);
 
@@ -221,6 +255,10 @@ impl OpenAIClient {
             http,
             default_model: config.default_model,
             rate_limiter,
+            additional_headers: config.headers.unwrap_or_default(),
+            organization: config.organization,
+            project: config.project,
+            max_retries: config.max_retries,
         })
     }
 
@@ -238,17 +276,41 @@ impl OpenAIClient {
     /// Build request headers
     fn build_headers(&self) -> anyhow::Result<HeaderMap> {
         let mut headers = HeaderMap::new();
-
-        let api_key_val =
-            HeaderValue::from_str(&format!("Bearer {}", self.api_key.expose_secret()))
-                .map_err(|e| anyhow::anyhow!("Invalid API key characters: {}", e))?;
-
-        headers.insert(header::AUTHORIZATION, api_key_val);
-
         headers.insert(
             header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
         );
+
+        let api_key = self.api_key.expose_secret();
+        if !api_key.is_empty() {
+            let api_key_val = HeaderValue::from_str(&format!("Bearer {}", api_key))
+                .map_err(|e| anyhow::anyhow!("Invalid API key characters: {}", e))?;
+            headers.insert(header::AUTHORIZATION, api_key_val);
+        }
+
+        if let Some(org) = &self.organization {
+            headers.insert(
+                HeaderName::from_static("openai-organization"),
+                HeaderValue::from_str(org)
+                    .map_err(|e| anyhow::anyhow!("Invalid organization header: {}", e))?,
+            );
+        }
+
+        if let Some(project) = &self.project {
+            headers.insert(
+                HeaderName::from_static("openai-project"),
+                HeaderValue::from_str(project)
+                    .map_err(|e| anyhow::anyhow!("Invalid project header: {}", e))?,
+            );
+        }
+
+        for (key, value) in &self.additional_headers {
+            let header_name = HeaderName::from_bytes(key.as_bytes())
+                .map_err(|e| anyhow::anyhow!("Invalid header name '{}': {}", key, e))?;
+            let header_value = HeaderValue::from_str(value)
+                .map_err(|e| anyhow::anyhow!("Invalid header value for '{}': {}", key, e))?;
+            headers.insert(header_name, header_value);
+        }
 
         Ok(headers)
     }
@@ -277,56 +339,88 @@ impl OpenAIClient {
             url_str.push_str("chat/completions");
             Url::parse(&url_str)?
         };
-        let headers = self.build_headers()?;
+        let mut last_error: Option<anyhow::Error> = None;
+        let max_attempts = self.max_retries.saturating_add(1).max(1);
 
-        debug!("Sending chat request to {}", url);
+        for attempt in 0..max_attempts {
+            let headers = self.build_headers()?;
 
-        let response = self
-            .http
-            .post(url)
-            .headers(headers)
-            .json(&request)
-            .send()
-            .await?;
-
-        let status = response.status();
-
-        if status.is_success() {
-            let chat_response: ChatResponse = response.json().await?;
-            info!(
-                "Chat completion successful: {} tokens used",
-                chat_response
-                    .usage
-                    .as_ref()
-                    .map(|u| u.total_tokens)
-                    .unwrap_or(0)
+            debug!(
+                attempt = attempt + 1,
+                max_attempts,
+                "Sending chat request to {}",
+                url
             );
-            Ok(chat_response)
-        } else {
-            let error_text = response.text().await?;
-            // Log the full error for debugging but don't expose it in the user-facing error
-            error!("API error ({}): {}", status, error_text);
 
-            match serde_json::from_str::<ApiError>(&error_text) {
-                Ok(api_error) => {
-                    // Only expose the error type, not the full message which might contain sensitive info
-                    anyhow::bail!(
-                        "API error: {} ({})",
-                        // Sanitize the message to prevent information disclosure
-                        sanitize_error_message(&api_error.error.message),
-                        api_error.error.error_type
-                    )
+            let response = self
+                .http
+                .post(url.clone())
+                .headers(headers)
+                .json(&request)
+                .send()
+                .await;
+
+            match response {
+                Ok(resp) => {
+                    let status = resp.status();
+                    if status.is_success() {
+                        let chat_response: ChatResponse = resp.json().await?;
+                        info!(
+                            "Chat completion successful: {} tokens used",
+                            chat_response
+                                .usage
+                                .as_ref()
+                                .map(|u| u.total_tokens)
+                                .unwrap_or(0)
+                        );
+                        return Ok(chat_response);
+                    }
+
+                    let error_text = resp.text().await.unwrap_or_default();
+                    error!("API error ({}): {}", status, error_text);
+
+                    if attempt + 1 < max_attempts && is_retryable_status(status) {
+                        let backoff = retry_backoff(attempt);
+                        debug!(
+                            status = %status,
+                            backoff_ms = backoff.as_millis(),
+                            "Retrying chat request"
+                        );
+                        tokio::time::sleep(backoff).await;
+                        continue;
+                    }
+
+                    last_error = Some(match serde_json::from_str::<ApiError>(&error_text) {
+                        Ok(api_error) => anyhow::anyhow!(
+                            "API error: {} ({})",
+                            sanitize_error_message(&api_error.error.message),
+                            api_error.error.error_type
+                        ),
+                        Err(_) => anyhow::anyhow!(
+                            "HTTP error {}: {}",
+                            status,
+                            status.canonical_reason().unwrap_or("Unknown error")
+                        ),
+                    });
                 }
-                Err(_) => {
-                    // Don't expose the raw error text which might contain sensitive information
-                    anyhow::bail!(
-                        "HTTP error {}: {}",
-                        status,
-                        status.canonical_reason().unwrap_or("Unknown error")
-                    )
+                Err(err) => {
+                    if attempt + 1 < max_attempts && is_retryable_error(&err) {
+                        let backoff = retry_backoff(attempt);
+                        debug!(
+                            backoff_ms = backoff.as_millis(),
+                            "Retrying chat request after transport error: {}",
+                            err
+                        );
+                        tokio::time::sleep(backoff).await;
+                        continue;
+                    }
+
+                    return Err(err.into());
                 }
             }
         }
+
+        Err(last_error.unwrap_or_else(|| anyhow::anyhow!("Request failed")))
     }
 
     /// Simple chat with default model
@@ -336,11 +430,13 @@ impl OpenAIClient {
             messages: vec![
                 Message {
                     role: Role::System,
-                    content: system.to_string(),
+                    content: Some(system.to_string()),
+                    tool_calls: None,
                 },
                 Message {
                     role: Role::User,
-                    content: user.to_string(),
+                    content: Some(user.to_string()),
+                    tool_calls: None,
                 },
             ],
             temperature: Some(0.1),
@@ -354,7 +450,7 @@ impl OpenAIClient {
             .choices
             .into_iter()
             .next()
-            .map(|c| c.message.content)
+            .and_then(|c| c.message.content)
             .ok_or_else(|| anyhow::anyhow!("No response content"))
     }
 
@@ -365,7 +461,8 @@ impl OpenAIClient {
             model: self.default_model.clone(),
             messages: vec![Message {
                 role: Role::User,
-                content: "Hi".to_string(),
+                content: Some("Hi".to_string()),
+                tool_calls: None,
             }],
             temperature: Some(0.0),
             max_tokens: Some(5),
@@ -380,6 +477,20 @@ impl OpenAIClient {
             }
         }
     }
+}
+
+fn is_retryable_status(status: reqwest::StatusCode) -> bool {
+    matches!(status.as_u16(), 408 | 429 | 500 | 502 | 503 | 504)
+}
+
+fn is_retryable_error(err: &reqwest::Error) -> bool {
+    err.is_timeout() || err.is_connect()
+}
+
+fn retry_backoff(attempt: u32) -> Duration {
+    let exp = 2u64.saturating_pow(attempt.min(6));
+    let ms = 200u64.saturating_mul(exp).min(2_000);
+    Duration::from_millis(ms)
 }
 
 /// Sanitize error messages to prevent information disclosure
@@ -432,6 +543,10 @@ mod tests {
             base_url: "http://localhost:1234".to_string(),
             api_key: SecretString::new("test".into()),
             default_model: "test-model".to_string(),
+            headers: None,
+            organization: None,
+            project: None,
+            disable_system_proxy: true,
             timeout_seconds: 5,
             max_retries: 0,
             rate_limit_config: None,

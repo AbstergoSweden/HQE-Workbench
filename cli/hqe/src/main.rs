@@ -4,9 +4,12 @@ use clap::{Parser, Subcommand};
 use console::style;
 use hqe_core::models::*;
 use hqe_core::scan::ScanPipeline;
+use hqe_openai::profile::ProfileManager;
+use hqe_openai::{ClientConfig, OpenAIAnalyzer, OpenAIClient};
 use indicatif::{ProgressBar, ProgressStyle};
 use serde_json::json;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing::Level;
 
 #[derive(Parser)]
@@ -208,6 +211,10 @@ async fn handle_prompt(
                 base_url: profile.base_url.clone(),
                 api_key: secrecy::SecretString::new(api_key),
                 default_model: profile.default_model.clone(),
+                headers: profile.headers.clone(),
+                organization: profile.organization.clone(),
+                project: profile.project.clone(),
+                disable_system_proxy: false,
                 timeout_seconds: 120, // Longer timeout for detailed prompts
                 max_retries: 1,
                 rate_limit_config: None,
@@ -274,7 +281,8 @@ async fn handle_prompt(
                             model: client_clone.default_model().to_string(),
                             messages: vec![hqe_openai::Message {
                                 role: hqe_openai::Role::User,
-                                content: prompt_text,
+                                content: Some(prompt_text),
+                                tool_calls: None,
                             }],
                             temperature: Some(0.2),
                             max_tokens: None,
@@ -282,7 +290,9 @@ async fn handle_prompt(
                         })
                         .await?;
 
-                    Ok(json!({ "result": response.choices[0].message.content }))
+                    Ok(json!({
+                        "result": response.choices[0].message.content.clone().unwrap_or_default()
+                    }))
                 })
             },
         );
@@ -528,7 +538,43 @@ async fn scan_repo(
 
     // Run scan
     pb.set_message("Initializing scan pipeline...");
-    let mut pipeline = ScanPipeline::new(&repo, config)?;
+    let mut pipeline = ScanPipeline::new(&repo, config.clone())?;
+    if config.llm_enabled && !config.local_only {
+        let profile_name = config
+            .provider_profile
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("Provider profile required for LLM scans"))?;
+        let manager = ProfileManager::default();
+        let (profile, api_key) = manager
+            .get_profile_with_key(&profile_name)?
+            .ok_or_else(|| anyhow::anyhow!("Profile not found"))?;
+        let api_key = api_key.ok_or_else(|| anyhow::anyhow!("No API key stored for profile"))?;
+
+        let base_url = profile.base_url.clone();
+        let default_model = profile.default_model.clone();
+
+        pipeline.set_provider_info(ProviderInfo {
+            name: profile.name.clone(),
+            base_url: Some(base_url.clone()),
+            model: Some(default_model.clone()),
+            llm_enabled: true,
+        });
+
+        let llm_client = OpenAIClient::new(ClientConfig {
+            base_url,
+            api_key,
+            default_model,
+            headers: profile.headers.clone(),
+            organization: profile.organization.clone(),
+            project: profile.project.clone(),
+            disable_system_proxy: false,
+            timeout_seconds: profile.timeout_s,
+            max_retries: 1,
+            rate_limit_config: None,
+        })?;
+        let analyzer = OpenAIAnalyzer::new(llm_client);
+        pipeline = pipeline.with_llm_analyzer(Arc::new(analyzer));
+    }
 
     pb.set_message("Phase: Ingestion...");
     let result = pipeline.run().await?;
@@ -729,6 +775,10 @@ async fn handle_config(command: ConfigCommands) -> anyhow::Result<()> {
                     base_url: profile.base_url.clone(),
                     api_key: secrecy::SecretString::new(api_key),
                     default_model: profile.default_model.clone(),
+                    headers: profile.headers.clone(),
+                    organization: profile.organization.clone(),
+                    project: profile.project.clone(),
+                    disable_system_proxy: false,
                     timeout_seconds: 30,
                     max_retries: 1,
                     rate_limit_config: None,

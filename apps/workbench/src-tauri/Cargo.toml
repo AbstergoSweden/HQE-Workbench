@@ -25,6 +25,7 @@ hqe-git = { path = "../../../crates/hqe-git" }
 
 # HQE Crates
 hqe-core = { path = "../../../crates/hqe-core" }
+hqe-artifacts = { path = "../../../crates/hqe-artifacts" }
 hqe-openai = { path = "../../../crates/hqe-openai" }
 hqe-protocol = { path = "../../../crates/hqe-protocol" }
 hqe-ingest = { path = "../../../crates/hqe-ingest" }

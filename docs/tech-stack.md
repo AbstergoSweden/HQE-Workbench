@@ -19,7 +19,7 @@ The application is structured as a cargo workspace with decoupled crates acting 
 
 ## Frontend (Tauri)
 - **Framework:** Tauri v2
-- **UI:** React 19 + TypeScript
+- **UI:** React 18.2 + TypeScript
 - **Styling:** Tailwind CSS
 
 ## Data Storage

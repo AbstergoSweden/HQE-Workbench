@@ -2,22 +2,25 @@ import { useNavigate } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import { useRepoStore } from '../store'
 import { Card } from '../components/ui/Card'
+import { useToast } from '../context/ToastContext'
 
 export function WelcomeScreen() {
   const navigate = useNavigate()
   const { setRepo } = useRepoStore()
+  const toast = useToast()
 
   const handleOpenFolder = async () => {
     try {
       const path = await invoke<string | null>('select_folder')
       if (path) {
         const name = path.split('/').pop() || 'Unknown'
-        const repoInfo = await invoke<{source: string, git_remote: string | null, git_commit: string | null}>('get_repo_info', { repoPath: path })
+        const repoInfo = await invoke<{source: string, git_remote: string | null, git_commit: string | null}>('get_repo_info', { repo_path: path })
         setRepo(path, name, repoInfo.source === 'git')
         navigate('/scan')
       }
     } catch (error) {
       console.error('Failed to open folder:', error)
+      toast.error('Failed to open repository. Please try again.')
     }
   }
 

@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ToastProvider } from './context/ToastContext'
 import { WelcomeScreen } from './screens/WelcomeScreen'

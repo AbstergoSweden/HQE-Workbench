@@ -13,15 +13,7 @@ async fn test_ingestion_engine_detects_new_topic() {
     let (tx, mut rx) = mpsc::channel(10);
     let engine = IngestEngine::new(root_path.clone(), tx);
 
-    // 3. Spawn engine
-    tokio::spawn(async move {
-        engine.start().await.expect("Engine failed");
-    });
-
-    // Give the watcher a moment to start
-    tokio::time::sleep(Duration::from_millis(100)).await;
-
-    // 4. Create a topic directory and manifest
+    // 3. Create a topic directory and manifest
     let topic_dir = root_path.join("finance-test");
     tokio::fs::create_dir(&topic_dir)
         .await
@@ -41,6 +33,12 @@ data_schemas: {}
     tokio::fs::write(topic_dir.join("manifest.yaml"), manifest_content)
         .await
         .expect("Failed to write manifest");
+
+    // 4. Run a deterministic scan to load new topics
+    engine
+        .initial_scan()
+        .await
+        .expect("Initial scan failed");
 
     // 5. Wait for event
     let event = tokio::time::timeout(Duration::from_secs(2), rx.recv())

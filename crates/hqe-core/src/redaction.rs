@@ -216,6 +216,7 @@ pub fn should_exclude_file(path: &str) -> bool {
     ];
 
     let lower_path = path.to_lowercase();
+    let normalized_path = lower_path.replace('\\', "/");
 
     // Check extensions
     for ext in &excluded_extensions {
@@ -226,7 +227,7 @@ pub fn should_exclude_file(path: &str) -> bool {
 
     // Check path segments
     for excluded in &excluded_paths {
-        if path.contains(excluded) {
+        if normalized_path.contains(excluded) {
             return true;
         }
     }

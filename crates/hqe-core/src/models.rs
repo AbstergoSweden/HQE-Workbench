@@ -141,6 +141,9 @@ pub struct ProtocolVersions {
 pub struct HqeReport {
     /// Unique identifier for this scan run
     pub run_id: String,
+    /// Provider metadata for this scan (if available)
+    #[serde(default)]
+    pub provider: Option<ProviderInfo>,
     /// Executive summary with health score and top priorities
     pub executive_summary: ExecutiveSummary,
     /// Project map with architecture and tech stack information
@@ -603,15 +606,24 @@ pub use hqe_protocol::models::ProviderProfile;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScanConfig {
     /// Whether LLM features are enabled for this scan
+    #[serde(default)]
     pub llm_enabled: bool,
     /// Name of the provider profile to use for LLM operations
+    #[serde(default)]
     pub provider_profile: Option<String>,
     /// Limits applied during the scan
+    #[serde(default)]
     pub limits: ScanLimits,
     /// Whether to run in local-only mode without LLM
+    #[serde(default)]
     pub local_only: bool,
     /// Timeout in seconds for LLM operations (0 means no timeout)
+    #[serde(default = "default_scan_timeout_seconds")]
     pub timeout_seconds: u64,
+}
+
+fn default_scan_timeout_seconds() -> u64 {
+    120
 }
 
 impl Default for ScanConfig {
@@ -621,7 +633,7 @@ impl Default for ScanConfig {
             provider_profile: None,
             limits: ScanLimits::default(),
             local_only: true,
-            timeout_seconds: 120, // 2 minute default for LLM operations
+            timeout_seconds: default_scan_timeout_seconds(), // 2 minute default for LLM operations
         }
     }
 }

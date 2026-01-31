@@ -49,6 +49,12 @@ export interface ExecutiveSummary {
 
 export interface HqeReport {
   run_id: string
+  provider?: {
+    name: string
+    base_url?: string | null
+    model?: string | null
+    llm_enabled?: boolean
+  } | null
   executive_summary: ExecutiveSummary
   deep_scan_results: {
     security: Finding[]
@@ -58,4 +64,28 @@ export interface HqeReport {
     testing: Finding[]
   }
   master_todo_backlog: TodoItem[]
+}
+
+export interface ProviderProfile {
+  name: string
+  base_url: string
+  api_key_id: string
+  default_model: string
+  headers?: Record<string, string>
+  organization?: string | null
+  project?: string | null
+  provider_kind?: string | null
+  timeout_s: number
+}
+
+export interface ProviderModel {
+  id: string
+  name?: string
+}
+
+export interface ProviderModelList {
+  provider_kind?: string
+  base_url?: string
+  fetched_at_unix_s?: number
+  models: ProviderModel[]
 }

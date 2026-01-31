@@ -1,19 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import { useRepoStore, useScanStore, useReportStore } from '../store'
+import { HqeReport, ProviderProfile } from '../types'
 import { useToast } from '../context/ToastContext'
 import { Card } from '../components/ui/Card'
 
 export function ScanScreen() {
   const navigate = useNavigate()
   const { path, name } = useRepoStore()
-  const { isScanning, phase, setScanning, setPhase, setProgress, reset } = useScanStore()
+  const { isScanning, phase, progress, setScanning, setPhase, setProgress, reset } = useScanStore()
   const { setReport } = useReportStore()
   const toast = useToast()
 
   const [localOnly, setLocalOnly] = useState(true)
   const [maxFiles, setMaxFiles] = useState(40)
+  const [profiles, setProfiles] = useState<ProviderProfile[]>([])
+  const [selectedProfile, setSelectedProfile] = useState<string>('')
+  const [loadingProfiles, setLoadingProfiles] = useState(false)
+
+  useEffect(() => {
+    if (localOnly) return
+    const loadProfiles = async () => {
+      setLoadingProfiles(true)
+      try {
+        const result = await invoke<ProviderProfile[]>('list_provider_profiles')
+        setProfiles(result ?? [])
+        if (result && result.length > 0) {
+          setSelectedProfile((current) => current || result[0].name)
+        }
+      } catch (error) {
+        console.error('Failed to load profiles:', error)
+        toast.error('Failed to load provider profiles')
+      }
+      setLoadingProfiles(false)
+    }
+    loadProfiles()
+  }, [localOnly, toast])
 
   const handleScan = async () => {
     if (!path) return
@@ -27,20 +50,21 @@ export function ScanScreen() {
 
       const config = {
         llm_enabled: !localOnly,
-        provider_profile: null,
+        provider_profile: localOnly ? null : (selectedProfile || null),
         limits: {
           max_files_sent: maxFiles,
           max_total_chars_sent: 250000,
           snippet_chars: 4000,
         },
         local_only: localOnly,
+        timeout_seconds: 120,
       }
 
       setPhase('Analyzing code with local heuristics...')
       setProgress(40)
 
-      const report = await invoke<any>('scan_repo', {
-        repoPath: path,
+      const report = await invoke<HqeReport>('scan_repo', {
+        repo_path: path,
         config,
       })
 
@@ -143,6 +167,33 @@ export function ScanScreen() {
               {maxFiles} files
             </p>
           </div>
+
+          {!localOnly && (
+            <div>
+              <label className="block mb-2 text-emerald-50">
+                Provider Profile
+              </label>
+              {loadingProfiles ? (
+                <p className="text-sm text-emerald-200/60">Loading profiles...</p>
+              ) : profiles.length > 0 ? (
+                <select
+                  value={selectedProfile}
+                  onChange={(e) => setSelectedProfile(e.target.value)}
+                  className="input w-full"
+                >
+                  {profiles.map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name} ({p.default_model})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-emerald-200/60">
+                  No provider profiles found. Add one in Settings.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </Card>
 
@@ -164,13 +215,14 @@ export function ScanScreen() {
           <div className="w-full rounded-full h-2 bg-black/20">
             <div
               className="h-2 rounded-full transition-all duration-300 bg-emerald-500"
-              style={{ width: '40%' }} // Dynamic width would require more logic, kept static for now
+              style={{ width: `${progress}%` }}
             />
           </div>
         </Card>
       ) : (
         <button
           onClick={handleScan}
+          disabled={!localOnly && !selectedProfile}
           className="btn btn-primary w-full py-4 text-lg flex items-center justify-center gap-2"
         >
           <span role="img" aria-label="rocket">🚀</span> Start Scan

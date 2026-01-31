@@ -3,17 +3,20 @@
 use crate::AppState;
 use hqe_core::models::*;
 use hqe_core::scan::ScanPipeline;
+use hqe_artifacts::ArtifactWriter;
 use hqe_openai::profile::{
     ApiKeyStore, DefaultProfilesStore, KeychainStore, ProfileManager, ProfilesStore,
     ProviderProfile,
 };
 use hqe_openai::provider_discovery::{DiskCache, ProviderDiscoveryClient, ProviderModelList};
-use hqe_openai::ProviderKindExt;
+use hqe_openai::OpenAIAnalyzer;
 use secrecy::{ExposeSecret, SecretString};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
-use tauri::{command, State};
+use tauri::{command, Manager, State};
+use hqe_openai::ProviderKindExt;
 use tauri_plugin_dialog::DialogExt;
 use url::Url;
 
@@ -32,6 +35,7 @@ pub async fn select_folder(app: tauri::AppHandle) -> Result<Option<String>, Stri
 /// Scan a repository
 #[command]
 pub async fn scan_repo(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     repo_path: String,
     config: ScanConfig,
@@ -54,9 +58,54 @@ pub async fn scan_repo(
     }
 
     // Run scan
-    let mut pipeline = ScanPipeline::new(&path, config).map_err(|e| e.to_string())?;
+    let mut pipeline = ScanPipeline::new(&path, config.clone()).map_err(|e| e.to_string())?;
+    if config.llm_enabled && !config.local_only {
+        let profile_name = config
+            .provider_profile
+            .clone()
+            .ok_or_else(|| "Provider profile required for LLM scans".to_string())?;
+
+        let manager = ProfileManager::default();
+        let (profile, api_key) = manager
+            .get_profile_with_key(&profile_name)
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Profile not found".to_string())?;
+
+        let api_key = api_key.ok_or_else(|| "No API key stored for profile".to_string())?;
+
+        pipeline.set_provider_info(ProviderInfo {
+            name: profile.name.clone(),
+            base_url: Some(profile.base_url.clone()),
+            model: Some(profile.default_model.clone()),
+            llm_enabled: true,
+        });
+
+        let llm_client = hqe_openai::OpenAIClient::new(hqe_openai::ClientConfig {
+            base_url: profile.base_url,
+            api_key,
+            default_model: profile.default_model.clone(),
+            headers: profile.headers.clone(),
+            organization: profile.organization.clone(),
+            project: profile.project.clone(),
+            disable_system_proxy: false,
+            timeout_seconds: profile.timeout_s,
+            max_retries: 1,
+            rate_limit_config: None,
+        })
+        .map_err(|e| e.to_string())?;
+
+        let analyzer = OpenAIAnalyzer::new(llm_client);
+        pipeline = pipeline.with_llm_analyzer(Arc::new(analyzer));
+    }
 
     let result = pipeline.run().await.map_err(|e| e.to_string())?;
+
+    let output_root = get_output_root(&app)?;
+    std::fs::create_dir_all(&output_root).map_err(|e| e.to_string())?;
+
+    let run_dir = output_root.join(format!("hqe_run_{}", result.manifest.run_id));
+    let writer = ArtifactWriter::new(&run_dir);
+    writer.write_all(&result).await.map_err(|e| e.to_string())?;
 
     Ok(result.report)
 }
@@ -129,16 +178,24 @@ pub async fn get_repo_info(repo_path: String) -> Result<RepoInfo, String> {
 
 /// Load a report by run ID
 #[command]
-pub async fn load_report(run_id: String) -> Result<Option<HqeReport>, String> {
+pub async fn load_report(app: tauri::AppHandle, run_id: String) -> Result<Option<HqeReport>, String> {
     // Validate the run_id to prevent path traversal
     if !is_valid_run_id(&run_id) {
         return Err("Invalid run ID format".to_string());
     }
 
     // Search for the report in default output directory
-    let output_dir = PathBuf::from("./hqe-output").join(format!("hqe_run_{}", run_id));
+    let output_dir = get_output_root(&app)?.join(format!("hqe_run_{}", run_id));
+
+    if !output_dir.exists() {
+        return Ok(None);
+    }
 
     let report_path = output_dir.join("report.json");
+
+    if !report_path.exists() {
+        return Ok(None);
+    }
 
     // Canonicalize the path to prevent path traversal
     let canonical_path = report_path
@@ -146,16 +203,12 @@ pub async fn load_report(run_id: String) -> Result<Option<HqeReport>, String> {
         .map_err(|_| "Report not found".to_string())?;
 
     // Verify the canonical path is within the expected directory
-    let expected_prefix = PathBuf::from("./hqe-output")
+    let expected_prefix = get_output_root(&app)?
         .canonicalize()
         .map_err(|e| format!("Could not canonicalize output directory: {}", e))?;
 
     if !canonical_path.starts_with(&expected_prefix) {
         return Err("Invalid report path".to_string());
-    }
-
-    if !canonical_path.exists() {
-        return Ok(None);
     }
 
     let content = tokio::fs::read_to_string(&canonical_path)
@@ -179,14 +232,48 @@ fn is_valid_run_id(run_id: &str) -> bool {
 
 /// Export artifacts
 #[command]
-pub async fn export_artifacts(run_id: String, target_dir: String) -> Result<(), String> {
-    let source = PathBuf::from("./hqe-output").join(format!("hqe_run_{}", run_id));
+pub async fn export_artifacts(
+    app: tauri::AppHandle,
+    run_id: String,
+    target_dir: String,
+) -> Result<(), String> {
+    if !is_valid_run_id(&run_id) {
+        return Err("Invalid run ID format".to_string());
+    }
+
+    let source = get_output_root(&app)?.join(format!("hqe_run_{}", run_id));
 
     let target = PathBuf::from(target_dir);
 
+    if !source.exists() {
+        return Err("Artifacts not found for run ID".to_string());
+    }
+
+    let canonical_source = source
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize source: {}", e))?;
+    let canonical_root = get_output_root(&app)?
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize output root: {}", e))?;
+
+    if !canonical_source.starts_with(&canonical_root) {
+        return Err("Invalid artifact source path".to_string());
+    }
+
+    tokio::fs::create_dir_all(&target)
+        .await
+        .map_err(|e| e.to_string())?;
+
     // Copy artifacts
-    for entry in std::fs::read_dir(&source).map_err(|e| e.to_string())? {
+    for entry in std::fs::read_dir(&canonical_source).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
+        if entry
+            .file_type()
+            .map_err(|e| e.to_string())?
+            .is_dir()
+        {
+            continue;
+        }
         let target_file = target.join(entry.file_name());
 
         tokio::fs::copy(entry.path(), target_file)
@@ -195,6 +282,14 @@ pub async fn export_artifacts(run_id: String, target_dir: String) -> Result<(), 
     }
 
     Ok(())
+}
+
+fn get_output_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?;
+    Ok(base.join("hqe-output"))
 }
 
 // ============================================================================
@@ -312,6 +407,10 @@ pub async fn test_provider_connection(profile_name: String) -> Result<bool, Stri
         base_url: profile.base_url.clone(),
         api_key,
         default_model: profile.default_model.clone(),
+        headers: profile.headers.clone(),
+        organization: profile.organization.clone(),
+        project: profile.project.clone(),
+        disable_system_proxy: false,
         timeout_seconds: profile.timeout_s,
         max_retries: 1,
         rate_limit_config: None,

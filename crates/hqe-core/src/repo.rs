@@ -776,6 +776,10 @@ impl RepoScanner {
         // Prevent path traversal by ensuring the resolved path is within the root directory
         let full_path = self.root_path.join(relative_path);
 
+        if !full_path.exists() {
+            return Ok(None);
+        }
+
         // Canonicalize both paths to resolve any '..' components and verify the file is within the allowed directory
         let canonical_full_path = full_path.canonicalize().map_err(crate::HqeError::Io)?;
         let canonical_root = self.root_path.canonicalize().map_err(crate::HqeError::Io)?;
@@ -786,10 +790,6 @@ impl RepoScanner {
                 "Path traversal detected: file '{}' is outside the allowed directory",
                 relative_path
             )));
-        }
-
-        if !canonical_full_path.exists() {
-            return Ok(None);
         }
 
         let metadata = tokio::fs::metadata(&canonical_full_path).await?;
