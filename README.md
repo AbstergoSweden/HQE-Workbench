@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AbstergoSweden/hqe-workbench/badge)](https://securityscorecards.dev/viewer/?uri=github.com/AbstergoSweden/hqe-workbench)
 
+
 A local-first macOS desktop application and CLI tool for running the HQE (High Quality Engineering) Engineer Protocol. Automates codebase health auditing, security scanning, and technical leadership tasks using a combination of local heuristics and LLM-powered analysis.
 
 ## Table of Contents
