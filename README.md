@@ -1,10 +1,11 @@
+<img width="1536" height="1024" alt="README_banner" src="https://github.com/user-attachments/assets/1c762e08-59c0-4451-90cf-bdd474d933cd" />
+
 # HQE-Workbench
 
 [![CI Status](https://github.com/AbstergoSweden/hqe-workbench/workflows/CI/badge.svg)](https://github.com/AbstergoSweden/hqe-workbench/actions/workflows/ci.yml)
 [![Security](https://github.com/AbstergoSweden/hqe-workbench/workflows/Security/badge.svg)](https://github.com/AbstergoSweden/hqe-workbench/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AbstergoSweden/hqe-workbench/badge)](https://securityscorecards.dev/viewer/?uri=github.com/AbstergoSweden/hqe-workbench)
-
 
 A local-first macOS desktop application and CLI tool for running the HQE (High Quality Engineering) Engineer Protocol. Automates codebase health auditing, security scanning, and technical leadership tasks using a combination of local heuristics and LLM-powered analysis.
 
