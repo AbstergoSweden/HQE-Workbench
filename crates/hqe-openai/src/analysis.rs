@@ -150,7 +150,7 @@ fn should_retry_without_format(error: &str) -> bool {
 
 fn extract_json_object(input: &str) -> Option<String> {
     if let Some(fenced) = extract_fenced_json(input) {
-        return Some(fenced);
+        return validate_and_extract_json(&fenced);
     }
 
     let mut in_string = false;
@@ -185,7 +185,8 @@ fn extract_json_object(input: &str) -> Option<String> {
                     depth -= 1;
                     if depth == 0 {
                         if let Some(start) = start_idx {
-                            return Some(input[start..=idx].to_string());
+                            let extracted = input[start..=idx].to_string();
+                            return validate_and_extract_json(&extracted);
                         }
                     }
                 }
@@ -195,6 +196,45 @@ fn extract_json_object(input: &str) -> Option<String> {
     }
 
     None
+}
+
+/// Validate and extract JSON after initial extraction to prevent injection
+fn validate_and_extract_json(json_str: &str) -> Option<String> {
+    // First, try to parse the JSON to ensure it's valid
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(json_str) {
+        // Check for suspicious patterns that might indicate injection
+        if contains_suspicious_patterns(&value) {
+            tracing::warn!("Suspicious patterns detected in LLM response JSON, rejecting");
+            return None;
+        }
+
+        // Return the validated JSON
+        Some(json_str.to_string())
+    } else {
+        None
+    }
+}
+
+/// Check for suspicious patterns in the parsed JSON that might indicate injection
+fn contains_suspicious_patterns(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::String(s) => {
+            // Check for common prompt injection patterns in string values
+            let lower = s.to_lowercase();
+            lower.contains("[system") ||
+            lower.contains("ignore") ||
+            lower.contains("disregard") ||
+            lower.contains("nevermind") ||
+            lower.contains("actually") ||
+            lower.contains("instead") ||
+            s.contains("{{") ||  // Template injection
+            s.contains("{%") ||  // Template injection
+            s.contains("{#")     // Template injection
+        }
+        serde_json::Value::Array(arr) => arr.iter().any(|v| contains_suspicious_patterns(v)),
+        serde_json::Value::Object(obj) => obj.values().any(|v| contains_suspicious_patterns(v)),
+        _ => false,
+    }
 }
 
 fn extract_fenced_json(input: &str) -> Option<String> {

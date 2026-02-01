@@ -20,5 +20,5 @@ echo ""
 echo "🖥️  Starting Tauri development server..."
 echo ""
 
-cd "$REPO_ROOT/apps/workbench"
+cd "$REPO_ROOT/desktop/workbench"
 npm run tauri:dev

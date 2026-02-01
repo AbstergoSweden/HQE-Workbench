@@ -117,20 +117,20 @@ impl RedactionEngine {
             patterns.push((SecretType::GoogleApiKey, re));
         }
 
-        // Generic secret= or SECRET= patterns
+        // Generic secret= or SECRET= patterns - improved to prevent ReDoS
         if let Ok(re) =
-            Regex::new("(?i)(secret|api[_-]?key|token)\\s*=\\s*[\"']?[a-zA-Z0-9_-]{16,}[\"']?")
+            Regex::new(r"(?i)(secret|api[_-]?key|token)\s*=\s*[\"']?[a-zA-Z0-9_-]{16,64}[\"']?")
         {
             patterns.push((SecretType::GenericSecret, re));
         }
 
-        // Password patterns (be careful with false positives)
-        if let Ok(re) = Regex::new("(?i)(password|passwd|pwd)\\s*=\\s*[\"'][^\"']{8,}[\"']") {
+        // Password patterns (be careful with false positives) - improved to prevent ReDoS
+        if let Ok(re) = Regex::new(r"(?i)(password|passwd|pwd)\s*=\s*[\"'][^\"']{8,128}[\"']") {
             patterns.push((SecretType::Password, re));
         }
 
-        // API Key patterns
-        if let Ok(re) = Regex::new("(?i)api[_-]?key[\"']?\\s*[:=]\\s*[\"'][a-zA-Z0-9_-]{16,}[\"']")
+        // API Key patterns - improved to prevent ReDoS
+        if let Ok(re) = Regex::new(r"(?i)api[_-]?key[\"']?\s*[:=]\s*[\"'][a-zA-Z0-9_-]{16,64}[\"']")
         {
             patterns.push((SecretType::ApiKey, re));
         }
@@ -216,11 +216,12 @@ pub fn should_exclude_file(path: &str) -> bool {
     ];
 
     let lower_path = path.to_lowercase();
+    // Normalize both forward and backward slashes to forward slashes for comparison
     let normalized_path = lower_path.replace('\\', "/");
 
     // Check extensions
     for ext in &excluded_extensions {
-        if lower_path.ends_with(ext) {
+        if normalized_path.ends_with(ext) {
             return true;
         }
     }

@@ -272,3 +272,9 @@ _site/
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# qwen-code-cli settings
+.qwen/
+
+# GitHub App credentials
+gha-creds-*.json

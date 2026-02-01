@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -13,36 +13,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      release_id: ${{ steps.create_release.outputs.id }}
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Generate Changelog
-        id: changelog
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          # Extract changelog section for this version
-          awk "/^## \\[$VERSION\\]/ {flag=1; next} /^## \\[/ {flag=0} flag" CHANGELOG.md > RELEASE_NOTES.md || echo "See CHANGELOG.md for release notes." > RELEASE_NOTES.md
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1.1.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.changelog.outputs.version }}
-          body_path: RELEASE_NOTES.md
-          draft: false
-          prerelease: ${{ contains(steps.changelog.outputs.version, 'alpha') || contains(steps.changelog.outputs.version, 'beta') || contains(steps.changelog.outputs.version, 'rc') }}
-
   build-macos:
-    needs: create-release
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -90,28 +61,15 @@ jobs:
           cd target/release
           tar czf hqe-macos-universal.tar.gz hqe
 
-      - name: Upload CLI Binary
-        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: target/release/hqe-macos-universal.tar.gz
-          asset_name: hqe-${{ github.ref_name }}-macos-universal.tar.gz
-          asset_content_type: application/gzip
-
-      - name: Upload Tauri DMG
-        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: target/release/bundle/dmg/*.dmg
-          asset_name: HQE-Workbench-${{ github.ref_name }}.dmg
-          asset_content_type: application/x-apple-diskimage
+          name: macos-release
+          path: |
+            target/release/hqe-macos-universal.tar.gz
+            target/release/bundle/dmg/*.dmg
 
   build-linux:
-    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -132,20 +90,61 @@ jobs:
           cd target/release
           tar czf hqe-linux-x86_64.tar.gz hqe
 
-      - name: Upload
-        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: linux-release
+          path: target/release/hqe-linux-x86_64.tar.gz
+
+  release:
+    needs: [build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          # macOS CLI
+          cp artifacts/macos-release/hqe-macos-universal.tar.gz release-assets/hqe-${{ github.ref_name }}-macos-universal.tar.gz
+          # macOS DMG (find and rename)
+          DMG_FILE=$(find artifacts/macos-release -name "*.dmg" -type f | head -1)
+          if [ -n "$DMG_FILE" ]; then
+            cp "$DMG_FILE" release-assets/HQE-Workbench-${{ github.ref_name }}.dmg
+          fi
+          # Linux CLI
+          cp artifacts/linux-release/hqe-linux-x86_64.tar.gz release-assets/hqe-${{ github.ref_name }}-linux-x86_64.tar.gz
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Extract changelog section for this version
+          awk "/^## \[$VERSION\]/ {flag=1; next} /^## \[/ {flag=0} flag" CHANGELOG.md > RELEASE_NOTES.md || echo "See CHANGELOG.md for release notes." > RELEASE_NOTES.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          name: Release ${{ steps.changelog.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(steps.changelog.outputs.version, 'alpha') || contains(steps.changelog.outputs.version, 'beta') || contains(steps.changelog.outputs.version, 'rc') }}
+          files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: target/release/hqe-linux-x86_64.tar.gz
-          asset_name: hqe-${{ github.ref_name }}-linux-x86_64.tar.gz
-          asset_content_type: application/gzip
 
   crates-io:
-    needs: [create-release, build-macos, build-linux]
+    needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
     if: "!contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc')"
+    env:
+      CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -153,17 +152,17 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Publish hqe-core
-        run: cargo publish -p hqe-core --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish -p hqe-core --token $CRATES_IO_TOKEN
         continue-on-error: true
 
       - name: Publish hqe-openai
-        run: cargo publish -p hqe-openai --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish -p hqe-openai --token $CRATES_IO_TOKEN
         continue-on-error: true
 
       - name: Publish hqe-git
-        run: cargo publish -p hqe-git --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish -p hqe-git --token $CRATES_IO_TOKEN
         continue-on-error: true
 
       - name: Publish hqe
-        run: cargo publish -p hqe --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish -p hqe --token $CRATES_IO_TOKEN
         continue-on-error: true

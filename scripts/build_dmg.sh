@@ -29,7 +29,7 @@ cargo build --release -p hqe
 # Build Tauri app
 echo ""
 echo "🔨 Step 4: Building Tauri app..."
-cd "$REPO_ROOT/apps/workbench"
+cd "$REPO_ROOT/desktop/workbench"
 npm run tauri:build
 
 # Check outputs

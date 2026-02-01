@@ -145,16 +145,27 @@ impl PromptLoader {
 
         let content = std::fs::read_to_string(&canonical_path)?;
 
-        let prompt_file: PromptFile = if canonical_path.extension().is_some_and(|e| e == "toml") {
-            toml::from_str(&content).map_err(|e| LoaderError::ParseToml {
+        let prompt_file: PromptFile = match canonical_path.extension().and_then(|s| s.to_str()) {
+            Some("toml") => {
+                // Add validation for TOML content to prevent deserialization attacks
+                validate_toml_content(&content)?;
+                toml::from_str(&content).map_err(|e| LoaderError::ParseToml {
+                    path: canonical_path.clone(),
+                    source: e,
+                })?
+            },
+            Some("yaml") | Some("yml") => {
+                // Add validation for YAML content to prevent deserialization attacks
+                validate_yaml_content(&content)?;
+                serde_yaml::from_str(&content).map_err(|e| LoaderError::ParseYaml {
+                    path: canonical_path.clone(),
+                    source: e,
+                })?
+            },
+            _ => return Err(LoaderError::ParseYaml {
                 path: canonical_path.clone(),
-                source: e,
-            })?
-        } else {
-            serde_yaml::from_str(&content).map_err(|e| LoaderError::ParseYaml {
-                path: canonical_path.clone(),
-                source: e,
-            })?
+                source: serde_yaml::Error::custom("Unsupported file extension, expected .toml, .yaml, or .yml")
+            })
         };
 
         // Determine tool name from file path relative to root
@@ -216,6 +227,9 @@ impl PromptLoader {
             "required": required
         });
 
+        // Validate the prompt template for malicious content
+        validate_prompt_template(&prompt_file.prompt)?;
+
         Ok(LoadedPromptTool {
             definition: MCPToolDefinition {
                 name,
@@ -227,6 +241,81 @@ impl PromptLoader {
             template: prompt_file.prompt,
         })
     }
+
+// Add validation functions for TOML and YAML content
+fn validate_toml_content(content: &str) -> Result<(), LoaderError> {
+    // Check for potentially dangerous patterns in TOML
+    if content.contains("!!") || content.contains("!<!") || content.contains("!") {
+        // These could indicate custom types or unsafe deserialization
+        return Err(LoaderError::ParseToml {
+            path: std::path::PathBuf::from("validation"),
+            source: toml::de::Error::custom("TOML contains potentially unsafe type indicators"),
+        });
+    }
+
+    Ok(())
+}
+
+fn validate_yaml_content(content: &str) -> Result<(), LoaderError> {
+    // Check for potentially dangerous patterns in YAML
+    if content.contains("!!") || content.contains("!") || content.contains("&") || content.contains("*") {
+        // These could indicate custom types, aliases, or unsafe deserialization
+        return Err(LoaderError::ParseYaml {
+            path: std::path::PathBuf::from("validation"),
+            source: serde_yaml::Error::custom("YAML contains potentially unsafe type indicators or anchors"),
+        });
+    }
+
+    Ok(())
+}
+
+// Add validation function for prompt templates
+fn validate_prompt_template(template: &str) -> Result<(), LoaderError> {
+    // Check for common prompt injection patterns in the template
+    let lower_template = template.to_lowercase();
+
+    // Look for patterns that could be used for prompt injection
+    if lower_template.contains("ignore") &&
+       (lower_template.contains("above") || lower_template.contains("previous") || lower_template.contains("instructions")) {
+        return Err(LoaderError::ParseYaml {
+            path: std::path::PathBuf::from("validation"),
+            source: serde_yaml::Error::custom("Prompt template contains potential injection pattern: 'ignore' with instructions"),
+        });
+    }
+
+    if lower_template.contains("disregard") &&
+       (lower_template.contains("above") || lower_template.contains("previous") || lower_template.contains("instructions")) {
+        return Err(LoaderError::ParseYaml {
+            path: std::path::PathBuf::from("validation"),
+            source: serde_yaml::Error::custom("Prompt template contains potential injection pattern: 'disregard' with instructions"),
+        });
+    }
+
+    if lower_template.contains("system") &&
+       (lower_template.contains("prompt") || lower_template.contains("instructions")) {
+        return Err(LoaderError::ParseYaml {
+            path: std::path::PathBuf::from("validation"),
+            source: serde_yaml::Error::custom("Prompt template contains potential injection pattern: 'system' with prompt/instructions"),
+        });
+    }
+
+    if lower_template.contains("nevermind") || lower_template.contains("actually") {
+        return Err(LoaderError::ParseYaml {
+            path: std::path::PathBuf::from("validation"),
+            source: serde_yaml::Error::custom("Prompt template contains potential injection pattern: 'nevermind' or 'actually'"),
+        });
+    }
+
+    // Check for template injection patterns
+    if template.matches("{{").count() != template.matches("}}").count() {
+        return Err(LoaderError::ParseYaml {
+            path: std::path::PathBuf::from("validation"),
+            source: serde_yaml::Error::custom("Prompt template has unmatched template delimiters"),
+        });
+    }
+
+    Ok(())
+}
 }
 
 fn should_ignore_dir_entry(entry: &walkdir::DirEntry) -> bool {

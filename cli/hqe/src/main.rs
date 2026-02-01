@@ -456,11 +456,27 @@ fn substitute_template(template: &str, args: &serde_json::Value) -> String {
             let key = format!("{{{{{}}}}}", k); // {{key}}
             let val = v
                 .as_str()
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| v.to_string());
+                .map(|s| validate_template_value(s))  // Validate string values
+                .unwrap_or_else(|| validate_template_value(&v.to_string())); // Validate non-string values
             result = result.replace(&key, &val);
         }
     }
+
+    result
+}
+
+// Validate that a template value doesn't contain dangerous patterns
+fn validate_template_value(value: &str) -> String {
+    // If the value contains template-like expressions, escape them to prevent processing
+    let mut result = value.to_string();
+
+    // Escape template delimiters to prevent them from being processed as templates
+    result = result.replace("{{", "\\{\\{");
+    result = result.replace("{%", "\\{%");
+    result = result.replace("{#", "\\{#");
+    result = result.replace("}}", "\\}\\}");
+    result = result.replace("%}", "%\\}");
+    result = result.replace("#}", "#\\}");
 
     result
 }

@@ -8,37 +8,45 @@ on:
     schedule:
         - cron: "30 4 * * 1" # Weekly on Mondays
 
+permissions:
+    contents: read
+
 jobs:
     audit:
         name: Rust Security Audit
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-            - uses: dtolnay/rust-toolchain@stable
-            - name: Install cargo-audit
-              uses: taiki-e/install-action@v2
+            - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+            - uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # stable
               with:
-                tool: cargo-audit
+                  toolchain: stable
+
+            - name: Install cargo-audit
+              uses: taiki-e/install-action@37461a1de4134bec919a737ee9ba018e72011b7c # v2.45.4
+              with:
+                  tool: cargo-audit
+
             - name: Run audit
               run: cargo audit
 
     # OpenSSF Scorecard disabled for private repositories
     # Re-enable when repository becomes public or when GitHub App permissions are configured
     # scorecard:
-    #     name: OpenSSF Scorecard
-    #     runs-on: ubuntu-latest
-    #     permissions:
-    #         security-events: write
-    #         id-token: write
-    #         contents: read
-    #         actions: read
-    #     steps:
-    #         - uses: actions/checkout@v4
-    #           with:
-    #               persist-credentials: false
-    #         - name: Run analysis
-    #           uses: ossf/scorecard-action@v2.3.1
-    #           with:
-    #               results_file: results.sarif
-    #               results_format: sarif
-    #               publish_results: true
+    #   name: OpenSSF Scorecard
+    #   runs-on: ubuntu-latest
+    #   permissions:
+    #     security-events: write
+    #     id-token: write
+    #     contents: read
+    #     actions: read
+    #   steps:
+    #     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    #       with:
+    #         persist-credentials: false
+    #     - name: Run analysis
+    #       uses: ossf/scorecard-action@v2.3.1
+    #       with:
+    #         results_file: results.sarif
+    #         results_format: sarif
+    #         publish_results: true

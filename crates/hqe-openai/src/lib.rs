@@ -819,6 +819,20 @@ fn sanitize_error_message(message: &str) -> String {
         }
     }
 
+    // Additional patterns for common secret formats
+    let additional_patterns = [
+        // AWS credentials
+        (r"AKIA[0-9A-Z]{16}", "AKIA***"),
+        // Generic key=value patterns with long values
+        (r"(?i)(key|secret|token|password)\s*[=:]\s*['\"][^'\"]{10,}['\"]", "$1=***REDACTED***"),
+    ];
+
+    for (pattern, replacement) in additional_patterns {
+        if let Ok(re) = regex::Regex::new(pattern) {
+            sanitized = re.replace_all(&sanitized, replacement).to_string();
+        }
+    }
+
     // Truncate very long messages to prevent exposing too much detail
     if sanitized.len() > 256 {
         format!("{}... [truncated]", &sanitized[..256])

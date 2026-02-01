@@ -118,6 +118,36 @@ impl Default for ScanLimits {
     }
 }
 
+impl ScanLimits {
+    /// Validate that the limits are reasonable to prevent resource exhaustion
+    pub fn validate(&self) -> Result<(), crate::HqeError> {
+        if self.max_files_sent == 0 || self.max_files_sent > 1000 {
+            return Err(crate::HqeError::Scan(format!(
+                "max_files_sent must be between 1 and 1000, got {}",
+                self.max_files_sent
+            )));
+        }
+
+        if self.max_total_chars_sent == 0 || self.max_total_chars_sent > 50_000_000 {
+            // 50MB limit
+            return Err(crate::HqeError::Scan(format!(
+                "max_total_chars_sent must be between 1 and 50,000,000, got {}",
+                self.max_total_chars_sent
+            )));
+        }
+
+        if self.snippet_chars == 0 || self.snippet_chars > 1_000_000 {
+            // 1MB limit per snippet
+            return Err(crate::HqeError::Scan(format!(
+                "snippet_chars must be between 1 and 1,000,000, got {}",
+                self.snippet_chars
+            )));
+        }
+
+        Ok(())
+    }
+}
+
 /// Scan timing information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Timestamps {

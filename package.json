@@ -4,7 +4,7 @@
     "scripts": {
         "preflight": "npm run preflight:rust && npm run preflight:js",
         "preflight:rust": "cargo test --workspace && cargo clippy --workspace -- -D warnings && cargo fmt --all -- --check",
-        "preflight:js": "cd apps/workbench && npm install && npm run lint && npm test"
+        "preflight:js": "cd desktop/workbench && npm install && npm run lint && npm test"
     },
     "devDependencies": {
         "prettier": "^3.0.0"

@@ -526,7 +526,9 @@ impl RepoScanner {
                         let is_false_positive = line_lower.contains("selected_")
                             && !line_lower.contains("select ")
                             || line_lower.contains("updated_") && !line_lower.contains("update ")
-                            || line_lower.contains("inserted_") && !line_lower.contains("insert ");
+                            || line_lower.contains("inserted_") && !line_lower.contains("insert ")
+                            || line_lower.contains("from_") && !line_lower.contains(" from ")
+                            || line_lower.contains("where_") && !line_lower.contains(" where ");
 
                         if !is_false_positive {
                             findings.push(LocalFinding {

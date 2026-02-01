@@ -70,7 +70,7 @@ python3 -m pip install --quiet pyyaml jsonschema 2>/dev/null || true
 
 # Install Node dependencies
 echo "📦 Installing Node.js dependencies..."
-cd "$REPO_ROOT/apps/workbench"
+cd "$REPO_ROOT/desktop/workbench"
 npm install
 
 # Build Rust dependencies
