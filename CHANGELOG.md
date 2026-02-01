@@ -28,6 +28,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI workflows for build/test/lint and a security audit workflow
 - Documentation structure (architecture, threat model, provider setup)
 
+## [0.2.0] - 2026-01-31
+
+### Added
+
+- **CLI**: New `hqe export` command to extract artifacts from previous runs
+- **CLI**: New `hqe patch` command to apply diffs from scan reports
+- **Provider Discovery**: Added support for local/private LLM endpoints (no API key required)
+- **Settings**: Enhanced configuration for custom headers, organization, and project IDs
+- **UI**: Added "Export" functionality to Report screen
+- **UI**: Visual improvements to scan progress and evidence rendering
+
+### Changed
+
+- **Discovery**: Improved URL normalization and filtering logic for non-chat models
+- **Scanning**: Renamed "Security" findings to "Safety" in some contexts to align with protocol
+- **Fixes**: Resolved false positives in secret detection and SQL injection logic
+- **Infrastructure**: Updated CI to support Rust 1.75+ and fixed glib dependencies
+
 ## [0.1.0] - 2026-01-30
 
 ### Added

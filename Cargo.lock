@@ -1916,7 +1916,7 @@ dependencies = [
 
 [[package]]
 name = "hqe"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -1942,7 +1942,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-artifacts"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1959,7 +1959,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1985,7 +1985,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-flow"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "hqe-mcp",
@@ -1998,7 +1998,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-git"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2013,7 +2013,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-ingest"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "hqe-protocol",
@@ -2028,7 +2028,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-mcp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2047,7 +2047,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-openai"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2071,7 +2071,7 @@ dependencies = [
 
 [[package]]
 name = "hqe-protocol"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2085,11 +2085,11 @@ dependencies = [
 
 [[package]]
 name = "hqe-vector"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "hqe-workbench-app"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "dirs 5.0.1",

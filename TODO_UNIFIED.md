@@ -552,7 +552,7 @@ Status: ✅ All items in Sweep 5 completed as of 2026-01-31.
 
 Scope: Provider edge cases + next-area deep dive.
 
-Status: ⏳ In progress.
+Status: ✅ All items in Sweep 6 completed.
 
 ## Sweep 6: P2 (Important Quality / UX / Perf)
 
