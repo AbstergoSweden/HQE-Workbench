@@ -168,7 +168,10 @@ pub fn build_scan_prompt(bundle: &EvidenceBundle) -> String {
             // Sanitize technology names and evidence
             let sanitized_name = sanitize_for_prompt(&tech.name);
             let sanitized_evidence = sanitize_for_prompt(&tech.evidence);
-            prompt.push_str(&format!("- {} (evidence: {})\n", sanitized_name, sanitized_evidence));
+            prompt.push_str(&format!(
+                "- {} (evidence: {})\n",
+                sanitized_name, sanitized_evidence
+            ));
         }
     }
 
@@ -224,30 +227,30 @@ pub fn build_scan_prompt(bundle: &EvidenceBundle) -> String {
 fn sanitize_for_prompt(content: &str) -> String {
     // Remove or escape prompt injection patterns
     content
-        .replace("{{", "\\{\\{")  // Escape template delimiters
-        .replace("{%", "\\{%")    // Escape template delimiters
-        .replace("{#", "\\{#")    // Escape template delimiters
-        .replace("}}", "\\}\\}")  // Escape template delimiters
-        .replace("%}", "%\\}")    // Escape template delimiters
-        .replace("#}", "#\\}")    // Escape template delimiters
-        .replace("[INST]", "\\[INST\\]")  // Escape instruction markers
-        .replace("[/INST]", "\\[/INST\\]")  // Escape instruction markers
-        .replace("<|", "\\<|")    // Escape special tokens
-        .replace("|>", "|\\>")    // Escape special tokens
-        .replace("[System", "\\[System")  // Prevent system prompt manipulation
-        .replace("[system", "\\[system")  // Prevent system prompt manipulation
-        .replace("System:", "System\\:")  // Prevent system prompt manipulation
-        .replace("system:", "system\\:")  // Prevent system prompt manipulation
-        .replace("Assistant:", "Assistant\\:")  // Prevent role manipulation
-        .replace("assistant:", "assistant\\:")  // Prevent role manipulation
-        .replace("Human:", "Human\\:")  // Prevent role manipulation
-        .replace("human:", "human\\:")  // Prevent role manipulation
-        .replace("User:", "User\\:")  // Prevent role manipulation
-        .replace("user:", "user\\:")  // Prevent role manipulation
-        .replace("Ignore", "Ignore\\")  // Prevent ignore instruction manipulation
-        .replace("ignore", "ignore\\")  // Prevent ignore instruction manipulation
-        .replace("Disregard", "Disregard\\")  // Prevent disregard instruction manipulation
-        .replace("disregard", "disregard\\")  // Prevent disregard instruction manipulation
+        .replace("{{", "\\{\\{") // Escape template delimiters
+        .replace("{%", "\\{%") // Escape template delimiters
+        .replace("{#", "\\{#") // Escape template delimiters
+        .replace("}}", "\\}\\}") // Escape template delimiters
+        .replace("%}", "%\\}") // Escape template delimiters
+        .replace("#}", "#\\}") // Escape template delimiters
+        .replace("[INST]", "\\[INST\\]") // Escape instruction markers
+        .replace("[/INST]", "\\[/INST\\]") // Escape instruction markers
+        .replace("<|", "\\<|") // Escape special tokens
+        .replace("|>", "|\\>") // Escape special tokens
+        .replace("[System", "\\[System") // Prevent system prompt manipulation
+        .replace("[system", "\\[system") // Prevent system prompt manipulation
+        .replace("System:", "System\\:") // Prevent system prompt manipulation
+        .replace("system:", "system\\:") // Prevent system prompt manipulation
+        .replace("Assistant:", "Assistant\\:") // Prevent role manipulation
+        .replace("assistant:", "assistant\\:") // Prevent role manipulation
+        .replace("Human:", "Human\\:") // Prevent role manipulation
+        .replace("human:", "human\\:") // Prevent role manipulation
+        .replace("User:", "User\\:") // Prevent role manipulation
+        .replace("user:", "user\\:") // Prevent role manipulation
+        .replace("Ignore", "Ignore\\") // Prevent ignore instruction manipulation
+        .replace("ignore", "ignore\\") // Prevent ignore instruction manipulation
+        .replace("Disregard", "Disregard\\") // Prevent disregard instruction manipulation
+        .replace("disregard", "disregard\\") // Prevent disregard instruction manipulation
 }
 
 /// Build prompt for patch generation

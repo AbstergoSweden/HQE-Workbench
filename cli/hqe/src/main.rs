@@ -456,7 +456,7 @@ fn substitute_template(template: &str, args: &serde_json::Value) -> String {
             let key = format!("{{{{{}}}}}", k); // {{key}}
             let val = v
                 .as_str()
-                .map(|s| validate_template_value(s))  // Validate string values
+                .map(validate_template_value) // Validate string values
                 .unwrap_or_else(|| validate_template_value(&v.to_string())); // Validate non-string values
             result = result.replace(&key, &val);
         }

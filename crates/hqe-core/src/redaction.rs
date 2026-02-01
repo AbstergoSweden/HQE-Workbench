@@ -119,18 +119,18 @@ impl RedactionEngine {
 
         // Generic secret= or SECRET= patterns - improved to prevent ReDoS
         if let Ok(re) =
-            Regex::new(r"(?i)(secret|api[_-]?key|token)\s*=\s*[\"']?[a-zA-Z0-9_-]{16,64}[\"']?")
+            Regex::new(r#"(?i)(secret|api[_-]?key|token)\s*=\s*["']?[a-zA-Z0-9_-]{16,64}["']?"#)
         {
             patterns.push((SecretType::GenericSecret, re));
         }
 
         // Password patterns (be careful with false positives) - improved to prevent ReDoS
-        if let Ok(re) = Regex::new(r"(?i)(password|passwd|pwd)\s*=\s*[\"'][^\"']{8,128}[\"']") {
+        if let Ok(re) = Regex::new(r#"(?i)(password|passwd|pwd)\s*=\s*["'][^"']{8,128}["']"#) {
             patterns.push((SecretType::Password, re));
         }
 
         // API Key patterns - improved to prevent ReDoS
-        if let Ok(re) = Regex::new(r"(?i)api[_-]?key[\"']?\s*[:=]\s*[\"'][a-zA-Z0-9_-]{16,64}[\"']")
+        if let Ok(re) = Regex::new(r#"(?i)api[_-]?key["']?\s*[:=]\s*["'][a-zA-Z0-9_-]{16,64}["']"#)
         {
             patterns.push((SecretType::ApiKey, re));
         }

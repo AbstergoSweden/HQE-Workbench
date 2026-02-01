@@ -824,7 +824,10 @@ fn sanitize_error_message(message: &str) -> String {
         // AWS credentials
         (r"AKIA[0-9A-Z]{16}", "AKIA***"),
         // Generic key=value patterns with long values
-        (r"(?i)(key|secret|token|password)\s*[=:]\s*['\"][^'\"]{10,}['\"]", "$1=***REDACTED***"),
+        (
+            r#"(?i)(key|secret|token|password)\s*[=:]\s*['"][^'"]{10,}['"]"#,
+            "$1=***REDACTED***",
+        ),
     ];
 
     for (pattern, replacement) in additional_patterns {

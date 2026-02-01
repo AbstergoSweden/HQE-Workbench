@@ -229,10 +229,10 @@ fn contains_suspicious_patterns(value: &serde_json::Value) -> bool {
             lower.contains("instead") ||
             s.contains("{{") ||  // Template injection
             s.contains("{%") ||  // Template injection
-            s.contains("{#")     // Template injection
+            s.contains("{#") // Template injection
         }
-        serde_json::Value::Array(arr) => arr.iter().any(|v| contains_suspicious_patterns(v)),
-        serde_json::Value::Object(obj) => obj.values().any(|v| contains_suspicious_patterns(v)),
+        serde_json::Value::Array(arr) => arr.iter().any(contains_suspicious_patterns),
+        serde_json::Value::Object(obj) => obj.values().any(contains_suspicious_patterns),
         _ => false,
     }
 }
