@@ -150,7 +150,7 @@ The README already contains all required sections:
 | Documentation | ✅ | Links to all docs |
 | Contributing | ✅ | Guidelines and CoC |
 | Security | ✅ | Policy and reporting |
-| License | ✅ | MIT license |
+| License | ✅ | Apache-2.0 license |
 
 ### Badge Verification
 
@@ -159,7 +159,7 @@ The README already contains all required sections:
 | CI | ✅ Valid GitHub Actions link |
 | Security | ✅ Valid GitHub Actions link |
 | OpenSSF Scorecard | ✅ Valid badge |
-| License | ✅ Valid MIT badge |
+| License | ✅ Valid Apache-2.0 badge |
 
 ---
 

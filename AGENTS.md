@@ -24,7 +24,7 @@ cargo build --release -p hqe
 | TypeScript | 5.3+ (Workbench), 5.9+ (Prompts) | `desktop/workbench/package.json:45`, `prompts/prompts/server/package.json:143` |
 | Python | 3.11+ (protocol validation) | `.github/workflows/ci.yml` |
 | Platform | macOS 12.0+ | `README.md:108` |
-| License | MIT | `Cargo.toml:21` |
+| License | Apache-2.0 | `Cargo.toml:21` |
 
 ## Workspace Structure
 
