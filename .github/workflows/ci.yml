@@ -4,8 +4,16 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "*.txt"
+      - "LICENSE*"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
 
 permissions:
   contents: read
@@ -15,6 +23,19 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  # Secret scanning - runs before all other jobs
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Protocol validation temporarily disabled pending schema v4.2.1 updates
   # Re-enable after schema is updated to match protocol structure
   # validate-protocol:
