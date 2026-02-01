@@ -18,3 +18,14 @@
 | example-repo/ | examples/demo-repo/ |
 | prompts/ | mcp-server/ |
 
+
+
+## Commit 2: Path Reference Updates (2026-02-01T01:06:24Z)
+
+| File | Changes |
+|------|---------|
+| .github/workflows/ci.yml | apps/workbench → desktop/workbench |
+| .github/workflows/release.yml | apps/workbench → desktop/workbench |
+| .github/CODEOWNERS | apps/workbench → desktop/workbench |
+| .github/pull_request_template.md | apps/workbench → desktop/workbench |
+| .github/copilot-instructions.md | apps/workbench → desktop/workbench |

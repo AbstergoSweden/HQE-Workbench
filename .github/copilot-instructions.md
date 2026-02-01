@@ -33,11 +33,11 @@ cargo test -p hqe-openai
 # Run single test
 cargo test --test integration_test test_name
 
-# Run frontend tests (from apps/workbench)
-cd apps/workbench && npm test
+# Run frontend tests (from desktop/workbench)
+cd desktop/workbench && npm test
 
 # Watch mode for frontend
-cd apps/workbench && npm test -- --watch
+cd desktop/workbench && npm test -- --watch
 ```
 
 ### Linting and Formatting
@@ -51,8 +51,8 @@ cargo fmt --all -- --check
 # Rust formatting apply
 cargo fmt --all
 
-# TypeScript linting (from apps/workbench)
-cd apps/workbench && npm run lint
+# TypeScript linting (from desktop/workbench)
+cd desktop/workbench && npm run lint
 
 # Run all quality checks before committing
 npm run preflight
@@ -84,7 +84,7 @@ cargo build --workspace
 
 ```
 hqe-workbench/
-├── apps/workbench/          # Tauri v2 desktop app (React + TypeScript)
+├── desktop/workbench/          # Tauri v2 desktop app (React + TypeScript)
 │   ├── src/                 # React frontend
 │   ├── src-tauri/          # Tauri Rust backend
 │   └── vite.config.ts      # Dev server on port 1420
@@ -150,7 +150,7 @@ Report and manifest generation.
 - **Styling:** Tailwind CSS
 - **Testing:** Vitest
 - **Build tool:** Vite 5.0.0
-- **Entry point:** `apps/workbench/src/main.tsx`
+- **Entry point:** `desktop/workbench/src/main.tsx`
 
 ## Key Conventions
 
@@ -248,9 +248,9 @@ The HQE Protocol (v4.2.1) is the source of truth for scan phases, report structu
 4. Add integration test with `mockito` HTTP mocking
 
 ### Modifying the desktop UI
-1. Edit React components in `apps/workbench/src/`
+1. Edit React components in `desktop/workbench/src/`
 2. Use Zustand stores for state (see existing stores)
-3. Run `cd apps/workbench && npm run lint` before committing
+3. Run `cd desktop/workbench && npm run lint` before committing
 4. Test with `./scripts/dev.sh` (auto-reloads on save)
 
 ### Adding a new crate
@@ -264,14 +264,14 @@ The HQE Protocol (v4.2.1) is the source of truth for scan phases, report structu
 - **Protocol changes:** `protocol/hqe-engineer.yaml` + run validation script
 - **Core models:** `crates/hqe-core/src/models.rs` (used across all crates)
 - **CLI arguments:** `cli/hqe/src/main.rs` (uses `clap` derive macros)
-- **Frontend state:** `apps/workbench/src/stores/` (Zustand stores)
-- **Build config:** Root `Cargo.toml` for Rust, `apps/workbench/package.json` for frontend
+- **Frontend state:** `desktop/workbench/src/stores/` (Zustand stores)
+- **Build config:** Root `Cargo.toml` for Rust, `desktop/workbench/package.json` for frontend
 
 ## Tauri-Specific Notes
 
-- **Commands** - Rust functions exposed to frontend via `#[tauri::command]` in `apps/workbench/src-tauri/src/main.rs`
-- **Permissions** - Configure in `apps/workbench/src-tauri/tauri.conf.json`
-- **Plugins** - Tauri v2 uses plugins for fs, dialog, shell (see `apps/workbench/package.json` dependencies)
+- **Commands** - Rust functions exposed to frontend via `#[tauri::command]` in `desktop/workbench/src-tauri/src/main.rs`
+- **Permissions** - Configure in `desktop/workbench/src-tauri/tauri.conf.json`
+- **Plugins** - Tauri v2 uses plugins for fs, dialog, shell (see `desktop/workbench/package.json` dependencies)
 - **IPC** - Frontend calls backend via `@tauri-apps/api`: `import { invoke } from '@tauri-apps/api/core'`
 
 ## GitHub MCP Server Integration

@@ -16,8 +16,8 @@
 
 - [ ] `cargo test --workspace`
 - [ ] `cargo clippy --workspace -- -D warnings`
-- [ ] `cd apps/workbench && npm test`
-- [ ] `cd apps/workbench && npm run lint`
+- [ ] `cd desktop/workbench && npm test`
+- [ ] `cd desktop/workbench && npm run lint`
 
 ## Security / Privacy
 

@@ -9,7 +9,7 @@
 Cargo.toml @AbstergoSweden
 
 # Frontend (Tauri/React)
-/apps/workbench/ @AbstergoSweden
+/desktop/workbench/ @AbstergoSweden
 
 # Protocol & Docs
 /protocol/ @AbstergoSweden

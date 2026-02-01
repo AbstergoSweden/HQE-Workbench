@@ -57,7 +57,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: apps/workbench/package-lock.json
+          cache-dependency-path: desktop/workbench/package-lock.json
 
       - name: Install dependencies
         run: |
@@ -65,7 +65,7 @@ jobs:
           pip3 install pyyaml jsonschema
 
       - name: Install Node dependencies
-        working-directory: apps/workbench
+        working-directory: desktop/workbench
         run: npm ci
 
       - name: Build Universal Binary
@@ -80,7 +80,7 @@ jobs:
         run: codesign --force --deep --sign - target/release/hqe
 
       - name: Build Tauri App
-        working-directory: apps/workbench
+        working-directory: desktop/workbench
         run: npm run tauri:build -- --target universal-apple-darwin
         env:
           CI: true
