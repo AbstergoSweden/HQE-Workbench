@@ -29,3 +29,16 @@
 | .github/CODEOWNERS | apps/workbench → desktop/workbench |
 | .github/pull_request_template.md | apps/workbench → desktop/workbench |
 | .github/copilot-instructions.md | apps/workbench → desktop/workbench |
+
+✓ Commit 2 recorded: 8ef1493
+
+## Commit 3: Safe Deletions (2026-02-01T01:06:47Z)
+
+| File/Dir | Reason | Restore Command |
+|----------|--------|-----------------|
+| GEMINI.md | Superseded by AGENTS.md | git checkout HEAD~1 -- GEMINI.md |
+| CLAUDE.md | Superseded by AGENTS.md | git checkout HEAD~1 -- CLAUDE.md |
+| QWEN.md | Superseded by AGENTS.md | git checkout HEAD~1 -- QWEN.md |
+| TODO.md | Superseded by TODO_UNIFIED.md | git checkout HEAD~1 -- TODO.md |
+| verification_results.md | Superseded by v2 | git checkout HEAD~1 -- verification_results.md |
+| hqe_workbench_provider_discovery/ | Temporary scaffold | git checkout HEAD~1 -- hqe_workbench_provider_discovery/ |
