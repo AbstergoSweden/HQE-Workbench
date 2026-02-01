@@ -18,7 +18,7 @@ members = [
 version = "0.2.0"
 edition = "2021"
 authors = ["Faye Håkansdotter <2-craze-headmen@icloud.com>"]
-license = "MIT"
+license = "Apache-2.0"
 repository = "https://github.com/AbstergoSweden/HQE-Workbench"
 rust-version = "1.75"
 

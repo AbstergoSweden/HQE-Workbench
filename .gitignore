@@ -191,10 +191,11 @@ playwright/.cache/
 # Logs
 # ============================================================================
 *.log
-logs/
 *.log.*
 combined.log
 error.log
+# Note: The /logs directory is tracked for audit reports and documentation
+# Only log FILES are ignored, not the logs directory itself
 
 # ============================================================================
 # Temporary Files
