@@ -2,7 +2,7 @@
 
 > Status: canonical
 
-Make Claude check its own work. Gates inject quality criteria—Claude self-evaluates, no manual review needed.
+Make the AI check its own work. Gates inject quality criteria—The AI self-evaluates, no manual review needed.
 
 ## Quick Start
 
@@ -26,11 +26,11 @@ prompt_engine(command:">>analyze", gates:[
 
 ## Why Use Gates?
 
-Stop reviewing outputs manually. Gates make Claude verify its own work against your criteria.
+Stop reviewing outputs manually. Gates make the AI verify its own work against your criteria.
 
 | Without Gates | With Gates |
 |--------------|------------|
-| "Looks good" → ship it → bugs later | Claude checks for error handling → catches issues |
+| "Looks good" → ship it → bugs later | The AI checks for error handling → catches issues |
 | Manual security review → time sink | `security-awareness` gate → automatic checks |
 | Inconsistent quality across prompts | Same gates applied consistently |
 
@@ -209,7 +209,7 @@ Key fields:
 
 ## How Validation Works
 
-Gates inject criteria into prompts. Claude self-evaluates. Server routes based on the verdict.
+Gates inject criteria into prompts. The AI self-evaluates. Server routes based on the verdict.
 
 | Check Type | Status |
 |------------|--------|
@@ -217,7 +217,7 @@ Gates inject criteria into prompts. Claude self-evaluates. Server routes based o
 | `pattern_check` | Auto-passes (guidance-only) |
 | `llm_self_check` | Coming soon (LLM API) |
 
-**Why no regex/length checks?** An output can pass string checks while being semantically wrong. We inject guidance and let Claude reason about quality.
+**Why no regex/length checks?** An output can pass string checks while being semantically wrong. We inject guidance and let the AI reason about quality.
 
 ---
 
@@ -315,24 +315,24 @@ Shell verification gates execute real commands for ground-truth validation inste
 ### Basic Usage
 
 ```bash
-# Run tests after Claude's work
+# Run tests after the AI work
 prompt_engine(command: ">>implement-feature :: verify:'npm test'")
 
 # Multiple verification commands
 prompt_engine(command: ">>code :: verify:'npm run typecheck && npm test'")
 ```
 
-**Flow**: Claude works → Verification runs → Exit 0 = PASS, non-zero = FAIL → Bounce-back on failure
+**Flow**: The AI works → Verification runs → Exit 0 = PASS, non-zero = FAIL → Bounce-back on failure
 
 ### Autonomous Loops (Ralph Wiggum Style)
 
-Enable `loop:true` for true autonomous execution where Claude keeps working until tests pass:
+Enable `loop:true` for true autonomous execution where the AI keeps working until tests pass:
 
 ```bash
 prompt_engine(command: ">>fix-all-errors :: verify:'npm test' loop:true max:15")
 ```
 
-**Flow**: Claude works → Tries to stop → Stop hook runs verification → If FAIL: blocked, error fed back → Loop continues
+**Flow**: The AI works → Tries to stop → Stop hook runs verification → If FAIL: blocked, error fed back → Loop continues
 
 ### Git Safety
 
@@ -396,7 +396,7 @@ gates: ["code-quality", { name: "Custom", description: "..." }]
 ## Execution Flow
 
 ```
-Request → Stage 2 (extract inline gates) → Stage 5 (inject guidance) → Claude executes → Self-evaluation → PASS/FAIL → Route
+Request → Stage 2 (extract inline gates) → Stage 5 (inject guidance) → The AI executes → Self-evaluation → PASS/FAIL → Route
 ```
 
 ### Verdicts

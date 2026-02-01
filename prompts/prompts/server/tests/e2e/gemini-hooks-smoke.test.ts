@@ -23,7 +23,7 @@ function runHook(cmd: string, input: object): Promise<{ code: number; stdout: st
 
 describe('Gemini Hooks Smoke', () => {
   it('BeforeAgent wrapper emits additionalContext', async () => {
-    const script = path.join(PROJECT_ROOT, '.gemini', 'hooks', 'prompt-suggest.py');
+    const script = path.join(PROJECT_ROOT, '.agents', 'hooks', 'prompt-suggest.py');
     const input = {
       session_id: 'test-session',
       hook_event_name: 'BeforeAgent',
@@ -40,7 +40,7 @@ describe('Gemini Hooks Smoke', () => {
   });
 
   it('AfterTool wrapper accepts prompt_engine response and emits additionalContext', async () => {
-    const script = path.join(PROJECT_ROOT, '.gemini', 'hooks', 'post-prompt-engine.py');
+    const script = path.join(PROJECT_ROOT, '.agents', 'hooks', 'post-prompt-engine.py');
     const input = {
       session_id: 'test-session',
       hook_event_name: 'AfterTool',

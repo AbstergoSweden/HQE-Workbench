@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.18-brightgreen.svg)](https://nodejs.org/)
 
-MCP server for prompt management, thinking frameworks, and quality gates. Hot-reloads prompts, injects structured reasoning, enforces output validation—all through MCP tools the Agent can call directly.
+MCP server for prompt management, thinking frameworks, and quality gates. Hot-reloads prompts, injects structured reasoning, enforces output validation—all through MCP tools the AI can call directly.
 
 ### Quick Start
 
@@ -27,7 +27,7 @@ MCP server for prompt management, thinking frameworks, and quality gates. Hot-re
 }
 ```
 
-Restart Claude Desktop. Verify:
+Restart MCP Client. Verify:
 
 ```bash
 resource_manager(resource_type: "prompt", action: "list")
@@ -43,7 +43,7 @@ resource_manager(resource_type: "prompt", action: "list")
 
 **Problem**: Prompt engineering is slow. Edit → restart → test → repeat. And you're debugging prompt issues manually.
 
-**Solution**: Just ask the Agent to fix it. Describe the problem, the Agent updates the prompt via `resource_manager`, you test immediately. No manual editing, no restart.
+**Solution**: Just ask the AI to fix it. Describe the problem, the AI updatess the prompt via `resource_manager`, you test immediately. No manual editing, no restart.
 
 ```text
 User: "The code_review prompt is too verbose"
@@ -71,7 +71,7 @@ prompt_engine(command: "@ReACT Debug this error")
 
 ### 🛡️ Gates — Agent self-validates outputs
 
-**Problem**: The Agent returns plausible outputs, but you need specific criteria met—and you want the Agent to verify, not you.
+**Problem**: The AI returns plausible outputs, but you need specific criteria met—and you want the Agent to verify, not you.
 
 **Solution**: Gates inject quality criteria. The Agent self-evaluates and reports PASS/FAIL. Failed gates trigger retries or pause for your decision.
 
@@ -101,7 +101,7 @@ resource_manager(resource_type:"prompt", action:"rollback", id:"code_review", ve
 
 ## MCP Tools
 
-Three consolidated tools the Agent can call:
+Three consolidated tools the AI can call:
 
 ### `prompt_engine` — Execute prompts and chains
 
@@ -183,7 +183,7 @@ npx agent-prompts --init=~/my-prompts
 
 This creates `~/my-prompts/prompts/` with starter prompts (`prompt.yaml` + templates).
 
-**2. Point your MCP Client (e.g. Claude Desktop) to your workspace:**
+**2. Point your MCP Client (e.g. MCP Client) to your workspace:**
 
 Edit `~/.config/claude/claude_desktop_config.json`:
 
@@ -201,7 +201,7 @@ Edit `~/.config/claude/claude_desktop_config.json`:
 }
 ```
 
-**3. Restart Claude Desktop and test:**
+**3. Restart MCP Client and test:**
 
 ```bash
 resource_manager(resource_type:"prompt", action:"list")
@@ -273,7 +273,7 @@ This repo uses a Release PR flow to ensure the npm package version and changelog
 
 ## Feature Highlights
 
-### Claude Desktop Configurations
+### MCP Client Configurations
 
 **Basic — Use package defaults (good for trying it out):**
 
@@ -382,12 +382,12 @@ npx agent-prompts --startup-test --verbose
 
 **"Permission denied"**
 
-- Ensure the user running Claude Desktop can read your workspace directory
+- Ensure the user running MCP Client can read your workspace directory
 
 **Changes not appearing**
 
 - Confirm you're editing files under your configured `MCP_WORKSPACE` / `MCP_PROMPTS_PATH`
-- If needed, restart Claude Desktop (most clients restart MCP servers on reconnect)
+- If needed, restart MCP Client (most clients restart MCP servers on reconnect)
 
 ---
 

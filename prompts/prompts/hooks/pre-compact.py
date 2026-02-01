@@ -50,7 +50,7 @@ def main():
     # Format reminder using existing function
     reminder = format_chain_reminder(state)
 
-    # Output for Claude to remember after compaction
+    # Output for the AI to remember after compaction
     hook_response = {
         "hookSpecificOutput": {
             "hookEventName": "PreCompact",

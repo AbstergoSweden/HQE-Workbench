@@ -51,7 +51,7 @@ node -e "JSON.parse(require('fs').readFileSync('config.json'))"
    ```bash
    node dist/index.js --transport=stdio --verbose
    ```
-2. Check Claude Desktop logs:
+2. Check MCP Client logs:
    - macOS: `~/Library/Logs/Claude/`
    - Windows: `%APPDATA%\Claude\logs`
 3. Ensure absolute paths in `claude_desktop_config.json`
@@ -62,7 +62,7 @@ node -e "JSON.parse(require('fs').readFileSync('config.json'))"
 
 **Fix**:
 1. Check `system_control(action: "status")` to verify server is running
-2. Restart Claude Desktop to refresh MCP connections
+2. Restart MCP Client to refresh MCP connections
 3. Verify `prompts.registerWithMcp: true` in `config.json`
 
 ---
@@ -172,7 +172,7 @@ LOG_LEVEL=debug node dist/index.js --transport=stdio
 ### Log File Locations
 
 - Server logs: `server/logs/*.log`
-- Claude Desktop: `~/Library/Logs/Claude/` (macOS) or `%APPDATA%\Claude\logs` (Windows)
+- MCP Client: `~/Library/Logs/Claude/` (macOS) or `%APPDATA%\Claude\logs` (Windows)
 
 ### Get Runtime Status
 
