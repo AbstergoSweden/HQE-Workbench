@@ -23,6 +23,7 @@ export function SettingsScreen() {
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
   const [discovering, setDiscovering] = useState(false)
+  const [validating, setValidating] = useState(false)
   const [discoverError, setDiscoverError] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<boolean | null>(null)
   const [keyLocked, setKeyLocked] = useState(true) // When locked, key is persisted to secure storage
@@ -416,6 +417,40 @@ export function SettingsScreen() {
                 <p className="text-xs mt-1" style={{ color: 'var(--dracula-orange)' }}>
                   Key is session-only and won&apos;t be persisted
                 </p>
+              )}
+              {(key || storedApiKey) && url && (
+                <button
+                  onClick={async () => {
+                    const keyToUse = key || storedApiKey || ''
+                    if (!keyToUse || !url) {
+                      toast.error('URL and API key are required')
+                      return
+                    }
+                    setValidating(true)
+                    try {
+                      const parsedHeaders = parseHeadersInput() ?? {}
+                      await invoke('discover_models', {
+                        input: {
+                          base_url: url,
+                          api_key: keyToUse,
+                          headers: parsedHeaders,
+                          timeout_s: timeout,
+                          no_cache: true,
+                        },
+                      })
+                      toast.success('✓ API key is valid')
+                    } catch (error) {
+                      const msg = error instanceof Error ? error.message : String(error)
+                      toast.error(`✗ Invalid API key: ${msg}`)
+                    }
+                    setValidating(false)
+                  }}
+                  className="btn text-xs mt-2"
+                  disabled={validating}
+                  style={{ borderColor: 'var(--dracula-cyan)' }}
+                >
+                  {validating ? '⟳ validating...' : '✓ validate_key'}
+                </button>
               )}
             </div>
 

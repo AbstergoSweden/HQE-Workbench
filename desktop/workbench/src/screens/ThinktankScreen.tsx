@@ -212,11 +212,11 @@ export const ThinktankScreen: FC = () => {
   return (
     <div className="flex h-full gap-4">
       {/* Sidebar: Prompt List */}
-      <div 
+      <div
         className="w-80 flex flex-col card p-0 overflow-hidden"
         style={{ borderColor: 'var(--dracula-comment)' }}
       >
-        <div 
+        <div
           className="p-3 border-b flex flex-col gap-3"
           style={{ borderColor: 'var(--dracula-comment)' }}
         >
@@ -234,7 +234,7 @@ export const ThinktankScreen: FC = () => {
               {loading ? <span className="animate-spin">⟳</span> : '↻'}
             </button>
           </div>
-          
+
           <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
             <input
               type="checkbox"
@@ -243,7 +243,7 @@ export const ThinktankScreen: FC = () => {
             />
             Show agent prompts
           </label>
-          
+
           <input
             type="text"
             placeholder="Search prompts..."
@@ -257,20 +257,42 @@ export const ThinktankScreen: FC = () => {
           {loading ? (
             <div className="p-4 space-y-2">
               {[...Array(6)].map((_, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className="h-10 w-full animate-pulse"
                   style={{ background: 'var(--dracula-current-line)' }}
                 />
               ))}
             </div>
           ) : prompts.length === 0 ? (
-            <div className="p-8 text-center text-sm" style={{ color: 'var(--dracula-comment)' }}>
-              No prompts found in /prompts
+            <div className="p-6 text-center flex flex-col items-center gap-3">
+              <div className="text-3xl opacity-50">📭</div>
+              <p className="text-sm font-medium" style={{ color: 'var(--dracula-fg)' }}>
+                No prompts found
+              </p>
+              <p className="text-xs" style={{ color: 'var(--dracula-comment)' }}>
+                Add <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>.yaml</code> files to your <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>prompts/</code> folder
+              </p>
+              <button
+                onClick={loadPrompts}
+                className="btn text-xs mt-2"
+                style={{ borderColor: 'var(--dracula-cyan)' }}
+              >
+                ↻ refresh
+              </button>
             </div>
           ) : visiblePrompts.length === 0 ? (
-            <div className="p-8 text-center text-sm" style={{ color: 'var(--dracula-comment)' }}>
-              No matching prompts
+            <div className="p-6 text-center flex flex-col items-center gap-3">
+              <div className="text-3xl opacity-50">🔍</div>
+              <p className="text-sm" style={{ color: 'var(--dracula-comment)' }}>
+                No prompts match &quot;{searchQuery}&quot;
+              </p>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-xs text-terminal-cyan hover:underline"
+              >
+                Clear search
+              </button>
             </div>
           ) : (
             <div className="flex flex-col">
@@ -281,14 +303,14 @@ export const ThinktankScreen: FC = () => {
                   className="p-3 text-left text-sm border-b transition-all duration-150"
                   style={{
                     borderColor: 'var(--dracula-comment)',
-                    backgroundColor: selectedPrompt?.name === p.name 
-                      ? 'var(--dracula-bg)' 
+                    backgroundColor: selectedPrompt?.name === p.name
+                      ? 'var(--dracula-bg)'
                       : 'transparent',
-                    borderLeft: selectedPrompt?.name === p.name 
-                      ? '2px solid var(--dracula-green)' 
+                    borderLeft: selectedPrompt?.name === p.name
+                      ? '2px solid var(--dracula-green)'
                       : '2px solid transparent',
-                    color: selectedPrompt?.name === p.name 
-                      ? 'var(--dracula-green)' 
+                    color: selectedPrompt?.name === p.name
+                      ? 'var(--dracula-green)'
                       : 'var(--dracula-fg)',
                   }}
                   onMouseEnter={(e) => {
@@ -305,9 +327,9 @@ export const ThinktankScreen: FC = () => {
                   <div className="font-mono text-sm truncate flex items-center gap-2">
                     {p.name.replace(/_/g, ' ')}
                     {isAgentPrompt(p.name) && (
-                      <span 
+                      <span
                         className="text-[10px] px-1.5 py-0.5 rounded"
-                        style={{ 
+                        style={{
                           background: 'var(--dracula-orange)20',
                           color: 'var(--dracula-orange)',
                           border: '1px solid var(--dracula-orange)'
@@ -325,8 +347,8 @@ export const ThinktankScreen: FC = () => {
             </div>
           )}
         </div>
-        
-        <div 
+
+        <div
           className="p-2 border-t text-center text-xs"
           style={{ borderColor: 'var(--dracula-comment)', color: 'var(--dracula-comment)' }}
         >
@@ -337,7 +359,7 @@ export const ThinktankScreen: FC = () => {
       {/* Main Content: Input & Execution */}
       <div className="flex-1 flex flex-col gap-4 overflow-hidden">
         {!selectedPrompt ? (
-          <div 
+          <div
             className="flex-1 flex items-center justify-center card"
             style={{ borderColor: 'var(--dracula-comment)', borderStyle: 'dashed' }}
           >
@@ -349,7 +371,7 @@ export const ThinktankScreen: FC = () => {
         ) : (
           <div className="flex-1 flex flex-col gap-4 overflow-hidden">
             {/* Input Section */}
-            <div 
+            <div
               className="card p-4"
               style={{ borderColor: 'var(--dracula-comment)' }}
             >
@@ -362,21 +384,21 @@ export const ThinktankScreen: FC = () => {
                   ({selectedPrompt.name})
                 </span>
               </div>
-              
+
               {isAgentPrompt(selectedPrompt.name) && (
-                <div 
+                <div
                   className="mb-4 text-sm p-3 rounded"
-                  style={{ 
+                  style={{
                     background: 'var(--dracula-orange)10',
                     border: '1px solid var(--dracula-orange)30',
                     color: 'var(--dracula-orange)'
                   }}
                 >
-                  ⚠ This prompt is designed for an agent runtime with tool/file access. 
+                  ⚠ This prompt is designed for an agent runtime with tool/file access.
                   Thinktank will only send text to the model.
                 </div>
               )}
-              
+
               <p className="text-sm mb-4" style={{ color: 'var(--dracula-comment)' }}>
                 {selectedPrompt.description}
               </p>
@@ -478,11 +500,11 @@ export const ThinktankScreen: FC = () => {
 
             {/* Output Section */}
             {(result || executing || error) && (
-              <div 
+              <div
                 className="flex-1 card flex flex-col p-0 overflow-hidden"
                 style={{ borderColor: 'var(--dracula-comment)' }}
               >
-                <div 
+                <div
                   className="p-3 border-b flex justify-between items-center"
                   style={{ borderColor: 'var(--dracula-comment)' }}
                 >
@@ -502,9 +524,9 @@ export const ThinktankScreen: FC = () => {
 
                 <div className="flex-1 p-4 overflow-auto" style={{ background: 'var(--dracula-bg)' }}>
                   {error ? (
-                    <div 
+                    <div
                       className="p-4 rounded text-sm"
-                      style={{ 
+                      style={{
                         background: 'var(--dracula-red)10',
                         border: '1px solid var(--dracula-red)30',
                         color: 'var(--dracula-red)'
@@ -515,10 +537,10 @@ export const ThinktankScreen: FC = () => {
                   ) : executing ? (
                     <div className="flex flex-col gap-2">
                       {[...Array(4)].map((_, i) => (
-                        <div 
+                        <div
                           key={i}
                           className="h-4 animate-pulse"
-                          style={{ 
+                          style={{
                             background: 'var(--dracula-current-line)',
                             width: `${60 + Math.random() * 40}%`
                           }}
