@@ -5,7 +5,7 @@
 [![CI](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/ci.yml)
 [![Security](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/security.yml/badge.svg)](https://github.com/AbstergoSweden/HQE-Workbench/actions/workflows/security.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AbstergoSweden/HQE-Workbench/badge)](https://securityscorecards.dev/viewer/?uri=github.com/AbstergoSweden/HQE-Workbench)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 A local-first macOS desktop application + CLI for running the HQE (High Quality Engineering) Engineer
 Protocol. It automates codebase health auditing and produces actionable, evidence-backed TODOs using
@@ -188,4 +188,4 @@ Security is a top priority for HQE Workbench. Please see our [Security Policy](S
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

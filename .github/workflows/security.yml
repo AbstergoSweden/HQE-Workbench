@@ -22,13 +22,11 @@ jobs:
               with:
                   toolchain: stable
 
-            - name: Install cargo-audit
-              uses: taiki-e/install-action@37461a1de4134bec919a737ee9ba018e72011b7c # v2.45.4
+            # Use rustsec/audit-check which handles CVSS 4.0 advisories properly
+            - name: Run security audit
+              uses: rustsec/audit-check@692c7bdb3cc89c8dc1b31e66db33c52e4d81e9f2 # v2.0.0
               with:
-                  tool: cargo-audit
-
-            - name: Run audit
-              run: cargo audit
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
     # OpenSSF Scorecard disabled for private repositories
     # Re-enable when repository becomes public or when GitHub App permissions are configured
