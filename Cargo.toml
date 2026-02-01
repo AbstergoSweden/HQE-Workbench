@@ -11,7 +11,7 @@ members = [
     "crates/hqe-vector",
     "crates/hqe-flow",
     "cli/hqe",
-    "apps/workbench/src-tauri",
+    "desktop/workbench/src-tauri",
 ]
 
 [workspace.package]

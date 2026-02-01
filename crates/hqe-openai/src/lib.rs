@@ -538,13 +538,14 @@ impl OpenAIClient {
                     let hash = hqe_core::persistence::LocalDb::calculate_hash(
                         &request.model,
                         &prompt_json, // simplifying: using full json as messages input for now
-                        ""
+                        "",
                     );
-                    
+
                     // Check cache
                     if let Some(db) = &self.local_db {
                         if let Ok(Some(cached_resp)) = db.get_cached_response(&hash) {
-                            if let Ok(response) = serde_json::from_str::<ChatResponse>(&cached_resp) {
+                            if let Ok(response) = serde_json::from_str::<ChatResponse>(&cached_resp)
+                            {
                                 info!("Cache HIT for model {}", request.model);
                                 return Ok(response);
                             }
@@ -587,28 +588,45 @@ impl OpenAIClient {
                                 .map(|u| u.total_tokens)
                                 .unwrap_or(0)
                         );
-                        
+
                         // Cache the response and log interaction
                         if let Some((hash, prompt_json)) = &request_hash {
                             if let Some(db) = &self.local_db {
                                 if let Ok(resp_json) = serde_json::to_string(&chat_response) {
                                     // Store in cache
-                                    let _ = db.cache_response(hash, &request.model, prompt_json, &resp_json);
-                                    
+                                    let _ = db.cache_response(
+                                        hash,
+                                        &request.model,
+                                        prompt_json,
+                                        &resp_json,
+                                    );
+
                                     // Log session interaction (audit)
                                     // Extract last user message content for preview
-                                    let user_content = request.messages.last()
+                                    let user_content = request
+                                        .messages
+                                        .last()
                                         .and_then(|m| m.content.as_ref())
                                         .and_then(|c| c.to_text_lossy())
                                         .unwrap_or_default();
-                                        
+
                                     let id = uuid::Uuid::new_v4().to_string();
-                                    let _ = db.log_interaction(&id, "user", &user_content, Some(prompt_json));
-                                    let _ = db.log_interaction(&id, "assistant", "Response received", Some(&resp_json));
+                                    let _ = db.log_interaction(
+                                        &id,
+                                        "user",
+                                        &user_content,
+                                        Some(prompt_json),
+                                    );
+                                    let _ = db.log_interaction(
+                                        &id,
+                                        "assistant",
+                                        "Response received",
+                                        Some(&resp_json),
+                                    );
                                 }
                             }
                         }
-                        
+
                         return Ok(chat_response);
                     }
 

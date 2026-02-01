@@ -41,7 +41,7 @@ enum Commands {
         /// Provider profile to use
         #[arg(short, long)]
         profile: Option<String>,
-        
+
         /// Disable local semantic caching
         #[arg(long)]
         no_cache: bool,
@@ -81,7 +81,6 @@ enum Commands {
         #[arg(long, value_name = "BOOL")]
         parallel_tool_calls: Option<bool>,
 
-        
         /// Disable local semantic caching
         #[arg(long)]
         no_cache: bool,
@@ -782,12 +781,14 @@ async fn scan_repo(args: ScanRepoArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn export_run(run_id: String, out_dir: PathBuf, from_dir: Option<PathBuf>) -> anyhow::Result<()> {
+async fn export_run(
+    run_id: String,
+    out_dir: PathBuf,
+    from_dir: Option<PathBuf>,
+) -> anyhow::Result<()> {
     println!(
         "{}",
-        style(format!("📦 Exporting run: {}", run_id))
-            .bold()
-            .cyan()
+        style(format!("📦 Exporting run: {}", run_id)).bold().cyan()
     );
     println!("  Output: {}", out_dir.display());
 
@@ -868,16 +869,22 @@ async fn handle_patch(
     // Locate report
     let run_dir = locate_run_dir(&run_id, None)?;
     let report_path = run_dir.join("hqe_report.json");
-    
+
     if !report_path.exists() {
-        return Err(anyhow::anyhow!("Report not found at {}", report_path.display()));
+        return Err(anyhow::anyhow!(
+            "Report not found at {}",
+            report_path.display()
+        ));
     }
 
     let content = tokio::fs::read_to_string(&report_path).await?;
     let report: HqeReport = serde_json::from_str(&content)?;
 
     // Find patch
-    let patch = report.immediate_actions.iter().find(|p| p.todo_id == todo_id);
+    let patch = report
+        .immediate_actions
+        .iter()
+        .find(|p| p.todo_id == todo_id);
 
     match patch {
         Some(p) => {
@@ -886,21 +893,22 @@ async fn handle_patch(
             println!();
 
             for diff in &p.diffs {
-                println!("{}", style(format!("File: {}", diff.file_path)).underlined());
-                
+                println!(
+                    "{}",
+                    style(format!("File: {}", diff.file_path)).underlined()
+                );
+
                 if preview {
                     println!("{}", style(&diff.diff_content).dim());
                 }
 
                 if apply {
                     println!("  Applying patch...");
-                    
+
                     // Create temp file for the diff
-                    let mut temp = tempfile::Builder::new()
-                        .suffix(".patch")
-                        .tempfile()?;
+                    let mut temp = tempfile::Builder::new().suffix(".patch").tempfile()?;
                     std::io::Write::write_all(&mut temp, diff.diff_content.as_bytes())?;
-                    
+
                     let status = std::process::Command::new("patch")
                         .arg("-p1")
                         .arg("-i")
@@ -912,18 +920,24 @@ async fn handle_patch(
                             println!("  {}", style("Success").green());
                         }
                         Ok(s) => {
-                             println!("  {}", style(format!("Failed with exit code: {}", s)).red());
+                            println!("  {}", style(format!("Failed with exit code: {}", s)).red());
                         }
                         Err(e) => {
-                             println!("  {}", style(format!("Failed to execute patch command: {}", e)).red());
-                             println!("  Ensure 'patch' utility is installed.");
+                            println!(
+                                "  {}",
+                                style(format!("Failed to execute patch command: {}", e)).red()
+                            );
+                            println!("  Ensure 'patch' utility is installed.");
                         }
                     }
                 }
             }
         }
         None => {
-            println!("{}", style(format!("No patch found for TODO ID: {}", todo_id)).red());
+            println!(
+                "{}",
+                style(format!("No patch found for TODO ID: {}", todo_id)).red()
+            );
             println!("Available patches:");
             for p in &report.immediate_actions {
                 println!("  - {} ({})", p.todo_id, p.title);

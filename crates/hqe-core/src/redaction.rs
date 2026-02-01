@@ -344,18 +344,22 @@ mod tests {
         // Test multiple secrets separately to ensure they all get redacted
         let aws_content = "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE another=AKIAANOTHEREXAMPLE";
         let redacted_aws = engine.redact(aws_content);
-        
+
         assert!(redacted_aws.contains("REDACTED_AWS_ACCESS_KEY"));
         assert!(!redacted_aws.contains("AKIAIOSFODNN7EXAMPLE"));
-        
+
         let github_content = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
         let redacted_github = engine.redact(github_content);
-        
+
         assert!(redacted_github.contains("REDACTED_GITHUB_TOKEN"));
         assert!(!redacted_github.contains("ghp_"));
-        
+
         let summary = engine.summary();
-        assert!(summary.total_redactions >= 2, "Expected at least 2 redactions, got {}", summary.total_redactions);
+        assert!(
+            summary.total_redactions >= 2,
+            "Expected at least 2 redactions, got {}",
+            summary.total_redactions
+        );
     }
 
     #[test]
@@ -363,7 +367,7 @@ mod tests {
         let mut engine = RedactionEngine::new();
         let content = "api_key = '1234567890abcdef'\nsecret=\"another_secret_value\"";
         let redacted = engine.redact(content);
-        
+
         assert!(redacted.contains("REDACTED_SECRET") || redacted.contains("REDACTED_API_KEY"));
         assert!(!redacted.contains("1234567890abcdef"));
     }
@@ -373,7 +377,7 @@ mod tests {
         let mut engine = RedactionEngine::new();
         let content = "password = 'super_secret_password123'";
         let redacted = engine.redact(content);
-        
+
         assert!(redacted.contains("REDACTED_PASSWORD"));
         assert!(!redacted.contains("super_secret_password123"));
     }
@@ -383,18 +387,18 @@ mod tests {
         let mut engine = RedactionEngine::new();
         let content = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
         let redacted = engine.redact(content);
-        
+
         assert!(redacted.contains("REDACTED_BEARER_TOKEN"));
     }
 
     #[test]
     fn test_reset_counters() {
         let mut engine = RedactionEngine::new();
-        
+
         engine.redact("AKIAIOSFODNN7EXAMPLE");
         let summary1 = engine.summary();
         assert_eq!(summary1.total_redactions, 1);
-        
+
         engine.reset();
         let summary2 = engine.summary();
         assert_eq!(summary2.total_redactions, 0);
@@ -406,10 +410,13 @@ mod tests {
         // The SSH key pattern uses multiline matching
         let content = "-----BEGIN OPENSSH PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF8PbnGy0AHB7MhgwC8oEdC1pr7BOSj\n-----END OPENSSH PRIVATE KEY-----";
         let redacted = engine.redact(content);
-        
+
         // The SSH pattern should match, but if it doesn't, at least the PRIVATE_KEY pattern should
-        assert!(redacted.contains("REDACTED_SSH_KEY") || redacted.contains("REDACTED_PRIVATE_KEY"), 
-                "Expected SSH or PRIVATE_KEY redaction. Got: {}", redacted);
+        assert!(
+            redacted.contains("REDACTED_SSH_KEY") || redacted.contains("REDACTED_PRIVATE_KEY"),
+            "Expected SSH or PRIVATE_KEY redaction. Got: {}",
+            redacted
+        );
     }
 
     #[test]
@@ -424,7 +431,7 @@ mod tests {
         let mut engine = RedactionEngine::new();
         let redacted = engine.redact("");
         assert_eq!(redacted, "");
-        
+
         let summary = engine.summary();
         assert_eq!(summary.total_redactions, 0);
     }
@@ -434,7 +441,7 @@ mod tests {
         let mut engine = RedactionEngine::new();
         let content = "This is just regular text without any secrets or API keys.";
         let redacted = engine.redact(content);
-        
+
         assert_eq!(redacted, content);
         let summary = engine.summary();
         assert_eq!(summary.total_redactions, 0);

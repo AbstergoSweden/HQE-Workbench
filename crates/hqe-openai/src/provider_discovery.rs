@@ -230,7 +230,8 @@ impl ProviderDiscoveryClient {
         } else if self.provider_kind == ProviderKind::Azure {
             return Err(DiscoveryError::Provider(
                 400,
-                "Azure OpenAI discovery is not supported. Please enter model names manually.".to_string(),
+                "Azure OpenAI discovery is not supported. Please enter model names manually."
+                    .to_string(),
             ));
         }
 

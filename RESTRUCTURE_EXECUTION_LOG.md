@@ -42,3 +42,23 @@
 | TODO.md | Superseded by TODO_UNIFIED.md | git checkout HEAD~1 -- TODO.md |
 | verification_results.md | Superseded by v2 | git checkout HEAD~1 -- verification_results.md |
 | hqe_workbench_provider_discovery/ | Temporary scaffold | git checkout HEAD~1 -- hqe_workbench_provider_discovery/ |
+
+✓ Commit 3 recorded: a6e5ef1
+
+## Commit 4: Verification & Repairs (2026-02-01T01:09:26Z)
+
+### Repairs Made
+| File | Issue | Fix |
+|------|-------|-----|
+| Cargo.toml | Workspace member path stale | Updated apps/workbench → desktop/workbench |
+| cli/hqe/src/main.rs | Formatting | cargo fmt applied |
+| crates/hqe-core/src/persistence.rs | Formatting | cargo fmt applied |
+| crates/hqe-core/src/redaction.rs | Formatting | cargo fmt applied |
+| crates/hqe-openai/src/lib.rs | Formatting | cargo fmt applied |
+| crates/hqe-openai/src/provider_discovery.rs | Formatting | cargo fmt applied |
+
+### Verification Results
+- Workspace build: PASS
+- Tests: PASS
+- Clippy: PASS
+- Format: PASS (after repair)
