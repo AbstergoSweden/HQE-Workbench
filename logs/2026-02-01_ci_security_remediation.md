@@ -69,17 +69,23 @@ The RustSec advisory database now includes CVSS 4.0 scored vulnerabilities which
 - README.md: MIT badge ✗
 - LEGAL.md: MIT text ✗
 - CITATION.cff: Apache-2.0 ✓
+- AGENTS.md: MIT ✗
+- REPOSITORY_HEALTH_REPORT.md: MIT ✗
 
 **Fix Applied**: Standardized all to Apache-2.0
 - Updated `Cargo.toml` license field
 - Updated `README.md` badge and license text
 - Updated `LEGAL.md` license section
+- Updated `AGENTS.md` license reference
+- Updated `REPOSITORY_HEALTH_REPORT.md` license references
 
 ## Verification
 
 - [x] JavaScript tests pass locally (`npm test` - 7 tests passed)
-- [ ] Rust build verification pending (Tauri deps require macOS)
-- [ ] CI workflow verification pending (will run on push)
+- [x] Rust clippy passes on core crates (hqe-core, hqe-openai, hqe-git, hqe-artifacts)
+- [x] Code review passed (no comments)
+- [x] CodeQL security scan passed (0 alerts)
+- [ ] Full CI workflow verification pending (requires workflow approval)
 
 ---
 *Generated as part of repository hygiene audit on 2026-02-01*
