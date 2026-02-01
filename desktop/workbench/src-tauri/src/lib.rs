@@ -39,6 +39,7 @@ pub fn run() {
             save_provider_profile,
             delete_provider_profile,
             detect_provider_kind,
+            import_default_profiles,
             // Prompt commands
             prompts::get_available_prompts,
             prompts::execute_prompt,

@@ -1,0 +1,65 @@
+[
+    {
+        "name": "openai",
+        "base_url": "https://api.openai.com/v1",
+        "default_model": "gpt-4o-mini",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "provider_kind": "openai",
+        "timeout_s": 60
+    },
+    {
+        "name": "anthropic",
+        "base_url": "https://api.anthropic.com/v1",
+        "default_model": "claude-3-5-sonnet-latest",
+        "headers": {
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01"
+        },
+        "provider_kind": "anthropic",
+        "timeout_s": 60
+    },
+    {
+        "name": "venice",
+        "base_url": "https://api.venice.ai/api/v1",
+        "default_model": "deepseek-r1-671b",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "provider_kind": "venice",
+        "timeout_s": 120
+    },
+    {
+        "name": "openrouter",
+        "base_url": "https://openrouter.ai/api/v1",
+        "default_model": "openai/gpt-4o-mini",
+        "headers": {
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://hqe-workbench.local",
+            "X-Title": "HQE Workbench"
+        },
+        "provider_kind": "openrouter",
+        "timeout_s": 120
+    },
+    {
+        "name": "xai-grok",
+        "base_url": "https://api.x.ai/v1",
+        "default_model": "grok-2-latest",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "provider_kind": "xai",
+        "timeout_s": 60
+    },
+    {
+        "name": "google-gemini",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "default_model": "gemini-2.0-flash",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "provider_kind": "google",
+        "timeout_s": 60
+    }
+]

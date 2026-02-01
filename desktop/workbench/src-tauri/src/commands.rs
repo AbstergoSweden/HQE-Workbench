@@ -356,6 +356,25 @@ pub async fn list_provider_profiles() -> Result<Vec<ProviderProfile>, String> {
     store.load_profiles().map_err(|e| e.to_string())
 }
 
+/// Import default profiles (only adds new ones, doesn't overwrite existing)
+#[command]
+pub async fn import_default_profiles(
+    profiles: Vec<ProviderProfile>,
+) -> Result<usize, String> {
+    let manager = ProfileManager::default();
+    let existing = manager.load_profiles().map_err(|e: hqe_openai::profile::ProfileError| e.to_string())?;
+    let existing_names: std::collections::HashSet<&str> = existing.iter().map(|p| p.name.as_str()).collect();
+    
+    let mut imported = 0;
+    for profile in profiles {
+        if !existing_names.contains(profile.name.as_str()) {
+            manager.save_profile(profile, None).map_err(|e| e.to_string())?;
+            imported += 1;
+        }
+    }
+    Ok(imported)
+}
+
 /// Get a single provider profile with its API key
 #[command]
 pub async fn get_provider_profile(

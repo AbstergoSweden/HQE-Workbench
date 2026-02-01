@@ -13,7 +13,7 @@ export function WelcomeScreen() {
       const path = await invoke<string | null>('select_folder')
       if (path) {
         const name = path.split('/').pop() || 'Unknown'
-        const repoInfo = await invoke<{source: string, git_remote: string | null, git_commit: string | null}>('get_repo_info', { repo_path: path })
+        const repoInfo = await invoke<{ source: string, git_remote: string | null, git_commit: string | null }>('get_repo_info', { repo_path: path })
         setRepo(path, name, repoInfo.source === 'git')
         navigate('/scan')
       }
@@ -24,18 +24,18 @@ export function WelcomeScreen() {
   }
 
   const features = [
-    { 
-      cmd: 'scan --deep', 
+    {
+      cmd: 'scan --deep',
       desc: 'Security, code quality, and architectural analysis',
       color: 'var(--dracula-cyan)'
     },
-    { 
-      cmd: 'report --format=hqe', 
+    {
+      cmd: 'report --format=hqe',
       desc: 'Structured HQE v3 reports with evidence-based findings',
       color: 'var(--dracula-purple)'
     },
-    { 
-      cmd: 'scan --local', 
+    {
+      cmd: 'scan --local',
       desc: 'Privacy-first local scanning with secret redaction',
       color: 'var(--dracula-green)'
     },
@@ -45,16 +45,16 @@ export function WelcomeScreen() {
     <div className="h-full flex flex-col animate-fade-in">
       {/* ASCII Art Header */}
       <div className="mb-8">
-        <pre 
+        <pre
           className="text-xs leading-none mb-4"
           style={{ color: 'var(--dracula-green)' }}
         >{`
   ██╗  ██╗ ██████╗ ███████╗    ██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗██████╗ ███████╗███╗   ██╗ ██████╗██╗  ██╗
   ██║  ██║██╔═══██╗██╔════╝    ██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝██╔══██╗██╔════╝████╗  ██║██╔════╝██║  ██║
   ███████║██║   ██║█████╗      ██║ █╗ ██║██║   ██║██████╔╝█████╔╝ ██████╔╝█████╗  ██╔██╗ ██║██║     ███████║
-  ██╔══██║██║   ██║██╔══╝      ██║███╗██║██║   ██║██╔══██╗██╔═██╗ ██╔══██╗██╔══╝  ██║╚██╗██║██║     ██╔══██║
-  ██║  ██║╚██████╔╝██║         ╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗██████╔╝███████╗██║ ╚████║╚██████╗██║  ██║
-  ╚═╝  ╚═╝ ╚═════╝ ╚═╝          ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝
+  ██╔══██║██║▄▄ ██║██╔══╝      ██║███╗██║██║   ██║██╔══██╗██╔═██╗ ██╔══██╗██╔══╝  ██║╚██╗██║██║     ██╔══██║
+  ██║  ██║╚██████╔╝███████╗    ╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗██████╔╝███████╗██║ ╚████║╚██████╗██║  ██║
+  ╚═╝  ╚═╝ ╚══▀▀═╝ ╚══════╝     ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝
         `}</pre>
         <div className="text-terminal-comment text-sm">
           {'// Health, Quality, and Evolution Analysis'}
@@ -65,7 +65,7 @@ export function WelcomeScreen() {
       <div className="grid grid-cols-2 gap-6 flex-1">
         {/* Left Column - Actions */}
         <div className="space-y-4">
-          <div 
+          <div
             className="card p-4"
             style={{ borderColor: 'var(--dracula-comment)' }}
           >
@@ -74,12 +74,12 @@ export function WelcomeScreen() {
               <span className="typewriter">initialize_scan</span>
               <span className="terminal-cursor" />
             </div>
-            
+
             <p className="text-sm mb-6" style={{ color: 'var(--dracula-comment)' }}>
               Run the HQE Engineer Protocol on your codebase. Get actionable reports,
               prioritized backlogs, and optional AI-powered patch suggestions.
             </p>
-            
+
             <div className="space-y-3">
               <button
                 onClick={handleOpenFolder}
@@ -88,7 +88,7 @@ export function WelcomeScreen() {
                 <span style={{ color: 'var(--dracula-green)' }}>❯</span>
                 <span>open_repository</span>
               </button>
-              
+
               <button
                 onClick={() => navigate('/settings')}
                 className="btn w-full flex items-center gap-3"
@@ -100,7 +100,7 @@ export function WelcomeScreen() {
           </div>
 
           {/* Quick Stats */}
-          <div 
+          <div
             className="card p-4"
             style={{ borderColor: 'var(--dracula-comment)' }}
           >
@@ -133,9 +133,9 @@ export function WelcomeScreen() {
           <div className="text-xs uppercase tracking-wider mb-2" style={{ color: 'var(--dracula-comment)' }}>
             Available Commands
           </div>
-          
+
           {features.map((feature, idx) => (
-            <div 
+            <div
               key={idx}
               className="card p-4 transition-all duration-200 hover:border-terminal-cyan"
               style={{ borderColor: 'var(--dracula-comment)' }}
@@ -143,7 +143,7 @@ export function WelcomeScreen() {
               <div className="flex items-start gap-3">
                 <span style={{ color: feature.color }}>$</span>
                 <div className="flex-1">
-                  <div 
+                  <div
                     className="font-mono text-sm mb-1"
                     style={{ color: feature.color }}
                   >
@@ -158,7 +158,7 @@ export function WelcomeScreen() {
           ))}
 
           {/* Help Hint */}
-          <div 
+          <div
             className="p-4 mt-4 text-xs"
             style={{ color: 'var(--dracula-comment)' }}
           >

@@ -19,11 +19,13 @@ export function SettingsScreen() {
   const [project, setProject] = useState('')
   const [timeout, setTimeout] = useState(60)
   const [availableModels, setAvailableModels] = useState<ProviderModel[]>([])
+  const [modelsDiscovered, setModelsDiscovered] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
   const [discovering, setDiscovering] = useState(false)
   const [discoverError, setDiscoverError] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<boolean | null>(null)
+  const [keyLocked, setKeyLocked] = useState(true) // When locked, key is persisted to secure storage
   const toast = useToast()
 
   const loadProfiles = useCallback(async () => {
@@ -39,9 +41,30 @@ export function SettingsScreen() {
   }, [toast])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- This is a standard fetch-on-mount pattern with async callback
     void loadProfiles()
   }, [loadProfiles])
+
+  // Auto-generate default headers based on URL
+  useEffect(() => {
+    if (!url) return
+    // Only auto-generate if headers are empty or unset
+    if (headersText.trim()) return
+
+    const defaultHeaders: Record<string, string> = {
+      'Content-Type': 'application/json'
+    }
+
+    // Add provider-specific headers based on URL
+    if (url.includes('anthropic.com')) {
+      defaultHeaders['anthropic-version'] = '2023-06-01'
+    } else if (url.includes('openrouter.ai')) {
+      defaultHeaders['HTTP-Referer'] = window.location.origin
+      defaultHeaders['X-Title'] = 'HQE Workbench'
+    }
+
+    setHeadersText(JSON.stringify(defaultHeaders, null, 2))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only trigger on URL change
+  }, [url])
 
   const resetForm = () => {
     setSelectedProfile('')
@@ -57,6 +80,7 @@ export function SettingsScreen() {
     setProject('')
     setTimeout(60)
     setAvailableModels([])
+    setModelsDiscovered(false)
     setDiscoverError(null)
     setTestResult(null)
   }
@@ -107,26 +131,45 @@ export function SettingsScreen() {
   }
 
   const handleDiscoverModels = async () => {
-    if (!url) return
+    if (!url) {
+      toast.error('URL is required for discovery')
+      return
+    }
+    const keyToUse = key || storedApiKey || ''
+    if (!keyToUse) {
+      toast.error('API key is required for discovery')
+      return
+    }
     setDiscovering(true)
     setDiscoverError(null)
     setAvailableModels([])
+    setModelsDiscovered(false)
     try {
-      const keyToUse = key || storedApiKey || ''
+      const parsedHeaders = parseHeadersInput() ?? {}
       const result = await invoke<ProviderModelList>('discover_models', {
-        baseUrl: url,
-        apiKey: keyToUse,
+        input: {
+          base_url: url,
+          api_key: keyToUse,
+          headers: parsedHeaders,
+          timeout_s: timeout,
+          no_cache: false,
+        }
       })
       if (result.models.length === 0) {
         setDiscoverError('No models discovered')
+        setModelsDiscovered(false)
       } else {
         setAvailableModels(result.models)
+        setModelsDiscovered(true)
+        // Auto-select first model if none selected
         if (!model && result.models[0]) {
           setModel(result.models[0].id)
         }
+        toast.success(`Discovered ${result.models.length} model(s)`)
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      setModelsDiscovered(false)
       setDiscoverError(message)
     }
     setDiscovering(false)
@@ -179,7 +222,8 @@ export function SettingsScreen() {
           project: project || null,
           timeout_s: timeout,
         },
-        apiKey: key || null,
+        // Only persist API key if lock is enabled
+        apiKey: keyLocked && key ? key : null,
       })
       toast.success(originalProfileName ? 'Profile updated' : 'Profile created')
       await loadProfiles()
@@ -202,6 +246,31 @@ export function SettingsScreen() {
     } catch (error) {
       console.error('Delete failed:', error)
       toast.error('Failed to delete profile')
+    }
+  }
+
+  // Default profiles to import
+  const defaultProfiles = [
+    { name: 'openai', base_url: 'https://api.openai.com/v1', default_model: 'gpt-4o-mini', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
+    { name: 'anthropic', base_url: 'https://api.anthropic.com/v1', default_model: 'claude-3-5-sonnet-latest', headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' }, timeout_s: 60 },
+    { name: 'venice', base_url: 'https://api.venice.ai/api/v1', default_model: 'deepseek-r1-671b', headers: { 'Content-Type': 'application/json' }, timeout_s: 120 },
+    { name: 'openrouter', base_url: 'https://openrouter.ai/api/v1', default_model: 'openai/gpt-4o-mini', headers: { 'Content-Type': 'application/json', 'HTTP-Referer': 'https://hqe-workbench.local', 'X-Title': 'HQE Workbench' }, timeout_s: 120 },
+    { name: 'xai-grok', base_url: 'https://api.x.ai/v1', default_model: 'grok-2-latest', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
+    { name: 'google-gemini', base_url: 'https://generativelanguage.googleapis.com/v1beta/openai', default_model: 'gemini-2.0-flash', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
+  ]
+
+  const handleLoadDefaults = async () => {
+    try {
+      const imported = await invoke<number>('import_default_profiles', { profiles: defaultProfiles })
+      if (imported > 0) {
+        toast.success(`Imported ${imported} default profile(s)`)
+        await loadProfiles()
+      } else {
+        toast.info('All default profiles already exist')
+      }
+    } catch (error) {
+      console.error('Failed to load defaults:', error)
+      toast.error('Failed to import default profiles')
     }
   }
 
@@ -269,6 +338,16 @@ export function SettingsScreen() {
           >
             <span className="text-terminal-purple">+</span> new_profile
           </button>
+
+          {profiles.length === 0 && (
+            <button
+              onClick={handleLoadDefaults}
+              className="btn w-full mt-2 text-sm"
+              style={{ borderColor: 'var(--dracula-cyan)' }}
+            >
+              <span className="text-terminal-cyan">⬇</span> load_defaults
+            </button>
+          )}
         </div>
 
         {/* Profile Form */}
@@ -317,6 +396,14 @@ export function SettingsScreen() {
                 {storedApiKey && (
                   <span className="text-terminal-green text-xs ml-2">(stored)</span>
                 )}
+                <span
+                  className="text-xs ml-2 cursor-pointer"
+                  style={{ color: keyLocked ? 'var(--dracula-green)' : 'var(--dracula-comment)' }}
+                  onClick={() => setKeyLocked(!keyLocked)}
+                  title={keyLocked ? 'Key will be saved to secure storage' : 'Key is session-only (not saved)'}
+                >
+                  {keyLocked ? '🔒' : '🔓'}
+                </span>
               </label>
               <input
                 type="password"
@@ -325,6 +412,11 @@ export function SettingsScreen() {
                 placeholder={storedApiKey ? '••••••••' : 'sk-...'}
                 className="input"
               />
+              {!keyLocked && key && (
+                <p className="text-xs mt-1" style={{ color: 'var(--dracula-orange)' }}>
+                  Key is session-only and won&apos;t be persisted
+                </p>
+              )}
             </div>
 
             {/* Model */}
@@ -337,17 +429,25 @@ export function SettingsScreen() {
                   type="text"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder="gpt-4o-mini"
+                  placeholder={modelsDiscovered ? 'gpt-4o-mini' : '(run discover first)'}
+                  disabled={!modelsDiscovered && availableModels.length === 0 && !originalProfileName}
                   className="input flex-1"
+                  style={{ opacity: (!modelsDiscovered && availableModels.length === 0 && !originalProfileName) ? 0.5 : 1 }}
                 />
                 <button
                   onClick={handleDiscoverModels}
-                  disabled={discovering || !url}
+                  disabled={discovering || !url || (!key && !storedApiKey)}
                   className="btn text-sm whitespace-nowrap"
+                  title={!key && !storedApiKey ? 'Enter API key first' : ''}
                 >
                   {discovering ? '...' : 'discover'}
                 </button>
               </div>
+              {!modelsDiscovered && availableModels.length === 0 && !originalProfileName && (
+                <p className="text-xs mt-1" style={{ color: 'var(--dracula-comment)' }}>
+                  Click "discover" to load available models
+                </p>
+              )}
               {discoverError && (
                 <p className="text-xs mt-1 text-terminal-red">{discoverError}</p>
               )}
