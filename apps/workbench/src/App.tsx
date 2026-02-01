@@ -1,6 +1,6 @@
 import { FC } from 'react'
 import { HashRouter as Router, Routes, Route } from 'react-router-dom'
-import { Layout } from './components/Layout'
+import { TerminalLayout } from './components/TerminalLayout'
 import { ToastProvider } from './context/ToastContext'
 import { WelcomeScreen } from './screens/WelcomeScreen'
 import { ScanScreen } from './screens/ScanScreen'
@@ -12,7 +12,7 @@ const App: FC = () => {
   return (
     <Router>
       <ToastProvider>
-        <Layout>
+        <TerminalLayout>
           <Routes>
             <Route path="/" element={<WelcomeScreen />} />
             <Route path="/scan" element={<ScanScreen />} />
@@ -20,7 +20,7 @@ const App: FC = () => {
             <Route path="/report" element={<ReportScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />
           </Routes>
-        </Layout>
+        </TerminalLayout>
       </ToastProvider>
     </Router>
   )

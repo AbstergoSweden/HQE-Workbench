@@ -1,73 +1,153 @@
-# hqe-workbench Context
-> **Auto-Generated:** 2026-01-30 | **Sources:** `Cargo.toml`, `package.json`, `apps/workbench/package.json`, `apps/workbench/src-tauri/Cargo.toml`, `apps/workbench/src-tauri/tauri.conf.json`, `apps/workbench/vite.config.ts`, `scripts/*.sh`, `docs/architecture.md`, `prompts/prompts/server/package.json`, `protocol/*`
+# HQE-Workbench — Agent Context
 
-## 1. System Identity
+> **Generated:** 2026-01-31 | **Sources:** `Cargo.toml`, `package.json`, `apps/workbench/package.json`, `apps/workbench/src-tauri/Cargo.toml`, `cli/hqe/Cargo.toml`, `.github/workflows/ci.yml`
+
+## Quick Start
+```bash
+# Bootstrap macOS environment
+./scripts/bootstrap_macos.sh
+
+# Build CLI
+cargo build --release -p hqe
+
+# Run local-only scan
+./target/release/hqe scan /path/to/repo --local-only
+```
+
+## System Identity
+
 | Attribute | Value | Source |
-| :--- | :--- | :--- |
-| **Primary Languages** | Rust (edition 2021, rust-version 1.75), TypeScript (5.3 workbench, 5.9 prompts server), JavaScript, Python 3 (protocol validation) | `Cargo.toml`, `apps/workbench/package.json`, `prompts/prompts/server/package.json`, `scripts/validate_protocol.sh` |
-| **Runtimes** | Rust (Tokio), Node.js (Workbench UI + Prompts server; prompts server requires >=18.18.0), Python 3 (protocol validation) | `Cargo.toml`, `prompts/prompts/server/package.json`, `scripts/validate_protocol.sh` |
-| **Desktop UI** | Tauri 2.0.0 + React 18.2.0 | `apps/workbench/src-tauri/Cargo.toml`, `apps/workbench/package.json` |
-| **Frontend Tooling** | Vite 5, TypeScript, Tailwind CSS 3.3, Zustand 4.4 | `apps/workbench/package.json` |
-| **Backend/Infra** | Cargo workspace, Clap CLI, Tokio async runtime | `Cargo.toml`, `cli/hqe/Cargo.toml` |
-| **Prompt Server** | Express + @modelcontextprotocol/sdk (Claude prompts MCP server) | `prompts/prompts/server/package.json` |
+|-----------|-------|--------|
+| Language | Rust 2021 Edition | `Cargo.toml:19` |
+| Rust Version | 1.75+ | `Cargo.toml:23` |
+| TypeScript | 5.3+ (Workbench), 5.9+ (Prompts) | `apps/workbench/package.json:45`, `prompts/prompts/server/package.json:143` |
+| Python | 3.11+ (protocol validation) | `.github/workflows/ci.yml` |
+| Platform | macOS 12.0+ | `README.md:108` |
+| License | MIT | `Cargo.toml:21` |
 
-## 2. Repository Layout
-- `apps/workbench/`: React + Vite frontend for the Tauri desktop app.
-- `apps/workbench/src-tauri/`: Rust Tauri backend, command bridge, and app config.
-- `cli/hqe/`: Rust CLI entry point (`hqe`).
-- `crates/`: Rust workspace libraries (core engine, providers, artifacts, MCP, ingest, vector, flow).
-- `protocol/`: HQE Engineer protocol YAML, schemas, and validation scripts.
-- `prompts/prompts/`: Claude prompts MCP server (Node/TypeScript) plus resources/docs.
-- `hqe_workbench_provider_discovery/`: Standalone provider discovery patch workspace.
-- `example-repo/`: Sample repository used for scan demos/testing.
+## Workspace Structure
 
-## 3. Operational Commands
-*Execute these exactly as shown.*
-| Scope | Intent | Command | Context/Notes | Source |
-| :--- | :--- | :--- | :--- | :--- |
-| **Root** | **Bootstrap (macOS)** | `./scripts/bootstrap_macos.sh` | Installs toolchains + deps | `scripts/bootstrap_macos.sh` |
-| **Root** | **Dev (Workbench)** | `./scripts/dev.sh` | Runs protocol validation then `tauri:dev` | `scripts/dev.sh` |
-| **Root** | **Build (DMG)** | `./scripts/build_dmg.sh` | Builds CLI + Tauri bundle | `scripts/build_dmg.sh` |
-| **Root** | **Validate Protocol** | `./scripts/validate_protocol.sh` | Python YAML schema validation | `scripts/validate_protocol.sh` |
-| **Root** | **Source Zip** | `./scripts/make_source_zip.sh` | Creates source-only archive | `scripts/make_source_zip.sh` |
-| **Root** | **Preflight** | `npm run preflight` | Rust tests/clippy/fmt + Workbench lint/test | `package.json` |
-| **Rust** | **Test (Workspace)** | `cargo test --workspace` | Rust unit/integration | `scripts/build_dmg.sh`, `package.json` |
-| **Rust** | **Build CLI** | `cargo build --release -p hqe` | CLI binary | `scripts/build_dmg.sh`, `scripts/bootstrap_macos.sh` |
-| **Workbench** | **Dev (Vite)** | `cd apps/workbench && npm run dev` | Vite dev server | `apps/workbench/package.json` |
-| **Workbench** | **Dev (Tauri)** | `cd apps/workbench && npm run tauri:dev` | Desktop app dev | `apps/workbench/package.json` |
-| **Workbench** | **Build (UI)** | `cd apps/workbench && npm run build` | TS + Vite build | `apps/workbench/package.json` |
-| **Workbench** | **Build (Tauri)** | `cd apps/workbench && npm run tauri:build` | Desktop bundle | `apps/workbench/package.json` |
-| **Workbench** | **Lint** | `cd apps/workbench && npm run lint` | ESLint | `apps/workbench/package.json` |
-| **Workbench** | **Test** | `cd apps/workbench && npm run test` | Vitest | `apps/workbench/package.json` |
-| **Prompts** | **Dev** | `cd prompts/prompts/server && npm run dev` | Hot reload server | `prompts/prompts/server/package.json` |
-| **Prompts** | **Build** | `cd prompts/prompts/server && npm run build` | TypeScript build | `prompts/prompts/server/package.json` |
-| **Prompts** | **Lint** | `cd prompts/prompts/server && npm run lint` | ESLint | `prompts/prompts/server/package.json` |
-| **Prompts** | **Test** | `cd prompts/prompts/server && npm run test` | Jest (unit) | `prompts/prompts/server/package.json` |
+> Cargo workspace with 14 members | `Cargo.toml:3-15`
 
-## 4. Entry Points & Config
-- **Workbench UI Entry:** `apps/workbench/src/main.tsx`
-- **Tauri App Entry:** `apps/workbench/src-tauri/src/main.rs` (launches `hqe_workbench_app::run()` in `apps/workbench/src-tauri/src/lib.rs`)
-- **CLI Entry:** `cli/hqe/src/main.rs`
-- **Prompts Server Entry:** `prompts/prompts/server/src/index.ts` (compiled to `dist/index.js`)
-- **Protocol Schema:** `protocol/hqe-engineer.yaml` + `protocol/hqe-schema.json`
-- **Workbench Config:** `apps/workbench/vite.config.ts`, `apps/workbench/src-tauri/tauri.conf.json`
+| Package | Path | Purpose | Type |
+|---------|------|---------|------|
+| `hqe` | `cli/hqe` | CLI entry point | Binary |
+| `hqe-workbench-app` | `apps/workbench/src-tauri` | Tauri desktop app | Binary |
+| `hqe-core` | `crates/hqe-core` | Scan pipeline & engine | Library |
+| `hqe-openai` | `crates/hqe-openai` | OpenAI-compatible client | Library |
+| `hqe-git` | `crates/hqe-git` | Git operations | Library |
+| `hqe-artifacts` | `crates/hqe-artifacts` | Report generation | Library |
+| `hqe-protocol` | `crates/hqe-protocol` | Schema definitions | Library |
+| `hqe-mcp` | `crates/hqe-mcp` | Model Context Protocol | Library |
+| `hqe-ingest` | `crates/hqe-ingest` | File ingestion | Library |
+| `hqe-vector` | `crates/hqe-vector` | Vector/embeddings (placeholder) | Library |
+| `hqe-flow` | `crates/hqe-flow` | Workflow engine | Library |
 
-## 5. Testing Strategy
-- **Rust:** `cargo test --workspace` (workspace crates + CLI)
-- **Workbench UI:** Vitest via `npm run test` in `apps/workbench`
-- **Prompts Server:** Jest via `npm run test` in `prompts/prompts/server`
+## Operational Commands
 
-## 6. Environment Variables (.env)
-*No `.env` or `.env.example` files found in this repo.*
+### Root Level
 
-## 7. Critical Files Map
-- `Cargo.toml`: Rust workspace configuration and dependency versions.
-- `apps/workbench/package.json`: Frontend dependencies + scripts.
-- `apps/workbench/src-tauri/Cargo.toml`: Tauri backend dependencies.
-- `apps/workbench/src-tauri/tauri.conf.json`: Tauri build/runtime config.
-- `cli/hqe/Cargo.toml`: CLI crate config.
-- `protocol/hqe-engineer.yaml`: HQE Engineer protocol source.
-- `protocol/hqe-schema.json`: Protocol JSON schema used by validator.
-- `scripts/dev.sh`: Dev entrypoint (protocol validation + Tauri dev).
-- `scripts/build_dmg.sh`: Release build pipeline.
-- `prompts/prompts/server/package.json`: MCP prompt server scripts + deps.
+| Intent | Command | Notes | Source |
+|--------|---------|-------|--------|
+| Preflight | `npm run preflight` | Rust tests + JS lint/test | `package.json:5` |
+| Preflight Rust | `npm run preflight:rust` | Tests, clippy, fmt check | `package.json:6` |
+| Preflight JS | `npm run preflight:js` | Workbench lint + test | `package.json:7` |
+| Bootstrap macOS | `./scripts/bootstrap_macos.sh` | Installs Homebrew, Node, Rust | `scripts/bootstrap_macos.sh` |
+| Build DMG | `./scripts/build_dmg.sh` | CLI + Tauri bundle | `scripts/build_dmg.sh` |
+
+### Rust Workspace
+
+| Intent | Command | Notes | Source |
+|--------|---------|-------|--------|
+| Build CLI | `cargo build --release -p hqe` | Output: `target/release/hqe` | `README.md:124` |
+| Test | `cargo test --workspace` | All workspace crates | `.github/workflows/ci.yml` |
+| Check | `cargo clippy --workspace -- -D warnings` | Lint | `.github/workflows/ci.yml` |
+| Format | `cargo fmt --all -- --check` | Format check | `.github/workflows/ci.yml` |
+
+### Workbench UI (apps/workbench)
+
+| Intent | Command | Notes | Source |
+|--------|---------|-------|--------|
+| Dev (Vite) | `npm run dev` | Port 1420 | `package.json:7` |
+| Dev (Tauri) | `npm run tauri:dev` | Desktop app dev mode | `package.json:11` |
+| Build | `npm run build` | TypeScript + Vite | `package.json:8` |
+| Build Tauri | `npm run tauri:build` | Desktop bundle | `package.json:12` |
+| Lint | `npm run lint` | ESLint | `package.json:13` |
+| Test | `npm run test` | Vitest | `package.json:14` |
+
+### Prompts Server (prompts/prompts/server)
+
+| Intent | Command | Notes | Source |
+|--------|---------|-------|--------|
+| Dev | `npm run dev` | Watch mode | `package.json:43` |
+| Build | `npm run build` | TypeScript compile | `package.json:29` |
+| Test | `npm run test` | Jest | `package.json:53` |
+| Lint | `npm run lint` | ESLint | `package.json:35` |
+| Type Check | `npm run typecheck` | TSC + validation | `package.json:33` |
+
+## Architecture
+
+| Aspect | Details | Source |
+|--------|---------|--------|
+| CLI Entry | `cli/hqe/src/main.rs` | `cli/hqe/Cargo.toml:14` |
+| Workbench UI Entry | `apps/workbench/src/main.tsx` | `vite.config.ts` |
+| Tauri Backend | `apps/workbench/src-tauri/src/lib.rs` | `Cargo.toml` |
+| Protocol Schema | `protocol/hqe-engineer.yaml` | Embedded in CLI binary |
+| State Management | Zustand 4.4 | `apps/workbench/package.json:27` |
+| Styling | Tailwind CSS 3.3 | `apps/workbench/package.json:44` |
+| Build Tool | Vite 5 | `apps/workbench/package.json:47` |
+| Framework | React 18.2, Tauri 2.0 | `apps/workbench/package.json:21,31` |
+| Key Dependencies | Tokio, Clap, Serde, Reqwest | `Cargo.toml:27-48` |
+
+## Environment Variables
+
+| Variable | Required | Purpose | Source |
+|----------|----------|---------|--------|
+| `HQE_OPENAI_TIMEOUT_SECONDS` | No | Override LLM timeout | `crates/hqe-openai/src/lib.rs` |
+| `HQE_PROMPTS_DIR` | No | Custom prompts directory | `apps/workbench/src-tauri/src/prompts.rs` |
+
+## Critical Files
+
+| Path | Purpose |
+|------|---------|
+| `Cargo.toml` | Workspace configuration |
+| `cli/hqe/src/main.rs` | CLI implementation |
+| `apps/workbench/src-tauri/src/lib.rs` | Tauri commands |
+| `protocol/hqe-engineer.yaml` | HQE Protocol v3 definition |
+| `protocol/hqe-schema.json` | Protocol JSON schema |
+| `scripts/bootstrap_macos.sh` | Environment setup |
+| `apps/workbench/vite.config.ts` | Vite configuration |
+| `apps/workbench/tailwind.config.js` | Tailwind theme |
+
+## CI/CD
+
+| Event | Workflow | Actions |
+|-------|----------|---------|
+| Push/PR to main | `.github/workflows/ci.yml` | Build, test, clippy, fmt |
+| Weekly schedule | `.github/workflows/security.yml` | cargo audit |
+
+## Verification
+
+```bash
+# Verify Rust workspace
+cargo test --workspace && cargo clippy --workspace
+
+# Verify Workbench
+cd apps/workbench && npm install && npm run lint && npm test
+
+# Full preflight
+npm run preflight
+
+# Run CLI
+./target/release/hqe scan ./example-repo --local-only
+```
+
+**Last validated:** 2026-01-31
+
+---
+
+## Verification Checklist
+- [ ] All commands tested locally
+- [ ] All file paths verified to exist
+- [ ] No hallucinated dependencies
+- [ ] Environment variables match source code

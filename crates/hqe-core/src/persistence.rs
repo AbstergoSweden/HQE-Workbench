@@ -75,7 +75,9 @@ impl LocalDb {
 
     /// Get cached response
     pub fn get_cached_response(&self, hash: &str) -> Result<Option<String>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|_| {
+            rusqlite::Error::InvalidParameterName("Mutex poisoned".to_string())
+        })?;
         let mut stmt = conn.prepare(
             "SELECT response_json FROM request_cache WHERE hash = ?1"
         )?;
@@ -96,7 +98,9 @@ impl LocalDb {
 
     /// Store response in cache
     pub fn cache_response(&self, hash: &str, model: &str, prompt: &str, response: &str) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|_| {
+            rusqlite::Error::InvalidParameterName("Mutex poisoned".to_string())
+        })?;
         conn.execute(
             "INSERT OR REPLACE INTO request_cache (hash, model, prompt_json, response_json)
              VALUES (?1, ?2, ?3, ?4)",
@@ -108,7 +112,9 @@ impl LocalDb {
 
     /// Log a session interaction
     pub fn log_interaction(&self, session_id: &str, role: &str, content: &str, metadata: Option<&str>) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|_| {
+            rusqlite::Error::InvalidParameterName("Mutex poisoned".to_string())
+        })?;
         conn.execute(
             "INSERT INTO session_log (session_id, role, content, metadata_json)
              VALUES (?1, ?2, ?3, ?4)",
@@ -139,6 +145,63 @@ mod tests {
         
         let h3 = LocalDb::calculate_hash("model2", "msg", "params");
         assert_ne!(h1, h3);
+    }
+
+    #[test]
+    fn test_hash_uniqueness() {
+        // Different inputs should produce different hashes
+        let h1 = LocalDb::calculate_hash("gpt-4", "message", "{}");
+        let h2 = LocalDb::calculate_hash("gpt-3", "message", "{}");
+        let h3 = LocalDb::calculate_hash("gpt-4", "different", "{}");
+        let h4 = LocalDb::calculate_hash("gpt-4", "message", "{\"temp\":0.7}");
+        
+        assert_ne!(h1, h2, "Different models should produce different hashes");
+        assert_ne!(h1, h3, "Different messages should produce different hashes");
+        assert_ne!(h1, h4, "Different params should produce different hashes");
+    }
+
+    #[test]
+    fn test_hash_empty_inputs() {
+        // Empty inputs should still produce valid hashes
+        let hash = LocalDb::calculate_hash("", "", "");
+        assert_eq!(hash.len(), 64);
+        // Hash of "|||" (empty model + separator + empty message + separator + empty params)
+        assert_eq!(hash, "565d240f5343e625ae579a4d45a770f1f02c6368b5ed4d06da4fbe6f47c28866");
+    }
+
+    #[test]
+    fn test_hash_special_characters() {
+        // Special characters should be handled correctly
+        let hash1 = LocalDb::calculate_hash("model", "{\"key\": \"value with spaces\"}", "{}");
+        let hash2 = LocalDb::calculate_hash("model", "{\"key\": \"value with spaces\"}", "{}");
+        assert_eq!(hash1, hash2, "Same special characters should produce same hash");
+    }
+
+    #[test]
+    fn test_hash_unicode() {
+        // Unicode characters should be handled correctly
+        let hash = LocalDb::calculate_hash("model", "日本語テキスト", "{}");
+        assert_eq!(hash.len(), 64);
+        
+        // Same unicode should produce same hash
+        let hash2 = LocalDb::calculate_hash("model", "日本語テキスト", "{}");
+        assert_eq!(hash, hash2);
+    }
+
+    #[test]
+    fn test_hash_order_matters() {
+        // Order of parameters matters
+        let h1 = LocalDb::calculate_hash("a", "b", "c");
+        let h2 = LocalDb::calculate_hash("c", "b", "a");
+        assert_ne!(h1, h2, "Different order should produce different hashes");
+    }
+
+    #[test]
+    fn test_hash_long_content() {
+        // Long content should still produce valid hashes
+        let long_message = "a".repeat(10000);
+        let hash = LocalDb::calculate_hash("model", &long_message, "{}");
+        assert_eq!(hash.len(), 64);
     }
 }
 

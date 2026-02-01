@@ -1,6 +1,6 @@
 #!/bin/bash
-# Sync plugin source to Claude Code cache
-# Run after modifying hooks or plugin.json, then restart Claude Code
+# Sync plugin source to Agents Code cache
+# Run after modifying hooks or plugin.json, then restart Agents Code
 # Works from any directory
 
 set -e
@@ -8,7 +8,7 @@ set -e
 # Resolve source dir relative to script location (not cwd)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-CACHE_BASE="$HOME/.claude/plugins/cache/minipuft-marketplace/claude-prompts-mcp"
+CACHE_BASE="$HOME/.agents/plugins/cache/minipuft-marketplace/agents-prompts-mcp"
 
 # Find the version directory (usually 1.0.0)
 if [ -d "$CACHE_BASE" ]; then
@@ -28,7 +28,7 @@ echo "  Cache:  $CACHE_DIR"
 mkdir -p "$CACHE_DIR"
 
 # Sync essential directories
-cp -r "$SOURCE_DIR/.claude-plugin" "$CACHE_DIR/"
+cp -r "$SOURCE_DIR/.agents-plugin" "$CACHE_DIR/"
 cp -r "$SOURCE_DIR/hooks" "$CACHE_DIR/"
 
 # Sync server cache if it exists (for hook lookups)
@@ -42,4 +42,4 @@ echo "Sync complete. Files synced:"
 ls -la "$CACHE_DIR/" | grep -E "^d" | awk '{print "  " $NF}'
 
 echo ""
-echo "Next: Restart Claude Code (/exit then claude) to reload hooks"
+echo "Next: Restart Agents Code (/exit then agents) to reload hooks"

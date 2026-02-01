@@ -8,6 +8,8 @@ afterEach(() => {
 if (!window.matchMedia) {
   window.matchMedia = () => ({
     matches: false,
+    media: '',
+    onchange: null,
     addListener: () => {},
     removeListener: () => {},
     addEventListener: () => {},

@@ -42,14 +42,14 @@ describe('ThinktankScreen', () => {
     const promptButton = await screen.findByRole('button', { name: /demo prompt/i })
     await userEvent.click(promptButton)
 
-    const countInput = screen.getByLabelText('count')
+    const countInput = screen.getByLabelText('--count')
     await userEvent.clear(countInput)
     await userEvent.type(countInput, '3')
 
-    const enabledCheckbox = screen.getByLabelText('enabled')
+    const enabledCheckbox = screen.getByLabelText('--enabled')
     await userEvent.click(enabledCheckbox)
 
-    const runButton = screen.getByRole('button', { name: /run prompt/i })
+    const runButton = screen.getByRole('button', { name: /execute prompt/i })
     await userEvent.click(runButton)
 
     await waitFor(() => {
@@ -83,7 +83,7 @@ describe('ThinktankScreen', () => {
     expect(screen.queryByRole('button', { name: /conductor setup/i })).toBeNull()
 
     // Toggle shows agent prompts
-    const showToggle = screen.getByRole('checkbox', { name: /show agent\/tool prompts/i })
+    const showToggle = screen.getByRole('checkbox', { name: /show agent prompts/i })
     await userEvent.click(showToggle)
 
     expect(await screen.findByRole('button', { name: /conductor setup/i })).not.toBeNull()

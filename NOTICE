@@ -1,0 +1,50 @@
+HQE-Workbench
+Copyright 2026 AbstergoSweden
+
+This product includes software developed by AbstergoSweden
+(https://github.com/AbstergoSweden).
+
+============================================================================
+THIRD-PARTY DEPENDENCIES
+============================================================================
+
+This project includes code from the following third-party libraries,
+used under their respective licenses:
+
+RUST ECOSYSTEM
+--------------
+- tokio: MIT License (https://github.com/tokio-rs/tokio)
+- serde: MIT/Apache-2.0 License (https://github.com/serde-rs/serde)
+- rusqlite: MIT License (https://github.com/rusqlite/rusqlite)
+- thiserror: MIT/Apache-2.0 License (https://github.com/dtolnay/thiserror)
+- anyhow: MIT/Apache-2.0 License (https://github.com/dtolnay/anyhow)
+- tauri: MIT/Apache-2.0 License (https://github.com/tauri-apps/tauri)
+
+TYPESCRIPT/JAVASCRIPT
+---------------------
+- React: MIT License (https://github.com/facebook/react)
+- Vite: MIT License (https://github.com/vitejs/vite)
+- Tailwind CSS: MIT License (https://github.com/tailwindlabs/tailwindcss)
+- zustand: MIT License (https://github.com/pmndrs/zustand)
+
+PYTHON
+------
+- PyYAML: MIT License (https://github.com/yaml/pyyaml)
+- jsonschema: MIT License (https://github.com/python-jsonschema/jsonschema)
+
+For complete license texts of all dependencies, see:
+- Rust: `cargo tree -e normal` output and individual crate licenses
+- Node: `apps/workbench/package-lock.json` and individual package licenses
+- Python: Individual package metadata in site-packages
+
+============================================================================
+ATTRIBUTION
+============================================================================
+
+This project uses the Dracula color palette (https://draculatheme.com/),
+licensed under the MIT License.
+
+============================================================================
+
+For questions regarding this NOTICE file, contact:
+2-craze-headmen@icloud.com

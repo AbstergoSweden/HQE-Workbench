@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Gemini CLI Hook: BeforeAgent → Prompt Suggest
+Agents CLI Hook: BeforeAgent → Prompt Suggest
 Detects >>prompt syntax and injects additionalContext with suggested MCP calls.
 """
 
@@ -10,9 +10,9 @@ from pathlib import Path
 
 import importlib.util
 
-# Delegate to core Gemini script to avoid drift
+# Delegate to core agents script to avoid drift
 EXT_ROOT = Path(__file__).resolve().parents[2]
-CORE_SCRIPT = EXT_ROOT / "hooks" / "gemini" / "before-agent.py"
+CORE_SCRIPT = EXT_ROOT / "hooks" / "agents" / "before-agent.py"
 
 def _delegate_main():
     spec = importlib.util.spec_from_file_location("before_agent", CORE_SCRIPT)

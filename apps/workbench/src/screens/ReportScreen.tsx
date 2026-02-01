@@ -1,10 +1,7 @@
-
 import { useNavigate } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import { useReportStore } from '../store'
-import { Finding, TodoItem, Severity } from '../types'
-import { Card } from '../components/ui/Card'
-import { Badge, BadgeVariant } from '../components/ui/Badge'
+import { Finding, Severity } from '../types'
 import { useToast } from '../context/ToastContext'
 
 export function ReportScreen() {
@@ -15,15 +12,19 @@ export function ReportScreen() {
   if (!report) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-emerald-200/60 mb-4">
+        <div 
+          className="card p-6 text-center"
+          style={{ borderColor: 'var(--dracula-comment)' }}
+        >
+          <div className="text-terminal-comment mb-4 text-lg">$</div>
+          <p className="text-sm mb-4" style={{ color: 'var(--dracula-comment)' }}>
             No scan results available
           </p>
           <button
             onClick={() => navigate('/scan')}
             className="btn btn-primary"
           >
-            Run a Scan
+            <span>❯</span> run_scan
           </button>
         </div>
       </div>
@@ -46,28 +47,20 @@ export function ReportScreen() {
     }
   }
 
-  const handleViewReport = async () => {
-    try {
-      const targetDir = await invoke<string | null>('select_folder')
-      if (!targetDir) return
-      await invoke('export_artifacts', { run_id, target_dir: targetDir })
-      toast.success('Report exported. Open report.md in the selected folder.')
-    } catch (error) {
-      console.error('Report export failed:', error)
-      toast.error('Failed to export report')
+  const getScoreColor = (score: number) => {
+    if (score >= 8) return 'var(--dracula-green)'
+    if (score >= 5) return 'var(--dracula-orange)'
+    return 'var(--dracula-red)'
+  }
+
+  const getSeverityBadge = (severity: Severity) => {
+    const colors: Record<string, string> = {
+      critical: 'var(--dracula-red)',
+      high: 'var(--dracula-orange)',
+      medium: 'var(--dracula-yellow)',
+      low: 'var(--dracula-green)',
     }
-  }
-
-  const getScoreColorClass = (score: number) => {
-    if (score >= 8) return 'text-emerald-500'
-    if (score >= 5) return 'text-yellow-500'
-    return 'text-red-500'
-  }
-
-  const getScoreBgStyle = (score: number) => {
-    if (score >= 8) return 'rgba(34, 197, 94, 0.1)'
-    if (score >= 5) return 'rgba(234, 179, 8, 0.1)'
-    return 'rgba(239, 68, 68, 0.1)'
+    return colors[severity] || 'var(--dracula-cyan)'
   }
 
   // Flatten findings from all categories
@@ -79,260 +72,203 @@ export function ReportScreen() {
     ...deep_scan_results.testing,
   ]
 
-  const getSeverityColor = (severity: Severity) => {
-    switch (severity.toLowerCase()) {
-      case 'critical': return '#ef4444'
-      case 'high': return '#f97316'
-      case 'medium': return '#eab308'
-      case 'low': return '#10b981'
-      default: return '#3b82f6'
-    }
-  }
-
-  const renderEvidence = (evidence: Finding['evidence']) => {
-    switch (evidence.type) {
-      case 'file_line':
-        return (
-          <>
-            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-emerald-500/10 text-emerald-200/60">
-              <span><span role="img" aria-label="file">📄</span> {evidence.file}</span>
-              {evidence.line && <span>:{evidence.line}</span>}
-            </div>
-            {evidence.snippet && (
-              <pre className="overflow-auto text-emerald-200/80">
-                <code>{evidence.snippet}</code>
-              </pre>
-            )}
-          </>
-        )
-      case 'file_function':
-        return (
-          <>
-            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-emerald-500/10 text-emerald-200/60">
-              <span><span role="img" aria-label="function">🧩</span> {evidence.file}</span>
-              {evidence.function && <span>::{evidence.function}</span>}
-            </div>
-            {evidence.snippet && (
-              <pre className="overflow-auto text-emerald-200/80">
-                <code>{evidence.snippet}</code>
-              </pre>
-            )}
-          </>
-        )
-      case 'reproduction':
-        return (
-          <>
-            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-emerald-500/10 text-emerald-200/60">
-              <span><span role="img" aria-label="repro">🧪</span> Reproduction</span>
-            </div>
-            {evidence.steps && evidence.steps.length > 0 && (
-              <ol className="list-decimal pl-5 text-emerald-200/80 space-y-1">
-                {evidence.steps.map((step, idx) => (
-                  <li key={idx}>{step}</li>
-                ))}
-              </ol>
-            )}
-            {evidence.observed && (
-              <p className="mt-2 text-emerald-200/80">
-                <span className="text-emerald-200/60">Observed:</span> {evidence.observed}
-              </p>
-            )}
-          </>
-        )
-      default:
-        return (
-          <p className="text-emerald-200/60">No evidence provided.</p>
-        )
-    }
-  }
+  const criticalCount = allFindings.filter(f => f.severity === 'critical').length
+  const highCount = allFindings.filter(f => f.severity === 'high').length
+  const mediumCount = allFindings.filter(f => f.severity === 'medium').length
+  const lowCount = allFindings.filter(f => f.severity === 'low').length
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <h1 className="text-3xl font-bold text-emerald-50">
-        <span role="img" aria-label="report">📊</span> Scan Report
-      </h1>
-
-      {/* Executive Summary */}
-      <Card>
-        <h2 className="text-lg font-semibold mb-6 text-emerald-50">
-          Executive Summary
-        </h2>
-
-        <div className="grid grid-cols-3 gap-6">
-          <div
-            className="text-center p-6 rounded-lg"
-            style={{ background: getScoreBgStyle(health_score || 0) }}
-          >
-            <p className="text-sm mb-2 text-emerald-200/60">
-              Health Score
-            </p>
-            <p className={`text-5xl font-bold ${getScoreColorClass(health_score || 0)}`}>
-              {health_score}/10
-            </p>
-          </div>
-
-          <div className="text-center p-6 rounded-lg bg-black/20">
-            <p className="text-sm mb-2 text-emerald-200/60">
-              TODO Items
-            </p>
-            <p className="text-5xl font-bold text-emerald-50">
-              {master_todo_backlog.length}
-            </p>
-          </div>
-
-          <div className="text-center p-6 rounded-lg bg-black/20">
-            <p className="text-sm mb-2 text-emerald-200/60">
-              Run ID
-            </p>
-            <p className="text-sm font-mono truncate text-emerald-50" title={run_id}>
-              {run_id}
-            </p>
-            {report.provider?.name && (
-              <p className="text-xs mt-2 text-emerald-200/60">
-                Provider: {report.provider.name}
-                {report.provider.model ? ` · ${report.provider.model}` : ''}
-              </p>
-            )}
-          </div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-terminal-green">❯</span>
+          <h1 className="text-lg font-bold" style={{ color: 'var(--dracula-fg)' }}>
+            scan_report
+          </h1>
         </div>
-      </Card>
+        <button
+          onClick={handleExport}
+          className="btn text-sm"
+        >
+          <span className="text-terminal-cyan">↓</span> export_artifacts
+        </button>
+      </div>
 
-      {/* Local Mode Notice */}
-      {isLocalOnly && (
-        <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-          <div className="flex items-start gap-3">
-            <span className="text-xl" role="img" aria-label="info">💡</span>
-            <div>
-              <p className="font-medium text-emerald-50">
-                Local-Only Analysis
-              </p>
-              <p className="text-sm mt-1 text-emerald-200/60">
-                This report was generated using local heuristics. For AI-powered analysis
-                and patch generation, configure an LLM provider in Settings.
-              </p>
+      {/* Health Score Card */}
+      <div 
+        className="card p-4"
+        style={{ borderColor: 'var(--dracula-comment)' }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--dracula-comment)' }}>
+              Health Score
+            </div>
+            <div 
+              className="text-5xl font-bold font-mono"
+              style={{ color: getScoreColor(health_score) }}
+            >
+              {health_score}<span className="text-2xl" style={{ color: 'var(--dracula-comment)' }}>/10</span>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <div className="font-mono text-sm" style={{ color: 'var(--dracula-comment)' }}>
+              run_id: <span style={{ color: 'var(--dracula-fg)' }}>{run_id.slice(0, 8)}...</span>
+            </div>
+            <div className="font-mono text-sm mt-1" style={{ color: 'var(--dracula-comment)' }}>
+              mode: <span style={{ color: isLocalOnly ? 'var(--dracula-green)' : 'var(--dracula-cyan)' }}>
+                {isLocalOnly ? 'local-only' : 'llm-enhanced'}
+              </span>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Findings */}
-      <Card>
-        <h2 className="text-lg font-semibold mb-6 text-emerald-50">
-          <span role="img" aria-label="findings">🔍</span> Detailed Findings
-        </h2>
-
-        {allFindings.length === 0 ? (
-          <p className="text-center py-8 opacity-50">No findings identified in this scan.</p>
-        ) : (
-          <div className="space-y-4">
-            {allFindings.map((finding) => (
-              <div
-                key={finding.id}
-                className="rounded-lg overflow-hidden bg-black/20 border-l-4"
-                style={{ borderColor: getSeverityColor(finding.severity) }}
-              >
-                {/* Header */}
-                <div className="p-4 flex items-center gap-4 border-b border-emerald-500/10">
-                  <Badge variant={finding.severity as BadgeVariant}>
-                    {finding.severity}
-                  </Badge>
-                  <span className="font-mono text-sm text-emerald-400">
-                    {finding.id}
-                  </span>
-                  <span className="text-sm text-emerald-200/60">
-                    {finding.category}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="p-4 space-y-4">
-                  <p className="font-medium text-emerald-50">
-                    {finding.title}
-                  </p>
-
-                  {/* Evidence / Snippet */}
-                  <div className="rounded-lg p-3 font-mono text-sm bg-black/30 border border-emerald-500/10">
-                    {renderEvidence(finding.evidence)}
-                  </div>
-
-                  {/* Impact & Recommendation */}
-                  <div className="space-y-2 text-sm">
-                    <p className="text-emerald-50">
-                      <span className="text-emerald-200/60">Impact: </span>
-                      {finding.impact}
-                    </p>
-                    <p className="text-emerald-50">
-                      <span className="text-emerald-400 font-medium">
-                        <span role="img" aria-label="fix">💡</span> Fix:
-                      </span>
-                      {finding.recommendation}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="pt-4 border-t border-emerald-500/10 flex justify-end">
-                    <button
-                      onClick={() => navigate('/thinktank', {
-                        state: {
-                          promptName: finding.category.toLowerCase().includes('security') ? 'code_review_security' : 'code_review_best_practices',
-                          args: { args: finding.evidence.snippet || '' }
-                        }
-                      })}
-                      className="text-xs px-3 py-1.5 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-colors border border-emerald-600/30 font-medium flex items-center gap-1.5"
-                    >
-                      <span role="img" aria-label="analyze">🧠</span> Deep Analyze
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+      {/* Summary Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        <div 
+          className="card p-3 text-center"
+          style={{ borderColor: 'var(--dracula-red)' }}
+        >
+          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--dracula-red)' }}>
+            {criticalCount}
           </div>
-        )}
-      </Card>
+          <div className="text-xs" style={{ color: 'var(--dracula-comment)' }}>Critical</div>
+        </div>
+        <div 
+          className="card p-3 text-center"
+          style={{ borderColor: 'var(--dracula-orange)' }}
+        >
+          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--dracula-orange)' }}>
+            {highCount}
+          </div>
+          <div className="text-xs" style={{ color: 'var(--dracula-comment)' }}>High</div>
+        </div>
+        <div 
+          className="card p-3 text-center"
+          style={{ borderColor: 'var(--dracula-yellow)' }}
+        >
+          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--dracula-yellow)' }}>
+            {mediumCount}
+          </div>
+          <div className="text-xs" style={{ color: 'var(--dracula-comment)' }}>Medium</div>
+        </div>
+        <div 
+          className="card p-3 text-center"
+          style={{ borderColor: 'var(--dracula-green)' }}
+        >
+          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--dracula-green)' }}>
+            {lowCount}
+          </div>
+          <div className="text-xs" style={{ color: 'var(--dracula-comment)' }}>Low</div>
+        </div>
+      </div>
 
-      {/* Master TODO Backlog */}
-      <Card>
-        <h2 className="text-lg font-semibold mb-6 text-emerald-50">
-          <span role="img" aria-label="todo">📝</span> Master TODO Backlog
-        </h2>
-
-        <div className="space-y-3">
-          {master_todo_backlog.length === 0 ? (
-            <p className="opacity-50 text-sm italic">No items in backlog.</p>
+      {/* Findings List */}
+      <div 
+        className="card"
+        style={{ borderColor: 'var(--dracula-comment)' }}
+      >
+        <div 
+          className="px-4 py-3 border-b flex items-center justify-between"
+          style={{ borderColor: 'var(--dracula-comment)' }}
+        >
+          <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
+            Findings ({allFindings.length})
+          </span>
+        </div>
+        
+        <div className="max-h-64 overflow-auto">
+          {allFindings.length === 0 ? (
+            <div className="p-4 text-center text-sm" style={{ color: 'var(--dracula-comment)' }}>
+              No findings detected
+            </div>
           ) : (
-            master_todo_backlog.map((item: TodoItem) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 p-4 rounded-lg bg-black/20 border-l-4"
-                style={{ borderColor: getSeverityColor(item.severity) }}
+            allFindings.map((finding, idx) => (
+              <div 
+                key={idx}
+                className="px-4 py-3 border-b transition-colors hover:bg-opacity-50"
+                style={{ 
+                  borderColor: 'var(--dracula-comment)',
+                  backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--dracula-bg)'
+                }}
               >
-                <span className="font-mono text-sm text-emerald-400 min-w-[80px]">
-                  {item.id}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-emerald-50 truncate">
-                    {item.title}
-                  </p>
-                  <p className="text-sm text-emerald-200/60 truncate">
-                    Root Cause: {item.root_cause}
-                  </p>
+                <div className="flex items-start gap-3">
+                  <span 
+                    className="text-xs px-2 py-0.5 rounded font-mono"
+                    style={{ 
+                      backgroundColor: `${getSeverityBadge(finding.severity)}20`,
+                      color: getSeverityBadge(finding.severity),
+                      border: `1px solid ${getSeverityBadge(finding.severity)}`
+                    }}
+                  >
+                    {finding.severity}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-mono text-sm truncate" style={{ color: 'var(--dracula-fg)' }}>
+                      {finding.title}
+                    </div>
+                    <div className="font-mono text-xs truncate" style={{ color: 'var(--dracula-comment)' }}>
+                      {finding.category} • {finding.id}
+                    </div>
+                  </div>
                 </div>
-                <Badge variant={item.severity as BadgeVariant}>
-                  {item.severity}
-                </Badge>
               </div>
             ))
           )}
         </div>
-      </Card>
+      </div>
 
-      <div className="flex gap-4">
-        <button className="btn btn-primary" onClick={handleExport}>
-          📦 Export Artifacts
-        </button>
-        <button className="btn btn-secondary" onClick={handleViewReport}>
-          📄 View Full Report
-        </button>
+      {/* TODO Backlog */}
+      <div 
+        className="card"
+        style={{ borderColor: 'var(--dracula-comment)' }}
+      >
+        <div 
+          className="px-4 py-3 border-b flex items-center justify-between"
+          style={{ borderColor: 'var(--dracula-comment)' }}
+        >
+          <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
+            TODO Backlog ({master_todo_backlog.length})
+          </span>
+        </div>
+        
+        <div className="max-h-48 overflow-auto">
+          {master_todo_backlog.length === 0 ? (
+            <div className="p-4 text-center text-sm" style={{ color: 'var(--dracula-comment)' }}>
+              No TODO items
+            </div>
+          ) : (
+            master_todo_backlog.slice(0, 10).map((todo, idx) => (
+              <div 
+                key={idx}
+                className="px-4 py-2 border-b flex items-center gap-3"
+                style={{ borderColor: 'var(--dracula-comment)' }}
+              >
+                <input type="checkbox" disabled className="opacity-50" />
+                <span 
+                  className="text-xs px-1.5 py-0.5 rounded font-mono"
+                  style={{ 
+                    backgroundColor: `${getSeverityBadge(todo.severity)}20`,
+                    color: getSeverityBadge(todo.severity)
+                  }}
+                >
+                  {todo.severity[0]}
+                </span>
+                <span className="font-mono text-sm truncate flex-1" style={{ color: 'var(--dracula-fg)' }}>
+                  {todo.title}
+                </span>
+              </div>
+            ))
+          )}
+          {master_todo_backlog.length > 10 && (
+            <div className="px-4 py-2 text-center text-xs" style={{ color: 'var(--dracula-comment)' }}>
+              ... and {master_todo_backlog.length - 10} more items
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -298,8 +298,8 @@ Use these standard categories (in order):
 
 ### NPM Package
 
-- **Package name**: `claude-prompts`
-- **Registry**: <https://www.npmjs.com/package/claude-prompts>
+- **Package name**: `agents-prompts`
+- **Registry**: <https://www.npmjs.com/package/agents-prompts>
 - **Publish from**: `server/` directory
 
 ```bash
@@ -313,9 +313,9 @@ npm publish
 Keep the footer links updated for GitHub diff navigation:
 
 ```markdown
-[Unreleased]: https://github.com/minipuft/claude-prompts-mcp/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/minipuft/claude-prompts-mcp/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/minipuft/claude-prompts-mcp/releases/tag/v1.0.0
+[Unreleased]: https://github.com/minipuft/agents-prompts-mcp/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/minipuft/agents-prompts-mcp/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/minipuft/agents-prompts-mcp/releases/tag/v1.0.0
 ```
 
 ---

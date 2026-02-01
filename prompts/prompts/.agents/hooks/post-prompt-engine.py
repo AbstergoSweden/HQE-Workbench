@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Gemini CLI Hook: AfterTool → Post prompt_engine processing
+Agents CLI Hook: AfterTool → Post prompt_engine processing
 Tracks chain/gate state and injects continuation reminders.
 """
 
@@ -10,9 +10,9 @@ from pathlib import Path
 
 import importlib.util
 
-# Delegate to core Gemini script to avoid drift
+# Delegate to core agents script to avoid drift
 EXT_ROOT = Path(__file__).resolve().parents[2]
-CORE_SCRIPT = EXT_ROOT / "hooks" / "gemini" / "after-tool.py"
+CORE_SCRIPT = EXT_ROOT / "hooks" / "agents" / "after-tool.py"
 
 def _delegate_main():
     spec = importlib.util.spec_from_file_location("after_tool", CORE_SCRIPT)

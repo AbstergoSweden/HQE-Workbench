@@ -1,0 +1,108 @@
+name: Security Advisory
+about: Report a security vulnerability privately.
+title: "[SECURITY] "
+labels: ["security", "triage"]
+projects: ["AbstergoSweden/1"]
+assignees:
+  - AbstergoSweden
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Security Vulnerability Report
+
+        Thank you for taking the time to report a security issue.
+        **This is a private report.** Only maintainers can view this.
+
+        For critical vulnerabilities, please also email **2-craze-headmen@icloud.com**
+        with subject line `[HQE-Workbench Security]`.
+
+        ### PGP Encryption (Optional but Recommended)
+
+        If you have the PGP key listed in SECURITY.md, encrypting your report
+        adds additional protection. However, this form itself is private.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Summary
+      description: Provide a brief summary of the vulnerability.
+      placeholder: e.g., SQL injection in cache lookup allows arbitrary code execution
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What security impact does this have? Who is affected?
+      placeholder: e.g., Any user with local access can read API keys from memory
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide detailed steps to reproduce the issue.
+      placeholder: |
+        1. Run `hqe scan --target ...`
+        2. Observe that ...
+        3. Attacker can ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Possible Mitigation
+      description: Do you have suggestions for how to fix this?
+      placeholder: e.g., Use parameterized queries instead of string interpolation
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this vulnerability?
+      options:
+        - Critical (RCE, data breach, system compromise)
+        - High (privilege escalation, significant data exposure)
+        - Medium (limited impact, requires specific conditions)
+        - Low (minor issue, defense in depth)
+        - Unknown (needs assessment)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: Disclosure
+      description: Responsible disclosure agreement
+      options:
+        - label: I agree to coordinate disclosure with maintainers (90-day standard)
+          required: true
+        - label: I have not publicly disclosed this vulnerability
+          required: true
+        - label: I am not aware of active exploitation in the wild
+          required: false
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact (Optional)
+      description: How can we reach you for follow-up questions?
+      placeholder: email@example.com or GitHub handle
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        ### Response Timeline
+
+        - **48 hours:** Acknowledgment of receipt
+        - **7 days:** Initial assessment
+        - **30 days:** Target fix date (varies by severity)
+        - **90 days:** Public disclosure (unless extended by mutual agreement)
+
+        Thank you for helping keep HQE-Workbench secure!

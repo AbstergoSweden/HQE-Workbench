@@ -18,4 +18,12 @@ Cargo.toml @AbstergoSweden
 
 # DevOps
 /.github/ @AbstergoSweden
+/.github/workflows/security.yml @AbstergoSweden
 /scripts/ @AbstergoSweden
+
+# Security-sensitive paths
+/crates/hqe-openai/ @AbstergoSweden
+/crates/hqe-core/src/redaction.rs @AbstergoSweden
+/crates/hqe-core/src/persistence.rs @AbstergoSweden
+SECURITY.md @AbstergoSweden
+.github/ISSUE_TEMPLATE/security_advisory.yml @AbstergoSweden

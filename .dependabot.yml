@@ -1,0 +1,112 @@
+version: 2
+updates:
+  # Rust/Cargo dependencies
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
+    open-pull-requests-limit: 10
+    groups:
+      rust-security:
+        patterns:
+          - "*"
+        update-types:
+          - "security"
+      rust-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "deps(rust)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "rust"
+    reviewers:
+      - "AbstergoSweden"
+    ignore:
+      # Pin Tauri to stable releases only
+      - dependency-name: "tauri"
+        update-types: ["version-update:semver-major"]
+
+  # Node.js/npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/apps/workbench"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
+    open-pull-requests-limit: 10
+    groups:
+      npm-security:
+        patterns:
+          - "*"
+        update-types:
+          - "security"
+      npm-development:
+        dependency-type: "development"
+        patterns:
+          - "eslint*"
+          - "@types/*"
+          - "vitest"
+          - "typescript"
+      npm-production:
+        dependency-type: "production"
+        patterns:
+          - "react*"
+          - "@tauri-apps/*"
+    commit-message:
+      prefix: "deps(node)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "javascript"
+    reviewers:
+      - "AbstergoSweden"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns:
+          - "actions/*"
+          - "dtolnay/*"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "ci-cd"
+    reviewers:
+      - "AbstergoSweden"
+
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(python)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    reviewers:
+      - "AbstergoSweden"

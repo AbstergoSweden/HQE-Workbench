@@ -1,0 +1,57 @@
+# EditorConfig for HQE-Workbench
+# https://editorconfig.org/
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = 100
+
+# Rust
+[*.rs]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+
+# Python
+[*.{py,pyi}]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+
+# TypeScript/JavaScript
+[*.{ts,tsx,js,jsx}]
+indent_style = space
+indent_size = 2
+max_line_length = 100
+
+# JSON/YAML
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# TOML (Cargo)
+[*.toml]
+indent_style = space
+indent_size = 4
+
+# Shell scripts
+[*.{sh,bash}]
+indent_style = space
+indent_size = 2
+
+# GitHub Actions
+[.github/workflows/*.yml]
+indent_style = space
+indent_size = 2
+
+# Makefiles
+[Makefile]
+indent_style = tab

@@ -1,0 +1,11 @@
+gemini
+claude
+openai
+anthropic
+gpt-3
+gpt-4
+gpt-4o
+llama
+mistral
+cohere
+palm

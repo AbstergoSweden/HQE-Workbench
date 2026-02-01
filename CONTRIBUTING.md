@@ -69,4 +69,4 @@ Thank you for your interest in contributing! We are building the future of auton
 - **Issues**: Report bugs/features on GitHub.
 - **Discussions**: Join our GitHub Discussions for deeper topics.
 
-By contributing, you agree that your contributions will be licensed under the project's MIT License.
+By contributing, you agree that your contributions will be licensed under the Apache 2.0 License.

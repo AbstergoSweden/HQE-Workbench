@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Gemini Adapter: AfterTool Hook
-Wraps the chain-tracking logic for Gemini CLI.
+Agents Adapter: AfterTool Hook
+Wraps the chain-tracking logic for Agents CLI.
 """
 
 import sys
@@ -25,7 +25,7 @@ def _project_root() -> Path:
 
 
 def _log_debug(message: str) -> None:
-    if os.getenv('GEMINI_HOOK_DEBUG', '').lower() not in {'1', 'true', 'yes'}:
+    if os.getenv('AGENTS_HOOK_DEBUG', '').lower() not in {'1', 'true', 'yes'}:
         return
     root = _project_root()
     log_dir = root / '.agents'
@@ -52,7 +52,7 @@ def parse_hook_input() -> dict:
 def main():
     hook_input = parse_hook_input()
 
-    # Gemini Input Mapping
+    # Agents Input Mapping
     tool_name = (
         hook_input.get("tool_name", "") or 
         hook_input.get("toolName", "") or

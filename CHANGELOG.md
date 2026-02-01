@@ -8,9 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **License:** Changed from MIT to Apache 2.0 for better patent protection and enterprise compatibility
+- **Security:** Hardened CI/CD workflows with SHA-pinned Actions and least-privilege permissions
+
 ### Added
 
 - Repository scaffold with community docs (Contributing, Code of Conduct, Security)
+- Governance model documentation (GOVERNANCE.md)
+- Project authors file (AUTHORS)
+- Apache 2.0 NOTICE file with third-party attribution
+- Security advisory issue template for private vulnerability reports
+- Additional CI workflows: release automation, stale issue cleanup, documentation deployment
+- EditorConfig for consistent code formatting across editors
+- Dependabot configuration for automated dependency updates
+- Pre-commit hooks for code quality and secret detection
+- CODEOWNERS updated with security-critical path ownership
 - CI workflows for build/test/lint and a security audit workflow
 - Documentation structure (architecture, threat model, provider setup)
 

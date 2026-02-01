@@ -1,0 +1,33 @@
+# HQE-Workbench Authors
+
+## Current Maintainers
+
+* **Faye Hakansdotter** <2-craze-headmen@icloud.com>
+  - Project Lead & Architecture
+  - Security & Protocol Design
+  - GitHub: @AbstergoSweden
+
+## Contributors
+
+We thank all contributors who have helped shape HQE-Workbench.
+See the git commit history for a complete list of contributors.
+
+## Emeritus Maintainers
+
+*None at this time.*
+
+## How to Add Yourself
+
+If you make a significant contribution to this project, you may add
+yourself to this file in your pull request. Follow the format:
+
+```
+* **Your Name** <email@example.com>
+  - Area of contribution
+  - GitHub: @username
+```
+
+## Contact
+
+For security-sensitive communications, use the PGP key listed in
+SECURITY.md. For general inquiries, open a GitHub Discussion.

@@ -835,6 +835,7 @@ mod tests {
             timeout_seconds: 5,
             max_retries: 0,
             rate_limit_config: None,
+            cache_enabled: false,
         };
 
         // Would need mockito or similar to test properly

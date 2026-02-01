@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-PreCompact hook: Remind Claude of active chain state before context compaction.
+PreCompact hook: Remind the agent of active chain state before context compaction.
 
 Triggers before: Context compaction (manual /compact or auto)
 
-Reads existing session state and injects a reminder so Claude knows how to
+Reads existing session state and injects a reminder so the agent knows how to
 resume the chain after compaction completes.
 """
 
@@ -19,7 +19,7 @@ from session_state import load_session_state, format_chain_reminder
 
 
 def parse_hook_input() -> dict:
-    """Parse JSON input from Claude Code hook system."""
+    """Parse JSON input from Agents Code hook system."""
     try:
         return json.load(sys.stdin)
     except json.JSONDecodeError:

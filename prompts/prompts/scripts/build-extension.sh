@@ -1,14 +1,14 @@
 #!/bin/bash
-# Build Claude Desktop Extension (.mcpb) with production deps only
+# Build Agents Desktop Extension (.mcpb) with production deps only
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 STAGING_DIR="$ROOT_DIR/.mcpb-staging"
-OUTPUT_FILE="$ROOT_DIR/claude-prompts.mcpb"
+OUTPUT_FILE="$ROOT_DIR/agents-prompts.mcpb"
 
-echo "==> Building Claude Desktop Extension"
+echo "==> Building Agents Desktop Extension"
 
 # Clean staging directory
 echo "==> Cleaning staging directory..."
@@ -46,7 +46,7 @@ echo "    Version: $VERSION"
 # Create minimal package.json with only production deps (version from source)
 cat > package.json << EOF
 {
-  "name": "claude-prompts",
+  "name": "agents-prompts",
   "version": "$VERSION",
   "type": "module",
   "main": "dist/index.js",

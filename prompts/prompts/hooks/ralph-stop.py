@@ -2,11 +2,11 @@
 """
 Stop hook: Shell verification for Ralph Wiggum-style autonomous loops.
 
-When Claude tries to stop, this hook:
+When the agent tries to stop, this hook:
 1. Reads runtime-state/verify-active.json (written by MCP server)
 2. Runs the verification command
-3. If PASS (exit 0): Allows Claude to stop
-4. If FAIL (exit != 0): Blocks stop, feeds error back to Claude
+3. If PASS (exit 0): Allows the agent to stop
+4. If FAIL (exit != 0): Blocks stop, feeds error back to the agent
 
 This integrates with the :: verify:"command" loop:true syntax in prompt_engine.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 
 def get_verify_state_path() -> Path:
     """Get path to verify-active.json from MCP server's runtime-state."""
-    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", str(Path(__file__).parent.parent))
+    plugin_root = os.environ.get("AGENTS_PLUGIN_ROOT", str(Path(__file__).parent.parent))
     return Path(plugin_root) / "server" / "runtime-state" / "verify-active.json"
 
 
@@ -96,7 +96,7 @@ def run_verification(command: str, timeout: int, working_dir: str = None) -> dic
 
 
 def format_error_feedback(result: dict, verify_state: dict) -> str:
-    """Format error feedback message for Claude."""
+    """Format error feedback message for the agent."""
     config = verify_state["config"]
     state = verify_state["state"]
     iteration = state["iteration"] + 1
@@ -188,6 +188,6 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        # On error, allow stop (don't break Claude)
+        # On error, allow stop (don't break the agent)
         print(f"[Verify] Hook error: {e}", file=sys.stderr)
         sys.exit(0)

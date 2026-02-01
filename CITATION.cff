@@ -7,7 +7,7 @@ authors:
     website: https://github.com/AbstergoSweden
 repository-code: https://github.com/AbstergoSweden/HQE-Workbench
 url: https://github.com/AbstergoSweden/HQE-Workbench
-license: MIT
+license: Apache-2.0
 version: 0.1.0
 date-released: 2026-01-30
 keywords:

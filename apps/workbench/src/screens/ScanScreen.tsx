@@ -4,7 +4,6 @@ import { invoke } from '@tauri-apps/api/core'
 import { useRepoStore, useScanStore, useReportStore } from '../store'
 import { HqeReport, ProviderProfile } from '../types'
 import { useToast } from '../context/ToastContext'
-import { Card } from '../components/ui/Card'
 
 export function ScanScreen() {
   const navigate = useNavigate()
@@ -54,7 +53,7 @@ export function ScanScreen() {
     reset()
 
     try {
-      setPhase('Ingesting repository...')
+      setPhase('ingesting repository...')
       setProgress(10)
 
       let veniceParamsValue: Record<string, unknown> | null = null
@@ -91,7 +90,7 @@ export function ScanScreen() {
             : null,
       }
 
-      setPhase('Analyzing code with local heuristics...')
+      setPhase('analyzing code with local heuristics...')
       setProgress(40)
 
       const report = await invoke<HqeReport>('scan_repo', {
@@ -99,13 +98,12 @@ export function ScanScreen() {
         config,
       })
 
-      setPhase('Generating artifacts...')
+      setPhase('generating artifacts...')
       setProgress(80)
 
       setReport(report)
 
       setProgress(100)
-      // UI-PERF-002: Set isScanning false BEFORE navigation to prevent stale UI state
       setTimeout(() => {
         setScanning(false)
         navigate('/report')
@@ -121,15 +119,19 @@ export function ScanScreen() {
   if (!path) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-emerald-200/60 mb-4">
+        <div 
+          className="card p-6 text-center"
+          style={{ borderColor: 'var(--dracula-comment)' }}
+        >
+          <div className="text-terminal-red mb-4 text-lg">✗ error</div>
+          <p className="text-sm mb-4" style={{ color: 'var(--dracula-comment)' }}>
             No repository selected
           </p>
           <button
             onClick={() => navigate('/')}
             className="btn btn-primary"
           >
-            Go to Welcome
+            <span>❯</span> go_home
           </button>
         </div>
       </div>
@@ -137,80 +139,103 @@ export function ScanScreen() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold mb-8 text-emerald-50">
-        Scan Repository
-      </h1>
+    <div className="max-w-4xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-6">
+        <span className="text-terminal-green">❯</span>
+        <h1 className="text-lg font-bold" style={{ color: 'var(--dracula-fg)' }}>
+          scan_repository
+        </h1>
+      </div>
 
-      <Card>
-        <h2 className="text-lg font-semibold mb-4 text-emerald-50">
-          Repository
-        </h2>
-        <div className="flex items-center gap-4 p-4 rounded-lg bg-black/20">
-          <div className="text-4xl" role="img" aria-label="folder">📁</div>
-          <div>
-            <p className="font-medium text-emerald-50">
+      {/* Repository Info */}
+      <div 
+        className="card p-4"
+        style={{ borderColor: 'var(--dracula-comment)' }}
+      >
+        <div className="flex items-center gap-2 mb-3 text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
+          <span>📁</span>
+          Target Repository
+        </div>
+        <div className="flex items-center gap-3 p-3" style={{ background: 'var(--dracula-bg)' }}>
+          <span className="text-terminal-cyan text-lg">📂</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-mono text-sm truncate" style={{ color: 'var(--dracula-fg)' }}>
               {name}
             </p>
-            <p className="text-sm text-emerald-200/60">
+            <p className="font-mono text-xs truncate" style={{ color: 'var(--dracula-comment)' }}>
               {path}
             </p>
           </div>
         </div>
-      </Card>
+      </div>
 
-      <Card>
-        <h2 className="text-lg font-semibold mb-4 text-emerald-50">
-          Scan Options
-        </h2>
+      {/* Scan Configuration */}
+      <div 
+        className="card p-4"
+        style={{ borderColor: 'var(--dracula-comment)' }}
+      >
+        <div className="flex items-center gap-2 mb-4 text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
+          <span>⚙</span>
+          Configuration
+        </div>
 
         <div className="space-y-4">
-          <label className="flex items-center gap-3 cursor-pointer">
+          {/* Local Only Toggle */}
+          <label className="flex items-start gap-3 cursor-pointer p-3 transition-colors hover:bg-opacity-50" style={{ background: 'var(--dracula-bg)' }}>
             <input
               type="checkbox"
               checked={localOnly}
               onChange={(e) => setLocalOnly(e.target.checked)}
-              className="w-5 h-5 rounded border-emerald-500/50 bg-black/20 text-emerald-500 focus:ring-emerald-500"
             />
-            <div>
-              <span className="text-emerald-50">
-                Local-only mode
-              </span>
-              <p className="text-sm text-emerald-200/60">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-terminal-green font-mono text-sm">--local-only</span>
+                <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)', color: 'var(--dracula-green)' }}>
+                  recommended
+                </span>
+              </div>
+              <p className="text-xs mt-1" style={{ color: 'var(--dracula-comment)' }}>
                 No data sent to external providers. Uses local heuristics only.
               </p>
             </div>
           </label>
 
-          <div>
-            <label className="block mb-2 text-emerald-50">
-              Max files to analyze
-            </label>
+          {/* Max Files Slider */}
+          <div className="p-3" style={{ background: 'var(--dracula-bg)' }}>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-terminal-cyan font-mono text-sm">
+                --max-files
+              </label>
+              <span className="font-mono text-sm" style={{ color: 'var(--dracula-fg)' }}>
+                {maxFiles}
+              </span>
+            </div>
             <input
               type="range"
               min="10"
               max="100"
               value={maxFiles}
               onChange={(e) => setMaxFiles(parseInt(e.target.value))}
-              className="w-full accent-emerald-500"
             />
-            <p className="text-sm mt-1 text-emerald-200/60">
-              {maxFiles} files
-            </p>
           </div>
 
+          {/* Provider Profile */}
           {!localOnly && (
-            <div>
-              <label className="block mb-2 text-emerald-50">
-                Provider Profile
+            <div className="p-3" style={{ background: 'var(--dracula-bg)' }}>
+              <label className="text-terminal-purple font-mono text-sm block mb-2">
+                --provider
               </label>
               {loadingProfiles ? (
-                <p className="text-sm text-emerald-200/60">Loading profiles...</p>
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--dracula-comment)' }}>
+                  <span className="animate-spin">⟳</span>
+                  loading profiles...
+                </div>
               ) : profiles.length > 0 ? (
                 <select
                   value={selectedProfile}
                   onChange={(e) => setSelectedProfile(e.target.value)}
-                  className="input w-full"
+                  className="input"
                 >
                   {profiles.map((p) => (
                     <option key={p.name} value={p.name}>
@@ -219,84 +244,108 @@ export function ScanScreen() {
                   ))}
                 </select>
               ) : (
-                <p className="text-sm text-emerald-200/60">
+                <p className="text-sm" style={{ color: 'var(--dracula-comment)' }}>
                   No provider profiles found. Add one in Settings.
                 </p>
               )}
             </div>
           )}
 
+          {/* Venice Options */}
           {!localOnly && isVeniceProfile && (
-            <div className="space-y-3 rounded-lg border border-emerald-500/10 bg-black/20 p-4">
-              <h3 className="text-sm font-semibold text-emerald-50">
-                Venice Advanced Options
-              </h3>
+            <div className="p-3 space-y-3" style={{ background: 'var(--dracula-bg)' }}>
+              <div className="text-terminal-orange font-mono text-sm">
+                # Venice Advanced Options
+              </div>
 
               <div>
-                <label className="block mb-2 text-emerald-50">
-                  Venice Parameters (JSON)
+                <label className="text-xs block mb-1" style={{ color: 'var(--dracula-comment)' }}>
+                  --venice-params (JSON)
                 </label>
                 <textarea
                   value={veniceParameters}
                   onChange={(e) => setVeniceParameters(e.target.value)}
                   placeholder='{"enable_web_search": "off", "include_venice_system_prompt": true}'
-                  className="input w-full min-h-[110px]"
+                  className="input min-h-[80px] text-xs"
                 />
-                <p className="text-sm mt-1 text-emerald-200/60">
-                  Optional. Provide a JSON object for Venice-specific request parameters.
-                </p>
               </div>
 
               <div>
-                <label className="block mb-2 text-emerald-50">
-                  Parallel Tool Calls
+                <label className="text-xs block mb-1" style={{ color: 'var(--dracula-comment)' }}>
+                  --parallel-tool-calls
                 </label>
                 <select
                   value={parallelToolCalls}
-                  onChange={(e) =>
-                    setParallelToolCalls(e.target.value as 'default' | 'true' | 'false')
-                  }
-                  className="input w-full"
+                  onChange={(e) => setParallelToolCalls(e.target.value as 'default' | 'true' | 'false')}
+                  className="input"
                 >
-                  <option value="default">Use provider default</option>
-                  <option value="true">Enable</option>
-                  <option value="false">Disable</option>
+                  <option value="default">default</option>
+                  <option value="true">true</option>
+                  <option value="false">false</option>
                 </select>
               </div>
             </div>
           )}
         </div>
-      </Card>
+      </div>
 
+      {/* Scan Progress or Start Button */}
       {isScanning ? (
-        <Card>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="animate-spin text-2xl text-emerald-500" role="img" aria-label="loading">
-              ⏳
-            </div>
-            <div>
-              <p className="font-medium text-emerald-50">
-                Scanning...
+        <div 
+          className="card p-4"
+          style={{ borderColor: 'var(--dracula-comment)' }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-terminal-cyan animate-pulse">⟳</span>
+            <div className="flex-1">
+              <p className="font-mono text-sm" style={{ color: 'var(--dracula-fg)' }}>
+                scanning...
               </p>
-              <p className="text-sm text-emerald-200/60">
+              <p className="font-mono text-xs" style={{ color: 'var(--dracula-comment)' }}>
                 {phase}
               </p>
             </div>
+            <span className="font-mono text-sm text-terminal-green">{progress}%</span>
           </div>
-          <div className="w-full rounded-full h-2 bg-black/20">
+          
+          {/* Progress Bar */}
+          <div 
+            className="h-2 w-full"
+            style={{ background: 'var(--dracula-bg)' }}
+          >
             <div
-              className="h-2 rounded-full transition-all duration-300 bg-emerald-500"
-              style={{ width: `${progress}%` }}
+              className="h-full transition-all duration-300"
+              style={{ 
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, var(--dracula-green), var(--dracula-cyan))'
+              }}
             />
           </div>
-        </Card>
+          
+          {/* Terminal Output Lines */}
+          <div className="mt-4 font-mono text-xs space-y-1" style={{ color: 'var(--dracula-comment)' }}>
+            <div className="flex gap-2">
+              <span>[{progress >= 10 ? '✓' : ' '}]</span>
+              <span style={{ color: progress >= 10 ? 'var(--dracula-green)' : undefined }}>ingest repository</span>
+            </div>
+            <div className="flex gap-2">
+              <span>[{progress >= 40 ? '✓' : ' '}]</span>
+              <span style={{ color: progress >= 40 ? 'var(--dracula-green)' : undefined }}>local heuristics</span>
+            </div>
+            <div className="flex gap-2">
+              <span>[{progress >= 80 ? '✓' : ' '}]</span>
+              <span style={{ color: progress >= 80 ? 'var(--dracula-green)' : undefined }}>generate artifacts</span>
+            </div>
+          </div>
+        </div>
       ) : (
         <button
           onClick={handleScan}
           disabled={!localOnly && !selectedProfile}
-          className="btn btn-primary w-full py-4 text-lg flex items-center justify-center gap-2"
+          className="btn btn-primary w-full py-3 flex items-center justify-center gap-2"
         >
-          <span role="img" aria-label="rocket">🚀</span> Start Scan
+          <span className="text-terminal-green">❯</span>
+          <span>execute_scan</span>
         </button>
       )}
     </div>

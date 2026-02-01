@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Extract changelog section for this version
+          awk "/^## \\[$VERSION\\]/ {flag=1; next} /^## \\[/ {flag=0} flag" CHANGELOG.md > RELEASE_NOTES.md || echo "See CHANGELOG.md for release notes." > RELEASE_NOTES.md
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1.1.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.changelog.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(steps.changelog.outputs.version, 'alpha') || contains(steps.changelog.outputs.version, 'beta') || contains(steps.changelog.outputs.version, 'rc') }}
+
+  build-macos:
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
+      - name: Setup Node
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/workbench/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          brew install libiconv create-dmg
+          pip3 install pyyaml jsonschema
+
+      - name: Install Node dependencies
+        working-directory: apps/workbench
+        run: npm ci
+
+      - name: Build Universal Binary
+        run: |
+          cargo build --release --target aarch64-apple-darwin -p hqe
+          cargo build --release --target x86_64-apple-darwin -p hqe
+          lipo -create -output target/release/hqe \
+            target/aarch64-apple-darwin/release/hqe \
+            target/x86_64-apple-darwin/release/hqe
+
+      - name: Sign Binary (ad-hoc)
+        run: codesign --force --deep --sign - target/release/hqe
+
+      - name: Build Tauri App
+        working-directory: apps/workbench
+        run: npm run tauri:build -- --target universal-apple-darwin
+        env:
+          CI: true
+
+      - name: Package CLI
+        run: |
+          cd target/release
+          tar czf hqe-macos-universal.tar.gz hqe
+
+      - name: Upload CLI Binary
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: target/release/hqe-macos-universal.tar.gz
+          asset_name: hqe-${{ github.ref_name }}-macos-universal.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Tauri DMG
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: target/release/bundle/dmg/*.dmg
+          asset_name: HQE-Workbench-${{ github.ref_name }}.dmg
+          asset_content_type: application/x-apple-diskimage
+
+  build-linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev libgtk-3-dev pkg-config
+
+      - name: Build
+        run: cargo build --release -p hqe
+
+      - name: Package
+        run: |
+          cd target/release
+          tar czf hqe-linux-x86_64.tar.gz hqe
+
+      - name: Upload
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: target/release/hqe-linux-x86_64.tar.gz
+          asset_name: hqe-${{ github.ref_name }}-linux-x86_64.tar.gz
+          asset_content_type: application/gzip
+
+  crates-io:
+    needs: [create-release, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: "!contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc')"
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish hqe-core
+        run: cargo publish -p hqe-core --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+
+      - name: Publish hqe-openai
+        run: cargo publish -p hqe-openai --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+
+      - name: Publish hqe-git
+        run: cargo publish -p hqe-git --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+
+      - name: Publish hqe
+        run: cargo publish -p hqe --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true

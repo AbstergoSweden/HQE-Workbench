@@ -5,8 +5,6 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { Card } from '../components/ui/Card'
-import { Skeleton } from '../components/ui/Skeleton'
 import { useToast } from '../context/ToastContext'
 
 interface PromptTool {
@@ -212,106 +210,178 @@ export const ThinktankScreen: FC = () => {
     showAgentPrompts ? 0 : searchFilteredPrompts.filter((p) => isAgentPrompt(p.name)).length
 
   return (
-    <div className="flex h-full gap-6">
+    <div className="flex h-full gap-4">
       {/* Sidebar: Prompt List */}
-      <Card className="w-1/3 flex flex-col p-0 overflow-hidden">
-        <div className="p-4 border-b border-emerald-500/10 flex flex-col gap-3">
+      <div 
+        className="w-80 flex flex-col card p-0 overflow-hidden"
+        style={{ borderColor: 'var(--dracula-comment)' }}
+      >
+        <div 
+          className="p-3 border-b flex flex-col gap-3"
+          style={{ borderColor: 'var(--dracula-comment)' }}
+        >
           <div className="flex justify-between items-center">
-            <span className="font-bold flex items-center gap-2 text-emerald-50">
-              <span role="img" aria-label="library">📚</span> Library
+            <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
+              Prompt Library
             </span>
             <button
               onClick={loadPrompts}
-              className="text-xs hover:bg-emerald-500/10 p-1.5 rounded transition-colors text-emerald-200/60"
+              className="text-xs p-1 rounded transition-colors hover:text-terminal-cyan"
               disabled={loading}
+              style={{ color: 'var(--dracula-comment)' }}
               title="Refresh Library"
             >
-              {loading ? <span role="img" aria-label="loading">⏳</span> : <span role="img" aria-label="refresh">🔃</span>}
+              {loading ? <span className="animate-spin">⟳</span> : '↻'}
             </button>
           </div>
-          <label className="inline-flex items-center gap-2 text-xs text-emerald-200/70">
+          
+          <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
             <input
               type="checkbox"
               checked={showAgentPrompts}
               onChange={(e) => setShowAgentPrompts(e.target.checked)}
-              className="w-4 h-4 rounded border-emerald-500/50 bg-black/20 text-emerald-500 focus:ring-emerald-500"
             />
-            Show agent/tool prompts (advanced)
+            Show agent prompts
           </label>
+          
           <input
             type="text"
             placeholder="Search prompts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full p-2 text-sm rounded bg-black/20 border border-emerald-500/10 focus:border-emerald-500/50 outline-none transition-colors text-emerald-50"
+            className="input text-sm"
           />
         </div>
 
         <div className="flex-1 overflow-auto">
           {loading ? (
-            <div className="p-4 space-y-4">
-              <Skeleton className="h-12 w-full" count={6} />
+            <div className="p-4 space-y-2">
+              {[...Array(6)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className="h-10 w-full animate-pulse"
+                  style={{ background: 'var(--dracula-current-line)' }}
+                />
+              ))}
             </div>
           ) : prompts.length === 0 ? (
-            <div className="p-8 text-center text-sm text-emerald-200/40">No prompts found in /prompts</div>
+            <div className="p-8 text-center text-sm" style={{ color: 'var(--dracula-comment)' }}>
+              No prompts found in /prompts
+            </div>
           ) : visiblePrompts.length === 0 ? (
-            <div className="p-8 text-center text-sm text-emerald-200/40">No matching prompts</div>
+            <div className="p-8 text-center text-sm" style={{ color: 'var(--dracula-comment)' }}>
+              No matching prompts
+            </div>
           ) : (
             <div className="flex flex-col">
               {visiblePrompts.map(p => (
                 <button
                   key={p.name}
                   onClick={() => handleSelectPrompt(p)}
-                  className={`p-4 text-left text-sm border-b border-emerald-500/10 transition-all hover:bg-emerald-500/5 ${selectedPrompt?.name === p.name
-                    ? 'bg-emerald-500/10 border-l-4 border-l-emerald-500 pl-[1.25rem]'
-                    : 'border-l-4 border-l-transparent'
-                    }`}
+                  className="p-3 text-left text-sm border-b transition-all duration-150"
+                  style={{
+                    borderColor: 'var(--dracula-comment)',
+                    backgroundColor: selectedPrompt?.name === p.name 
+                      ? 'var(--dracula-bg)' 
+                      : 'transparent',
+                    borderLeft: selectedPrompt?.name === p.name 
+                      ? '2px solid var(--dracula-green)' 
+                      : '2px solid transparent',
+                    color: selectedPrompt?.name === p.name 
+                      ? 'var(--dracula-green)' 
+                      : 'var(--dracula-fg)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedPrompt?.name !== p.name) {
+                      e.currentTarget.style.backgroundColor = 'var(--dracula-current-line)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedPrompt?.name !== p.name) {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                    }
+                  }}
                 >
-                  <div className="font-bold mb-1 truncate flex items-center gap-2 text-emerald-50">
+                  <div className="font-mono text-sm truncate flex items-center gap-2">
                     {p.name.replace(/_/g, ' ')}
                     {isAgentPrompt(p.name) && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200/80 border border-amber-500/20">
+                      <span 
+                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        style={{ 
+                          background: 'var(--dracula-orange)20',
+                          color: 'var(--dracula-orange)',
+                          border: '1px solid var(--dracula-orange)'
+                        }}
+                      >
                         AGENT
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-emerald-200/60 line-clamp-2">{p.description}</div>
+                  <div className="text-xs truncate mt-1" style={{ color: 'var(--dracula-comment)' }}>
+                    {p.description}
+                  </div>
                 </button>
               ))}
             </div>
           )}
         </div>
-        <div className="p-2 border-t border-emerald-500/10 text-center text-xs text-emerald-200/40 bg-black/10">
-          {visiblePrompts.length} prompts available{hiddenAgentCount > 0 ? ` (${hiddenAgentCount} hidden)` : ''}
+        
+        <div 
+          className="p-2 border-t text-center text-xs"
+          style={{ borderColor: 'var(--dracula-comment)', color: 'var(--dracula-comment)' }}
+        >
+          {visiblePrompts.length} prompts{hiddenAgentCount > 0 ? ` (${hiddenAgentCount} hidden)` : ''}
         </div>
-      </Card>
+      </div>
 
       {/* Main Content: Input & Execution */}
-      <div className="flex-1 flex flex-col gap-6">
+      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
         {!selectedPrompt ? (
-          <div className="flex-1 flex items-center justify-center border-2 border-dashed border-emerald-500/10 rounded-lg">
-            <div className="text-center text-emerald-200/40">
-              <div className="text-4xl mb-4"><span role="img" aria-label="brain">🧠</span></div>
+          <div 
+            className="flex-1 flex items-center justify-center card"
+            style={{ borderColor: 'var(--dracula-comment)', borderStyle: 'dashed' }}
+          >
+            <div className="text-center" style={{ color: 'var(--dracula-comment)' }}>
+              <div className="text-4xl mb-4">🧠</div>
               <p>Select a prompt from the library to begin</p>
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+          <div className="flex-1 flex flex-col gap-4 overflow-hidden">
             {/* Input Section */}
-            <Card className="p-6">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-emerald-50">
-                <span>{selectedPrompt.name.replace(/_/g, ' ')}</span>
-                <span className="text-xs font-normal text-emerald-200/40">({selectedPrompt.name})</span>
-              </h2>
+            <div 
+              className="card p-4"
+              style={{ borderColor: 'var(--dracula-comment)' }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-terminal-green">❯</span>
+                <h2 className="font-mono text-lg" style={{ color: 'var(--dracula-fg)' }}>
+                  {selectedPrompt.name.replace(/_/g, ' ')}
+                </h2>
+                <span className="font-mono text-xs" style={{ color: 'var(--dracula-comment)' }}>
+                  ({selectedPrompt.name})
+                </span>
+              </div>
+              
               {isAgentPrompt(selectedPrompt.name) && (
-                <div className="mb-4 text-sm rounded border border-amber-500/20 bg-amber-500/10 text-amber-200/90 p-3">
-                  This prompt is designed for an agent runtime with tool/file access. Thinktank will only send text to the model.
-                  Expect partial output unless you paste all required context into the inputs.
+                <div 
+                  className="mb-4 text-sm p-3 rounded"
+                  style={{ 
+                    background: 'var(--dracula-orange)10',
+                    border: '1px solid var(--dracula-orange)30',
+                    color: 'var(--dracula-orange)'
+                  }}
+                >
+                  ⚠ This prompt is designed for an agent runtime with tool/file access. 
+                  Thinktank will only send text to the model.
                 </div>
               )}
-              <p className="text-sm mb-6 text-emerald-200/80">{selectedPrompt.description}</p>
+              
+              <p className="text-sm mb-4" style={{ color: 'var(--dracula-comment)' }}>
+                {selectedPrompt.description}
+              </p>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 {Object.entries(selectedPrompt.input_schema?.properties || {}).map(([key, schema]) => {
                   const type = getSchemaType(schema)
                   const enumValues = Array.isArray(schema.enum) ? schema.enum : null
@@ -321,9 +391,10 @@ export const ThinktankScreen: FC = () => {
                     <div key={key} className="flex flex-col gap-1">
                       <label
                         htmlFor={inputId}
-                        className="text-xs font-bold uppercase tracking-wider text-emerald-200/60"
+                        className="text-xs font-mono"
+                        style={{ color: 'var(--dracula-cyan)' }}
                       >
-                        {key}
+                        --{key}
                       </label>
                       {enumValues ? (
                         <select
@@ -333,7 +404,7 @@ export const ThinktankScreen: FC = () => {
                             const selected = enumValues.find((opt) => String(opt) === e.target.value)
                             setArgs((prev) => ({ ...prev, [key]: selected ?? e.target.value }))
                           }}
-                          className="p-3 text-sm rounded border focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                          className="input"
                         >
                           {enumValues.map((opt) => (
                             <option key={String(opt)} value={String(opt)}>
@@ -342,16 +413,15 @@ export const ThinktankScreen: FC = () => {
                           ))}
                         </select>
                       ) : type === 'boolean' ? (
-                        <div className="inline-flex items-center gap-2 text-sm text-emerald-200/80">
+                        <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--dracula-fg)' }}>
                           <input
                             id={inputId}
                             type="checkbox"
                             checked={Boolean(value)}
                             onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.checked }))}
-                            className="w-4 h-4 rounded border-emerald-500/50 bg-black/20 text-emerald-500 focus:ring-emerald-500"
                           />
                           {schema.description || `Enable ${key}`}
-                        </div>
+                        </label>
                       ) : type === 'number' || type === 'integer' ? (
                         <input
                           id={inputId}
@@ -359,7 +429,7 @@ export const ThinktankScreen: FC = () => {
                           step={type === 'integer' ? '1' : 'any'}
                           value={value === undefined || value === null ? '' : String(value)}
                           onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
-                          className="p-3 text-sm rounded border focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                          className="input"
                           placeholder={schema.description || `Enter ${key}...`}
                         />
                       ) : type === 'object' || type === 'array' || key === 'args' || (type === 'string' && !schema.description?.includes('short')) ? (
@@ -367,7 +437,7 @@ export const ThinktankScreen: FC = () => {
                           id={inputId}
                           value={value === undefined ? '' : String(value)}
                           onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
-                          className="p-3 text-sm rounded border min-h-[120px] focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                          className="input min-h-[100px]"
                           placeholder={schema.description || `Enter ${key}...`}
                         />
                       ) : (
@@ -376,7 +446,7 @@ export const ThinktankScreen: FC = () => {
                           type="text"
                           value={value === undefined ? '' : String(value)}
                           onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
-                          className="p-3 text-sm rounded border focus:ring-1 focus:ring-emerald-500 outline-none bg-black/20 border-emerald-500/10 text-emerald-50"
+                          className="input"
                           placeholder={schema.description || `Enter ${key}...`}
                         />
                       )}
@@ -388,49 +458,72 @@ export const ThinktankScreen: FC = () => {
                   <button
                     onClick={handleExecute}
                     disabled={executing}
-                    className="btn btn-primary flex items-center gap-2 shadow-lg active:scale-95"
+                    className="btn btn-primary flex items-center gap-2"
                   >
                     {executing ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        Thinking...
+                        <span className="animate-spin">⟳</span>
+                        Executing...
                       </>
                     ) : (
                       <>
-                        <span role="img" aria-label="rocket">🚀</span> Run Prompt
+                        <span className="text-terminal-green">❯</span>
+                        Execute Prompt
                       </>
                     )}
                   </button>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* Output Section */}
             {(result || executing || error) && (
-              <Card className="flex-1 flex flex-col p-0 overflow-hidden">
-                <div className="p-3 border-b border-emerald-500/10 text-xs font-bold uppercase tracking-widest flex justify-between items-center bg-black/5 text-emerald-200/60">
-                  <span>Results</span>
+              <div 
+                className="flex-1 card flex flex-col p-0 overflow-hidden"
+                style={{ borderColor: 'var(--dracula-comment)' }}
+              >
+                <div 
+                  className="p-3 border-b flex justify-between items-center"
+                  style={{ borderColor: 'var(--dracula-comment)' }}
+                >
+                  <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
+                    Output
+                  </span>
                   {result && (
                     <button
                       onClick={() => navigator.clipboard.writeText(result)}
-                      className="hover:text-emerald-500 transition-colors"
+                      className="text-xs hover:text-terminal-cyan transition-colors"
+                      style={{ color: 'var(--dracula-comment)' }}
                     >
-                      Copy Output
+                      Copy
                     </button>
                   )}
                 </div>
 
-                <div className="flex-1 p-6 overflow-auto bg-black/20">
+                <div className="flex-1 p-4 overflow-auto" style={{ background: 'var(--dracula-bg)' }}>
                   {error ? (
-                    <div className="p-4 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
-                      {error}
+                    <div 
+                      className="p-4 rounded text-sm"
+                      style={{ 
+                        background: 'var(--dracula-red)10',
+                        border: '1px solid var(--dracula-red)30',
+                        color: 'var(--dracula-red)'
+                      }}
+                    >
+                      ✗ {error}
                     </div>
                   ) : executing ? (
-                    <div className="flex flex-col gap-4">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-5/6" />
-                      <Skeleton className="h-4 w-2/3" />
+                    <div className="flex flex-col gap-2">
+                      {[...Array(4)].map((_, i) => (
+                        <div 
+                          key={i}
+                          className="h-4 animate-pulse"
+                          style={{ 
+                            background: 'var(--dracula-current-line)',
+                            width: `${60 + Math.random() * 40}%`
+                          }}
+                        />
+                      ))}
                     </div>
                   ) : (
                     <div className="prose prose-invert max-w-none prose-sm">
@@ -461,7 +554,7 @@ export const ThinktankScreen: FC = () => {
                     </div>
                   )}
                 </div>
-              </Card>
+              </div>
             )}
           </div>
         )}
