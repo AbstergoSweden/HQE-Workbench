@@ -39,7 +39,8 @@ export function SettingsScreen() {
   }, [toast])
 
   useEffect(() => {
-    loadProfiles()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- This is a standard fetch-on-mount pattern with async callback
+    void loadProfiles()
   }, [loadProfiles])
 
   const resetForm = () => {
@@ -216,7 +217,7 @@ export function SettingsScreen() {
 
       <div className="grid grid-cols-3 gap-4">
         {/* Profile List */}
-        <div 
+        <div
           className="card p-4 col-span-1"
           style={{ borderColor: 'var(--dracula-comment)' }}
         >
@@ -242,14 +243,14 @@ export function SettingsScreen() {
                   onClick={() => handleSelectProfile(p.name)}
                   className="w-full text-left px-3 py-2 text-sm transition-all duration-150"
                   style={{
-                    backgroundColor: selectedProfile === p.name 
-                      ? 'var(--dracula-bg)' 
+                    backgroundColor: selectedProfile === p.name
+                      ? 'var(--dracula-bg)'
                       : 'transparent',
-                    borderLeft: selectedProfile === p.name 
-                      ? '2px solid var(--dracula-green)' 
+                    borderLeft: selectedProfile === p.name
+                      ? '2px solid var(--dracula-green)'
                       : '2px solid transparent',
-                    color: selectedProfile === p.name 
-                      ? 'var(--dracula-green)' 
+                    color: selectedProfile === p.name
+                      ? 'var(--dracula-green)'
                       : 'var(--dracula-fg)',
                   }}
                 >
@@ -271,7 +272,7 @@ export function SettingsScreen() {
         </div>
 
         {/* Profile Form */}
-        <div 
+        <div
           className="card p-4 col-span-2"
           style={{ borderColor: 'var(--dracula-comment)' }}
         >
@@ -412,7 +413,7 @@ export function SettingsScreen() {
                 <span className="text-terminal-green">❯</span>
                 {saving ? 'saving...' : (originalProfileName ? 'update' : 'create')}
               </button>
-              
+
               <button
                 onClick={handleTestProfile}
                 disabled={testing || !name || !url}
@@ -420,7 +421,7 @@ export function SettingsScreen() {
               >
                 {testing ? '...' : 'test'}
               </button>
-              
+
               {originalProfileName && (
                 <button
                   onClick={handleDelete}

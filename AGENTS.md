@@ -1,8 +1,9 @@
 # HQE-Workbench — Agent Context
 
-> **Generated:** 2026-01-31 | **Sources:** `Cargo.toml`, `package.json`, `apps/workbench/package.json`, `apps/workbench/src-tauri/Cargo.toml`, `cli/hqe/Cargo.toml`, `.github/workflows/ci.yml`
+> **Generated:** 2026-01-31 | **Sources:** `Cargo.toml`, `package.json`, `desktop/workbench/package.json`, `desktop/workbench/src-tauri/Cargo.toml`, `cli/hqe/Cargo.toml`, `.github/workflows/ci.yml`
 
 ## Quick Start
+
 ```bash
 # Bootstrap macOS environment
 ./scripts/bootstrap_macos.sh
@@ -20,7 +21,7 @@ cargo build --release -p hqe
 |-----------|-------|--------|
 | Language | Rust 2021 Edition | `Cargo.toml:19` |
 | Rust Version | 1.75+ | `Cargo.toml:23` |
-| TypeScript | 5.3+ (Workbench), 5.9+ (Prompts) | `apps/workbench/package.json:45`, `prompts/prompts/server/package.json:143` |
+| TypeScript | 5.3+ (Workbench), 5.9+ (Prompts) | `desktop/workbench/package.json:45`, `prompts/prompts/server/package.json:143` |
 | Python | 3.11+ (protocol validation) | `.github/workflows/ci.yml` |
 | Platform | macOS 12.0+ | `README.md:108` |
 | License | MIT | `Cargo.toml:21` |
@@ -32,7 +33,7 @@ cargo build --release -p hqe
 | Package | Path | Purpose | Type |
 |---------|------|---------|------|
 | `hqe` | `cli/hqe` | CLI entry point | Binary |
-| `hqe-workbench-app` | `apps/workbench/src-tauri` | Tauri desktop app | Binary |
+| `hqe-workbench-app` | `desktop/workbench/src-tauri` | Tauri desktop app | Binary |
 | `hqe-core` | `crates/hqe-core` | Scan pipeline & engine | Library |
 | `hqe-openai` | `crates/hqe-openai` | OpenAI-compatible client | Library |
 | `hqe-git` | `crates/hqe-git` | Git operations | Library |
@@ -64,7 +65,7 @@ cargo build --release -p hqe
 | Check | `cargo clippy --workspace -- -D warnings` | Lint | `.github/workflows/ci.yml` |
 | Format | `cargo fmt --all -- --check` | Format check | `.github/workflows/ci.yml` |
 
-### Workbench UI (apps/workbench)
+### Workbench UI (desktop/workbench)
 
 | Intent | Command | Notes | Source |
 |--------|---------|-------|--------|
@@ -90,13 +91,13 @@ cargo build --release -p hqe
 | Aspect | Details | Source |
 |--------|---------|--------|
 | CLI Entry | `cli/hqe/src/main.rs` | `cli/hqe/Cargo.toml:14` |
-| Workbench UI Entry | `apps/workbench/src/main.tsx` | `vite.config.ts` |
-| Tauri Backend | `apps/workbench/src-tauri/src/lib.rs` | `Cargo.toml` |
+| Workbench UI Entry | `desktop/workbench/src/main.tsx` | `vite.config.ts` |
+| Tauri Backend | `desktop/workbench/src-tauri/src/lib.rs` | `Cargo.toml` |
 | Protocol Schema | `protocol/hqe-engineer.yaml` | Embedded in CLI binary |
-| State Management | Zustand 4.4 | `apps/workbench/package.json:27` |
-| Styling | Tailwind CSS 3.3 | `apps/workbench/package.json:44` |
-| Build Tool | Vite 5 | `apps/workbench/package.json:47` |
-| Framework | React 18.2, Tauri 2.0 | `apps/workbench/package.json:21,31` |
+| State Management | Zustand 4.4 | `desktop/workbench/package.json:27` |
+| Styling | Tailwind CSS 3.3 | `desktop/workbench/package.json:44` |
+| Build Tool | Vite 5 | `desktop/workbench/package.json:47` |
+| Framework | React 18.2, Tauri 2.0 | `desktop/workbench/package.json:21,31` |
 | Key Dependencies | Tokio, Clap, Serde, Reqwest | `Cargo.toml:27-48` |
 
 ## Environment Variables
@@ -104,7 +105,7 @@ cargo build --release -p hqe
 | Variable | Required | Purpose | Source |
 |----------|----------|---------|--------|
 | `HQE_OPENAI_TIMEOUT_SECONDS` | No | Override LLM timeout | `crates/hqe-openai/src/lib.rs` |
-| `HQE_PROMPTS_DIR` | No | Custom prompts directory | `apps/workbench/src-tauri/src/prompts.rs` |
+| `HQE_PROMPTS_DIR` | No | Custom prompts directory | `desktop/workbench/src-tauri/src/prompts.rs` |
 
 ## Critical Files
 
@@ -112,12 +113,12 @@ cargo build --release -p hqe
 |------|---------|
 | `Cargo.toml` | Workspace configuration |
 | `cli/hqe/src/main.rs` | CLI implementation |
-| `apps/workbench/src-tauri/src/lib.rs` | Tauri commands |
+| `desktop/workbench/src-tauri/src/lib.rs` | Tauri commands |
 | `protocol/hqe-engineer.yaml` | HQE Protocol v3 definition |
 | `protocol/hqe-schema.json` | Protocol JSON schema |
 | `scripts/bootstrap_macos.sh` | Environment setup |
-| `apps/workbench/vite.config.ts` | Vite configuration |
-| `apps/workbench/tailwind.config.js` | Tailwind theme |
+| `desktop/workbench/vite.config.ts` | Vite configuration |
+| `desktop/workbench/tailwind.config.js` | Tailwind theme |
 
 ## CI/CD
 
@@ -133,7 +134,7 @@ cargo build --release -p hqe
 cargo test --workspace && cargo clippy --workspace
 
 # Verify Workbench
-cd apps/workbench && npm install && npm run lint && npm test
+cd desktop/workbench && npm install && npm run lint && npm test
 
 # Full preflight
 npm run preflight
@@ -147,6 +148,7 @@ npm run preflight
 ---
 
 ## Verification Checklist
+
 - [ ] All commands tested locally
 - [ ] All file paths verified to exist
 - [ ] No hallucinated dependencies

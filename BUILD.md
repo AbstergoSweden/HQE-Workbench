@@ -15,7 +15,7 @@
 
 ## Project Structure
 
-```
+```text
 hqe-workbench/
 ├── protocol/                    # HQE Protocol v3 (verbatim from ZIP)
 │   ├── hqe-engineer.yaml       # Protocol definition
@@ -45,7 +45,7 @@ hqe-workbench/
 │   └── hqe/
 │       └── src/main.rs         # CLI commands
 │
-├── apps/                        # Desktop applications
+├── desktop/                     # Desktop applications
 │   └── workbench/              # Tauri v2 macOS app
 │       ├── src/                # React + TypeScript UI
 │       │   ├── screens/        # Page components
@@ -90,6 +90,7 @@ hqe-workbench/
 ```
 
 This installs:
+
 - Homebrew (if needed)
 - Node.js
 - Rust toolchain
@@ -117,11 +118,13 @@ cargo build --release -p hqe
 ### 4. Build Desktop App
 
 Development mode:
+
 ```bash
 ./scripts/dev.sh
 ```
 
 Release build:
+
 ```bash
 ./scripts/build_dmg.sh
 ```
@@ -164,7 +167,7 @@ hqe config test openai
 
 ```bash
 # Terminal 1: Tauri dev
-cd apps/workbench && npm run tauri:dev
+cd desktop/workbench && npm run tauri:dev
 
 # Terminal 2: Run tests
 cargo test --workspace --watch
@@ -196,21 +199,25 @@ cargo clippy --workspace -- -D warnings
 ## Troubleshooting
 
 ### "No module named 'yaml'"
+
 ```bash
 pip3 install pyyaml jsonschema
 ```
 
 ### "command not found: cargo"
+
 ```bash
 source $HOME/.cargo/env
 ```
 
 ### "No such file: tauri.conf.json"
+
 ```bash
-cd apps/workbench && npm install
+cd desktop/workbench && npm install
 ```
 
 ### macOS Gatekeeper blocks app
+
 ```bash
 xattr -cr /Applications/HQE\ Workbench.app
 ```
@@ -230,6 +237,7 @@ xattr -cr /Applications/HQE\ Workbench.app
 ### macOS Universal Binary
 
 The build produces a universal binary supporting:
+
 - Apple Silicon (arm64)
 - Intel (x86_64)
 
@@ -237,11 +245,13 @@ The build produces a universal binary supporting:
 
 The build script doesn't include Apple Developer signing.
 For distribution, you'll need:
+
 - Apple Developer account
 - Signing certificate
 - Notarization (optional but recommended)
 
 To sign manually:
+
 ```bash
 codesign --force --deep --sign "Developer ID Application: Your Name" HQE\ Workbench.app
 ```

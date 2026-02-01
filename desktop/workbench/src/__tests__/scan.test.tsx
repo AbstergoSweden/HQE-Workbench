@@ -50,7 +50,7 @@ describe('ScanScreen', () => {
 
     renderWithProviders(<ScanScreen />, '/scan')
 
-    const startButton = screen.getByRole('button', { name: /start scan/i })
+    const startButton = screen.getByRole('button', { name: /execute_scan/i })
     await userEvent.click(startButton)
 
     await waitFor(() => {

@@ -28,7 +28,7 @@ cargo fmt --all -- --check
 Workbench UI:
 
 ```bash
-cd apps/workbench
+cd desktop/workbench
 npm run lint
 npm test
 npm run tauri:dev
@@ -43,7 +43,7 @@ Release build (macOS DMG):
 ## Repository Layout (What Lives Where)
 
 - `cli/hqe/`: CLI entry point (`hqe`).
-- `apps/workbench/`: Tauri + React desktop app.
+- `desktop/workbench/`: Tauri + React desktop app.
 - `crates/`: core libraries (pipeline, provider client, artifacts, git).
 - `protocol/`: protocol YAML + JSON schema.
 - `prompts/`: prompt library and the MCP prompts server.
@@ -65,9 +65,8 @@ GitHub Actions runs roughly the same checks as `npm run preflight`:
 - `cargo test --workspace`
 - `cargo clippy --workspace -- -D warnings`
 - `cargo fmt -- --check`
-- `cd apps/workbench && npm run lint`
-- `cd apps/workbench && npm test`
+- `cd desktop/workbench && npm run lint`
+- `cd desktop/workbench && npm test`
 
 Protocol validation uses `./scripts/validate_protocol.sh` and requires Python deps (`pyyaml`,
 `jsonschema`).
-

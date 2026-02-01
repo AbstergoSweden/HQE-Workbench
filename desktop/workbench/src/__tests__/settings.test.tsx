@@ -32,7 +32,7 @@ describe('SettingsScreen', () => {
     const baseUrl = screen.getByPlaceholderText('https://api.openai.com/v1')
     await userEvent.type(baseUrl, 'https://api.venice.ai/api/v1')
 
-    const discover = screen.getByRole('button', { name: /discover models/i })
+    const discover = screen.getByRole('button', { name: /^discover$/i })
     await userEvent.click(discover)
 
     await waitFor(() => {
@@ -57,8 +57,8 @@ describe('SettingsScreen', () => {
       if (cmd === 'list_provider_profiles') {
         return Promise.resolve([profile])
       }
-      if (cmd === 'get_provider_profile') {
-        return Promise.resolve([profile, 'stored-secret'])
+      if (cmd === 'get_api_key') {
+        return Promise.resolve('stored-secret')
       }
       if (cmd === 'discover_models') {
         return Promise.resolve({ models: [] })
@@ -68,29 +68,22 @@ describe('SettingsScreen', () => {
 
     renderWithProviders(<SettingsScreen />)
 
-    const profileOption = await screen.findByRole('option', { name: /select a profile/i })
-    const profileSelect = profileOption.closest('select')
-    if (!profileSelect) {
-      throw new Error('Profile select not found')
-    }
-    await userEvent.selectOptions(profileSelect, 'Venice')
+    // Wait for profile to appear as a button in the profiles list
+    const profileButton = await screen.findByRole('button', { name: /Venice/i })
+    await userEvent.click(profileButton)
 
+    // Verify that get_api_key was called to retrieve the stored API key
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith('get_provider_profile', { name: 'Venice' })
+      expect(invoke).toHaveBeenCalledWith('get_api_key', { apiKeyId: 'api_key:Venice' })
     })
 
-    const discover = screen.getByRole('button', { name: /discover models/i })
+    const discover = screen.getByRole('button', { name: /^discover$/i })
     await userEvent.click(discover)
 
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith('discover_models', {
-        input: {
-          base_url: 'https://api.venice.ai/api/v1',
-          headers: { 'X-Test': '1' },
-          api_key: 'stored-secret',
-          timeout_s: 60,
-          no_cache: false,
-        },
+        baseUrl: 'https://api.venice.ai/api/v1',
+        apiKey: 'stored-secret',
       })
     })
   })
