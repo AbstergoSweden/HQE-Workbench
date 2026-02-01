@@ -16,9 +16,9 @@ jobs:
         name: Rust Security Audit
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+            - uses: actions/checkout@v4
 
-            - uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # stable
+            - uses: dtolnay/rust-toolchain@stable
               with:
                   toolchain: stable
 
