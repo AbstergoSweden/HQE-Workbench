@@ -143,8 +143,7 @@ jobs:
     needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
     if: "!contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'rc')"
-    env:
-      CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -152,6 +151,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Publish hqe-core
+        env:
+          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
         run: cargo publish -p hqe-core --token $CRATES_IO_TOKEN
         continue-on-error: true
 
