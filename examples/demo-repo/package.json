@@ -166,7 +166,7 @@
     "whatwg-url": "^11.0.0",
     "tr46": "^4.1.1",
     "webidl-conversions": "^7.0.0",
-    "fast-xml-parser": "^4.2.5",
+    "fast-xml-parser": "^5.3.4",
     "validator": "^13.9.0",
     "normalize-url": "^8.0.0",
     "is-url": "^1.2.4",
