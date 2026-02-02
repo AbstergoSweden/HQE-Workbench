@@ -78,6 +78,7 @@ export class ShellVerifyExecutor {
     this.debug = config.debug ?? false;
 
     if (this.debug) {
+      // eslint-disable-next-line no-console
       console.error('[ShellVerifyExecutor] Initialized with config:', {
         defaultTimeout: this.defaultTimeout,
         maxTimeout: this.maxTimeout,
@@ -96,10 +97,10 @@ export class ShellVerifyExecutor {
     const startTime = Date.now();
     const { command, workingDir, timeout, env } = gate;
 
-    if (!command || command.trim() === '') {
+    if (command.trim() === '') {
       return this.createResult({
         startTime,
-        command: command ?? '',
+        command,
         passed: false,
         exitCode: -1,
         stdout: '',
@@ -125,8 +126,11 @@ export class ShellVerifyExecutor {
     const resolvedEnv = this.buildEnvironment(env);
 
     if (this.debug) {
+      // eslint-disable-next-line no-console
       console.error(`[ShellVerifyExecutor] Executing: ${command}`);
+      // eslint-disable-next-line no-console
       console.error(`[ShellVerifyExecutor] Working directory: ${resolvedWorkingDir}`);
+      // eslint-disable-next-line no-console
       console.error(`[ShellVerifyExecutor] Timeout: ${resolvedTimeout}ms`);
     }
 
@@ -167,8 +171,9 @@ export class ShellVerifyExecutor {
     const safeEnv: Record<string, string> = {};
 
     for (const key of SAFE_ENV_ALLOWLIST) {
-      if (process.env[key] !== undefined) {
-        safeEnv[key] = process.env[key]!;
+      const envVal = process.env[key];
+      if (envVal !== undefined) {
+        safeEnv[key] = envVal;
       }
     }
 
@@ -211,21 +216,21 @@ export class ShellVerifyExecutor {
         }, 1000);
       }, timeout);
 
-      proc.stdout?.on('data', (data: Buffer) => {
+      proc.stdout.on('data', (data: Buffer) => {
         stdout += data.toString();
         if (stdout.length > SHELL_OUTPUT_MAX_CHARS * 2) {
           stdout = stdout.slice(-SHELL_OUTPUT_MAX_CHARS * 2);
         }
       });
 
-      proc.stderr?.on('data', (data: Buffer) => {
+      proc.stderr.on('data', (data: Buffer) => {
         stderr += data.toString();
         if (stderr.length > SHELL_OUTPUT_MAX_CHARS * 2) {
           stderr = stderr.slice(-SHELL_OUTPUT_MAX_CHARS * 2);
         }
       });
 
-      proc.stdin?.end();
+      proc.stdin.end();
 
       proc.on('close', (code) => {
         clearTimeout(timeoutId);
@@ -297,7 +302,7 @@ export class ShellVerifyExecutor {
       command,
     };
 
-    if (timedOut) {
+    if (timedOut === true) {
       result.timedOut = true;
     }
 
@@ -323,9 +328,7 @@ let defaultExecutor: ShellVerifyExecutor | null = null;
  * Creates one if it doesn't exist.
  */
 export function getDefaultShellVerifyExecutor(): ShellVerifyExecutor {
-  if (!defaultExecutor) {
-    defaultExecutor = new ShellVerifyExecutor();
-  }
+  defaultExecutor ??= new ShellVerifyExecutor();
   return defaultExecutor;
 }
 
