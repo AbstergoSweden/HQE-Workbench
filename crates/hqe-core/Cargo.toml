@@ -33,14 +33,14 @@ regex = { workspace = true }
 secrecy = { workspace = true }
 sha2 = "0.10"
 keyring = "3"
-rand = "0.8"
+rand = "0.9"
 hex = "0.4"
 
 # Filesystem
 dirs = { workspace = true }
 
 # Persistence
-rusqlite = { version = "0.30", features = ["bundled-sqlcipher"] }
+rusqlite = { version = "0.38", features = ["bundled-sqlcipher"] }
 
 # HQE internal
 hqe-protocol = { path = "../hqe-protocol" }
