@@ -784,7 +784,10 @@ impl RepoScanner {
         Ok(findings)
     }
 
-    /// Read file content with size limit
+    /// Read file content with size limit.
+    ///
+    /// This method ensures the path is within the repository root and
+    /// handles canonicalization to prevent path traversal.
     pub async fn read_file(&self, relative_path: &str) -> crate::Result<Option<String>> {
         // Prevent path traversal by ensuring the resolved path is within the root directory
         let full_path = self.root_path.join(relative_path);
@@ -805,13 +808,17 @@ impl RepoScanner {
             )));
         }
 
-        let metadata = tokio::fs::metadata(&canonical_full_path).await?;
+        let metadata = tokio::fs::metadata(&canonical_full_path)
+            .await
+            .map_err(crate::HqeError::Io)?;
         if metadata.len() > self.max_file_size as u64 {
             warn!("File too large to read: {}", relative_path);
             return Ok(None);
         }
 
-        let content = tokio::fs::read_to_string(&canonical_full_path).await?;
+        let content = tokio::fs::read_to_string(&canonical_full_path)
+            .await
+            .map_err(crate::HqeError::Io)?;
         Ok(Some(content))
     }
 }

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useToast } from '../context/ToastContext'
 import { ConversationPanel } from '../components/ConversationPanel'
 import { usePrompts, usePromptExecution } from '../hooks'
-import { ChatMessage, PromptCategory } from '../types'
+import { ChatMessage } from '../types'
 
 // Extended Prompt interface with metadata
 interface PromptTool {
@@ -128,7 +128,7 @@ const isAgentPrompt = (name: string): boolean => {
 export const ThinktankScreen: FC = () => {
   const location = useLocation()
   const toast = useToast()
-  
+
   // Local UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [showAgentPrompts, setShowAgentPrompts] = useState(false)
@@ -139,11 +139,11 @@ export const ThinktankScreen: FC = () => {
   const [initialMessages, setInitialMessages] = useState<ChatMessage[]>([])
 
   // Use the enhanced prompts hook
-  const { 
-    prompts, 
+  const {
+    prompts,
     filteredPrompts,
-    loading, 
-    error: promptsError, 
+    loading,
+    error: promptsError,
     refresh,
     categories,
     countByCategory,
@@ -162,23 +162,10 @@ export const ThinktankScreen: FC = () => {
     reset,
   } = usePromptExecution()
 
-  // Handle incoming navigation state
-  useEffect(() => {
-    const state = location.state as { promptName?: string; args?: Record<string, unknown> } | null
-    if (state?.promptName && prompts.length > 0) {
-      const target = prompts.find(p => 
-        p.name === state.promptName || `prompts__${p.name}` === state.promptName
-      )
-      if (target) {
-        if (isAgentPrompt(target.name)) {
-          setShowAgentPrompts(true)
-        }
-        handleSelectPrompt(target, state.args)
-      }
-    }
-  }, [location.state, prompts])
-
   const handleSelectPrompt = useCallback((prompt: PromptTool, initialArgs?: Record<string, unknown>) => {
+    if (isAgentPrompt(prompt.name)) {
+      setShowAgentPrompts(true)
+    }
     setSelectedPrompt(prompt)
     reset()
     setChatMode(false)
@@ -207,6 +194,22 @@ export const ThinktankScreen: FC = () => {
     setArgs(newArgs)
   }, [reset])
 
+  // Handle incoming navigation state
+  useEffect(() => {
+    const state = location.state as { promptName?: string; args?: Record<string, unknown> } | null
+    if (state?.promptName && prompts.length > 0) {
+      const target = prompts.find(p =>
+        p.name === state.promptName || `prompts__${p.name}` === state.promptName
+      )
+      if (target) {
+        // Wrap in a microtask to avoid synchronous setState during render
+        Promise.resolve().then(() => {
+          handleSelectPrompt(target, state.args)
+        })
+      }
+    }
+  }, [location.state, prompts, handleSelectPrompt])
+
   const handleExecute = async () => {
     if (!selectedPrompt) return
 
@@ -222,14 +225,14 @@ export const ThinktankScreen: FC = () => {
 
       // Create initial message for potential chat transition
       const assistantMessage: ChatMessage = {
-        id: `report-${Date.now()}`,
+        id: `report-stable`,
         session_id: '',
         role: 'assistant',
         content: response,
         timestamp: new Date().toISOString(),
       }
       setInitialMessages([assistantMessage])
-    } catch (err) {
+    } catch {
       toast.error('Prompt execution failed')
     }
   }
@@ -258,11 +261,11 @@ export const ThinktankScreen: FC = () => {
               ← Back to prompt
             </button>
           </div>
-          
+
           <h3 className="font-mono text-sm mb-2" style={{ color: 'var(--dracula-fg)' }}>
             {selectedPrompt?.name.replace(/_/g, ' ')}
           </h3>
-          
+
           {selectedPrompt?.category && (
             <span
               className="text-xs px-2 py-0.5 rounded w-fit mb-3"
@@ -275,7 +278,7 @@ export const ThinktankScreen: FC = () => {
               {selectedPrompt.category}
             </span>
           )}
-          
+
           <p className="text-xs mb-4" style={{ color: 'var(--dracula-comment)' }}>
             {selectedPrompt?.description}
           </p>
@@ -469,9 +472,9 @@ export const ThinktankScreen: FC = () => {
       {/* Main Content: Input & Execution */}
       <div className="flex-1 flex flex-col gap-4 overflow-hidden">
         {displayedError && (
-          <div 
+          <div
             className="p-3 rounded text-sm"
-            style={{ 
+            style={{
               background: 'var(--dracula-red)20',
               border: '1px solid var(--dracula-red)',
               color: 'var(--dracula-red)'
@@ -695,7 +698,7 @@ export const ThinktankScreen: FC = () => {
                 <div className="flex-1 overflow-hidden" style={{ background: 'var(--dracula-bg)' }}>
                   <ConversationPanel
                     initialMessages={result ? [{
-                      id: `report-${Date.now()}`,
+                      id: `report-stable`,
                       session_id: '',
                       role: 'assistant',
                       content: result,

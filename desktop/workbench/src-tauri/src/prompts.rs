@@ -60,13 +60,15 @@ pub async fn get_available_prompts(app: AppHandle) -> Result<Vec<PromptToolInfo>
 
 /// List all available prompt tools with rich metadata
 #[command]
-pub async fn get_available_prompts_with_metadata(app: AppHandle) -> Result<Vec<PromptToolInfoWithMetadata>, String> {
+pub async fn get_available_prompts_with_metadata(
+    app: AppHandle,
+) -> Result<Vec<PromptToolInfoWithMetadata>, String> {
     let prompts_dir = get_prompts_dir(&app).ok_or("Could not locate prompts directory")?;
 
     // Try to use the enhanced registry if available
     let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
     let mut registry = hqe_mcp::registry_v2::PromptRegistry::new(loader);
-    
+
     match registry.load_all() {
         Ok(()) => {
             let prompts = registry.all();
@@ -316,8 +318,7 @@ fn contains_loadable_prompts(dir: &Path) -> bool {
 /// Validate template key names to prevent injection attacks.
 /// Only allows alphanumeric characters, underscores, and hyphens.
 fn is_valid_key_name(key: &str) -> bool {
-    !key.is_empty() 
-        && key.len() <= 64  // Reasonable length limit
+    !key.is_empty()
         && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
         // Prevent keys that could break out of template delimiters
         && !key.contains("{{")
@@ -326,7 +327,7 @@ fn is_valid_key_name(key: &str) -> bool {
 }
 
 /// Substitute template placeholders with values.
-/// 
+///
 /// # Security
 /// - Key names are validated to prevent template injection
 /// - Values are sanitized to remove potentially dangerous content
@@ -338,10 +339,13 @@ fn substitute_template(template: &str, args: &serde_json::Value) -> String {
         for (k, v) in obj {
             // Validate key name to prevent injection attacks
             if !is_valid_key_name(k) {
-                eprintln!("Warning: Invalid template key name '{}', skipping substitution", k);
+                eprintln!(
+                    "Warning: Invalid template key name '{}', skipping substitution",
+                    k
+                );
                 continue;
             }
-            
+
             let key = format!("{{{{{}}}}}", k); // {{key}}
             let val = v
                 .as_str()

@@ -3,12 +3,10 @@
 //! Provides chat session management, message handling, and persistence
 //! via the encrypted local database.
 
-use hqe_core::encrypted_db::{
-    ChatMessage, ChatOperations, ChatSession, EncryptedDb, MessageRole,
-};
+use hqe_core::encrypted_db::{ChatMessage, ChatOperations, ChatSession, MessageRole};
 use serde::{Deserialize, Serialize};
 use tauri::command;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 use uuid::Uuid;
 
 /// Chat session DTO for frontend
@@ -17,6 +15,7 @@ pub struct ChatSessionDto {
     pub id: String,
     pub repo_path: Option<String>,
     pub prompt_id: Option<String>,
+    pub name: String,
     pub provider: String,
     pub model: String,
     pub created_at: String,
@@ -44,27 +43,28 @@ pub async fn create_chat_session(
     provider: String,
     model: String,
 ) -> Result<ChatSessionDto, String> {
-    info!(repo_path = ?repo_path, provider = %provider, "Creating chat session");
-
     let db = state.db.lock().await;
-
+    let now = chrono::Utc::now();
     let session = ChatSession {
         id: Uuid::new_v4().to_string(),
         repo_path,
         prompt_id,
+        name: "New Chat".to_string(),
         provider,
         model,
-        created_at: chrono::Utc::now(),
-        updated_at: chrono::Utc::now(),
+        created_at: now,
+        updated_at: now,
         metadata: None,
     };
 
-    db.create_session(&session).map_err(|e| e.to_string())?;
+    db.create_session(&session)
+        .map_err(|e: hqe_core::encrypted_db::EncryptedDbError| e.to_string())?;
 
     Ok(ChatSessionDto {
         id: session.id,
         repo_path: session.repo_path,
         prompt_id: session.prompt_id,
+        name: session.name,
         provider: session.provider,
         model: session.model,
         created_at: session.created_at.to_rfc3339(),
@@ -93,6 +93,7 @@ pub async fn list_chat_sessions(
             id: s.id.clone(),
             repo_path: s.repo_path,
             prompt_id: s.prompt_id,
+            name: s.name,
             provider: s.provider,
             model: s.model,
             created_at: s.created_at.to_rfc3339(),
@@ -125,6 +126,7 @@ pub async fn get_chat_session(
         id: session.id.clone(),
         repo_path: session.repo_path,
         prompt_id: session.prompt_id,
+        name: session.name,
         provider: session.provider,
         model: session.model,
         created_at: session.created_at.to_rfc3339(),
@@ -260,13 +262,15 @@ pub async fn send_chat_message(
         session_id: session_id.clone(),
         parent_id: Some(user_message.id.clone()),
         role: MessageRole::Assistant,
-        content: "This is a placeholder response. Full LLM integration coming in Phase 3.".to_string(),
+        content: "This is a placeholder response. Full LLM integration coming in Phase 3."
+            .to_string(),
         context_refs: None,
         timestamp: chrono::Utc::now(),
         metadata: None,
     };
 
-    db.add_message(&assistant_message).map_err(|e| e.to_string())?;
+    db.add_message(&assistant_message)
+        .map_err(|e| e.to_string())?;
 
     Ok(ChatMessageDto {
         id: assistant_message.id,
@@ -295,7 +299,7 @@ pub async fn delete_chat_session(
 /// Get available provider specs
 #[command]
 pub async fn get_provider_specs() -> Result<Vec<serde_json::Value>, String> {
-    use hqe_openai::prefilled::{all_specs, AuthScheme};
+    use hqe_openai::prefilled::all_specs;
 
     let specs = all_specs();
     let json_specs: Vec<serde_json::Value> = specs
@@ -329,7 +333,7 @@ pub async fn apply_provider_spec(
     profile_name: Option<String>,
 ) -> Result<serde_json::Value, String> {
     use hqe_openai::prefilled::get_spec;
-    use hqe_openai::profile::{DefaultProfilesStore, ProfileManager, ProfilesStore};
+    use hqe_openai::profile::{ProfileError, ProfileManager};
     use hqe_protocol::models::ProviderProfile;
 
     info!(spec_id = %spec_id, "Applying provider spec");
@@ -353,7 +357,7 @@ pub async fn apply_provider_spec(
     let manager = ProfileManager::default();
     manager
         .save_profile(profile, Some(&api_key))
-        .map_err(|e| e.to_string())?;
+        .map_err(|e: ProfileError| e.to_string())?;
 
     Ok(serde_json::json!({
         "profile_name": profile_name,

@@ -12,18 +12,22 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, info, warn};
 
-/// Errors that can occur during registry operations
+/// Errors that can occur during registry operations.
 #[derive(Debug, thiserror::Error)]
 pub enum RegistryError {
+    /// Underlying I/O failure.
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// Failure to load prompt files.
     #[error("Load error: {0}")]
     Load(String),
 
+    /// Schema or metadata validation failure.
     #[error("Validation error: {0}")]
     Validation(String),
 
+    /// The requested prompt could not be found.
     #[error("Prompt not found: {0}")]
     NotFound(String),
 }
@@ -158,18 +162,27 @@ fn default_true() -> bool {
     true
 }
 
-/// Input type for validation and UI rendering
+/// Input type for validation and UI rendering.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum InputType {
+    /// A single line of text.
     String,
+    /// A whole number.
     Integer,
+    /// A true/false value.
     Boolean,
+    /// Arbitrary JSON data.
     Json,
+    /// Source code snippet.
     Code,
+    /// Path to a file or directory.
     FilePath,
+    /// Multi-line text area.
     TextArea,
+    /// Dropdown selection.
     Select,
+    /// Multiple selection from list.
     MultiSelect,
 }
 
@@ -288,8 +301,9 @@ impl PromptRegistry {
         let id = tool.definition.name.clone();
 
         // Detect if agent prompt
-        let is_agent_prompt =
-            id.starts_with("conductor_") || id.starts_with("cli_security_") || id.starts_with("agent_");
+        let is_agent_prompt = id.starts_with("conductor_")
+            || id.starts_with("cli_security_")
+            || id.starts_with("agent_");
 
         // Determine category from name patterns
         let category = self.detect_category(&id);
@@ -302,14 +316,15 @@ impl PromptRegistry {
 
         // Build title from ID
         let title = id
-            .replace('_', " ")
-            .replace('-', " ")
+            .replace(['_', '-'], " ")
             .split_whitespace()
             .map(|w| {
                 let mut chars = w.chars();
                 match chars.next() {
                     None => String::new(),
-                    Some(first) => first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase(),
+                    Some(first) => {
+                        first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase()
+                    }
                 }
             })
             .collect::<Vec<_>>()
@@ -358,7 +373,10 @@ impl PromptRegistry {
             PromptCategory::Performance
         } else if lower.contains("dep") || lower.contains("package") || lower.contains("import") {
             PromptCategory::Dependencies
-        } else if lower.contains("agent") || lower.contains("conductor") || lower.contains("cli_security") {
+        } else if lower.contains("agent")
+            || lower.contains("conductor")
+            || lower.contains("cli_security")
+        {
             PromptCategory::Agent
         } else {
             PromptCategory::Custom
@@ -366,7 +384,10 @@ impl PromptRegistry {
     }
 
     /// Extract input specs from JSON schema
-    fn extract_input_specs(&self, schema: &serde_json::Value) -> Result<Vec<InputSpec>, RegistryError> {
+    fn extract_input_specs(
+        &self,
+        schema: &serde_json::Value,
+    ) -> Result<Vec<InputSpec>, RegistryError> {
         let mut specs = Vec::new();
 
         if let Some(properties) = schema.get("properties").and_then(|p| p.as_object()) {
@@ -419,7 +440,11 @@ impl PromptRegistry {
         if !inputs.is_empty() {
             explanation.push_str("\n\n## Inputs\n\n");
             for input in inputs {
-                let req_indicator = if input.required { "**Required**" } else { "Optional" };
+                let req_indicator = if input.required {
+                    "**Required**"
+                } else {
+                    "Optional"
+                };
                 explanation.push_str(&format!(
                     "- **{}** ({}): {}\n",
                     input.name, req_indicator, input.description
@@ -433,7 +458,8 @@ impl PromptRegistry {
             }
         }
 
-        explanation.push_str("\n## Output\n\nThe AI will provide analysis based on the inputs provided.");
+        explanation
+            .push_str("\n## Output\n\nThe AI will provide analysis based on the inputs provided.");
 
         explanation
     }
@@ -465,7 +491,10 @@ impl PromptRegistry {
                 p.metadata.id.to_lowercase().contains(&lower_query)
                     || p.metadata.title.to_lowercase().contains(&lower_query)
                     || p.metadata.description.to_lowercase().contains(&lower_query)
-                    || p.metadata.tags.iter().any(|t| t.to_lowercase().contains(&lower_query))
+                    || p.metadata
+                        .tags
+                        .iter()
+                        .any(|t| t.to_lowercase().contains(&lower_query))
             })
             .collect()
     }
@@ -474,7 +503,11 @@ impl PromptRegistry {
     pub fn sorted(&self) -> Vec<&EnrichedPrompt> {
         let mut prompts: Vec<_> = self.prompts.values().collect();
         prompts.sort_by(|a, b| {
-            let cat_ord = a.metadata.category.sort_order().cmp(&b.metadata.category.sort_order());
+            let cat_ord = a
+                .metadata
+                .category
+                .sort_order()
+                .cmp(&b.metadata.category.sort_order());
             if cat_ord != std::cmp::Ordering::Equal {
                 return cat_ord;
             }
@@ -503,14 +536,20 @@ impl PromptRegistry {
             .values()
             .filter(|p| {
                 p.metadata.compatibility.providers.is_empty()
-                    || p.metadata.compatibility.providers.contains(&provider_kind.to_string())
+                    || p.metadata
+                        .compatibility
+                        .providers
+                        .contains(&provider_kind.to_string())
             })
             .collect()
     }
 
     /// Get all agent prompts (for internal use)
     pub fn agent_prompts(&self) -> Vec<&EnrichedPrompt> {
-        self.prompts.values().filter(|p| p.is_agent_prompt).collect()
+        self.prompts
+            .values()
+            .filter(|p| p.is_agent_prompt)
+            .collect()
     }
 
     /// Get all non-agent prompts (for user display)
@@ -547,10 +586,22 @@ mod tests {
             registry.detect_category("code_quality_check"),
             PromptCategory::Quality
         );
-        assert_eq!(registry.detect_category("explain_function"), PromptCategory::Explain);
-        assert_eq!(registry.detect_category("refactor_code"), PromptCategory::Refactor);
-        assert_eq!(registry.detect_category("generate_tests"), PromptCategory::Test);
-        assert_eq!(registry.detect_category("conductor_task"), PromptCategory::Agent);
+        assert_eq!(
+            registry.detect_category("explain_function"),
+            PromptCategory::Explain
+        );
+        assert_eq!(
+            registry.detect_category("refactor_code"),
+            PromptCategory::Refactor
+        );
+        assert_eq!(
+            registry.detect_category("generate_tests"),
+            PromptCategory::Test
+        );
+        assert_eq!(
+            registry.detect_category("conductor_task"),
+            PromptCategory::Agent
+        );
     }
 
     #[test]

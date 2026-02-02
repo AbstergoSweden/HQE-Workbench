@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import type { PromptMetadata, PromptCategory } from '../types'
+import type { PromptCategory } from '../types'
 
 export interface Prompt {
   name: string
@@ -68,7 +68,7 @@ export interface UsePromptsReturn {
  */
 export function usePrompts(options: UsePromptsOptions = {}): UsePromptsReturn {
   const { includeAgentPrompts = false, category, search } = options
-  
+
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,7 +78,7 @@ export function usePrompts(options: UsePromptsOptions = {}): UsePromptsReturn {
   const loadPrompts = useCallback(async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       // Try enhanced prompts with metadata first
       let loaded: Prompt[] = []
@@ -96,7 +96,7 @@ export function usePrompts(options: UsePromptsOptions = {}): UsePromptsReturn {
         const result = await invoke<Prompt[]>('get_available_prompts')
         loaded = result || []
       }
-      
+
       setPrompts(loaded)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
@@ -118,14 +118,14 @@ export function usePrompts(options: UsePromptsOptions = {}): UsePromptsReturn {
 
     // Filter out agent prompts unless included
     if (!includeAgentPrompts) {
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         !p.name.startsWith('conductor_') && !p.name.startsWith('cli_security_')
       )
     }
 
     // Filter by category
     if (category && category !== 'all') {
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.category?.toLowerCase() === category.toLowerCase()
       )
     }

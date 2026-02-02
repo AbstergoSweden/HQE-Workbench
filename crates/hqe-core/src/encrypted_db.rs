@@ -41,7 +41,7 @@ pub enum EncryptedDbError {
     /// Database migration error
     #[error("Migration error: {0}")]
     Migration(String),
-    
+
     /// Validation error
     #[error("Validation error: {0}")]
     Validation(String),
@@ -129,7 +129,7 @@ impl EncryptedDb {
     }
 
     /// Open database with SQLCipher encryption
-    /// 
+    ///
     /// # Security
     /// The key is validated to be a 64-character hex string before use,
     /// preventing SQL injection attacks.
@@ -138,7 +138,7 @@ impl EncryptedDb {
         if !is_valid_hex_key(key) {
             return Err(EncryptedDbError::InvalidKey);
         }
-        
+
         let conn = Connection::open(&config.db_path)?;
 
         // Configure SQLCipher encryption using pragma_update to avoid SQL injection
@@ -186,9 +186,10 @@ impl EncryptedDb {
 
     /// Initialize database schema
     fn initialize_schema(&self) -> Result<()> {
-        let conn = self.conn.lock().map_err(|_| {
-            EncryptedDbError::Encryption("Mutex poisoned".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
 
         // Chat sessions table
         conn.execute(
@@ -282,26 +283,25 @@ impl EncryptedDb {
         info!("Rotating encryption key");
 
         let new_key = Self::generate_key();
-        
+
         // Validate key format (should be 64 hex characters)
         if !is_valid_hex_key(&new_key) {
             return Err(EncryptedDbError::InvalidKey);
         }
 
-        let conn = self.conn.lock().map_err(|_| {
-            EncryptedDbError::Encryption("Mutex poisoned".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
 
         // Re-key the database using pragma_update to avoid SQL injection
         // The key is validated to be hex-only, making SQL injection impossible
         conn.pragma_update(None, "rekey", &new_key)?;
 
         // Update keychain
-        let entry = keyring::Entry::new(
-            &self.config.keychain_service,
-            &self.config.keychain_account,
-        )
-        .map_err(|e| EncryptedDbError::Keyring(e.to_string()))?;
+        let entry =
+            keyring::Entry::new(&self.config.keychain_service, &self.config.keychain_account)
+                .map_err(|e| EncryptedDbError::Keyring(e.to_string()))?;
 
         entry
             .set_password(&new_key)
@@ -312,7 +312,7 @@ impl EncryptedDb {
     }
 
     /// Export encrypted backup
-    /// 
+    ///
     /// # Security
     /// The backup_path is validated to prevent directory traversal attacks.
     /// Only safe path characters are allowed.
@@ -323,35 +323,39 @@ impl EncryptedDb {
         let canonical_path = backup_path.canonicalize().or_else(|_| {
             // If canonicalize fails (path doesn't exist), try to canonicalize the parent
             if let Some(parent) = backup_path.parent() {
-                let canonical_parent = parent.canonicalize()
-                    .map_err(|e| EncryptedDbError::Io(e))?;
+                let canonical_parent = parent.canonicalize().map_err(EncryptedDbError::Io)?;
+                std::fs::create_dir_all(&canonical_parent).map_err(EncryptedDbError::Io)?;
                 Ok(canonical_parent.join(backup_path.file_name().unwrap_or_default()))
             } else {
-                Err(EncryptedDbError::Validation("Invalid backup path".to_string()))
+                Err(EncryptedDbError::Validation(
+                    "Invalid backup path".to_string(),
+                ))
             }
         })?;
-        
+
         // Ensure path doesn't contain null bytes or other dangerous characters
         let path_str = canonical_path.to_string_lossy();
         if path_str.contains('\0') || path_str.contains('\'') || path_str.contains('"') {
             return Err(EncryptedDbError::Validation(
-                "Backup path contains invalid characters".to_string()
+                "Backup path contains invalid characters".to_string(),
             ));
         }
-        
+
         // Validate extension is .db or .db.encrypted
-        let ext = canonical_path.extension()
+        let ext = canonical_path
+            .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("");
         if !matches!(ext, "db" | "encrypted" | "sql" | "sqlite" | "backup") {
             return Err(EncryptedDbError::Validation(
-                "Backup must have .db, .encrypted, .sql, .sqlite, or .backup extension".to_string()
+                "Backup must have .db, .encrypted, .sql, .sqlite, or .backup extension".to_string(),
             ));
         }
 
-        let conn = self.conn.lock().map_err(|_| {
-            EncryptedDbError::Encryption("Mutex poisoned".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
 
         // SQLCipher backup using vacuum into with validated path
         // Path has been canonicalized and validated, making SQL injection impossible
@@ -374,9 +378,10 @@ impl EncryptedDb {
 
     /// Verify database integrity
     pub fn verify_integrity(&self) -> Result<bool> {
-        let conn = self.conn.lock().map_err(|_| {
-            EncryptedDbError::Encryption("Mutex poisoned".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
 
         match conn.execute("PRAGMA integrity_check", []) {
             Ok(_) => Ok(true),
@@ -388,10 +393,10 @@ impl EncryptedDb {
     }
 
     /// Get connection for direct queries
-    pub fn connection(&self) -> Result<std::sync::MutexGuard<Connection>> {
-        self.conn.lock().map_err(|_| {
-            EncryptedDbError::Encryption("Mutex poisoned".to_string())
-        })
+    pub fn connection(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
+        self.conn
+            .lock()
+            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))
     }
 }
 
@@ -400,95 +405,146 @@ fn escape_sql_string(s: &str) -> String {
     s.replace("'", "''")
 }
 
-/// Chat session model
+/// A chat session record.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChatSession {
+    /// Unique session identifier.
     pub id: String,
+    /// Absolute path to the repository being scanned (optional).
     pub repo_path: Option<String>,
+    /// Associated prompt ID (optional).
     pub prompt_id: Option<String>,
+    /// Human-readable name for the session.
+    pub name: String,
+    /// LLM provider used for this session.
     pub provider: String,
+    /// Specific model name within the provider.
     pub model: String,
+    /// Timestamp when the session was created.
     pub created_at: chrono::DateTime<chrono::Utc>,
+    /// Timestamp of the last update to the session.
     pub updated_at: chrono::DateTime<chrono::Utc>,
+    /// Metadata as JSON.
     pub metadata: Option<serde_json::Value>,
 }
 
-/// Chat message model
+/// A single message within a chat session.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChatMessage {
+    /// Unique identifier for the message.
     pub id: String,
+    /// ID of the session this message belongs to.
     pub session_id: String,
+    /// ID of the parent message (if any) for threading.
     pub parent_id: Option<String>,
+    /// Role of the message sender.
     pub role: MessageRole,
+    /// Text content of the message.
     pub content: String,
+    /// References to files or code snippets.
     pub context_refs: Option<Vec<ContextRef>>,
+    /// Timestamp when the message was created.
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    /// Metadata as JSON.
     pub metadata: Option<serde_json::Value>,
 }
 
 /// Message role
+/// Role of a message in a conversation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum MessageRole {
+    /// System-level instructions.
     System,
+    /// Human user input.
     User,
+    /// LLM assistant response.
     Assistant,
+    /// Output from a tool execution.
     Tool,
 }
 
-/// Reference to a file or code snippet in context
+/// A specific item of context attached to a message.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ContextRef {
+    /// Relative path to the file.
     pub file_path: String,
+    /// Starting line number.
     pub line_start: Option<u32>,
+    /// Ending line number.
     pub line_end: Option<u32>,
+    /// Content snippet.
     pub snippet: Option<String>,
 }
 
-/// Attachment model
+/// An attachment associated with a chat message or session.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Attachment {
+    /// Unique identifier for the attachment.
     pub id: String,
+    /// ID of the session this attachment belongs to.
     pub session_id: String,
+    /// Original filename of the attachment.
     pub name: String,
+    /// MIME type or content type.
     pub content_type: String,
+    /// Size in bytes.
     pub content_hash: String,
+    /// File extension.
     pub content_size: Option<i64>,
+    /// Starting line number for code snippets.
+    pub line_start: Option<u32>,
+    /// Ending line number for code snippets.
+    pub line_end: Option<u32>,
+    /// Actual text snippet if appropriate.
+    pub snippet: Option<String>,
+    /// Timestamp when the attachment was created.
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-/// Feedback record
+/// Record of feedback provided for a message.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FeedbackRecord {
+    /// Unique identifier for the feedback record.
     pub id: String,
+    /// ID of the session this feedback relates to.
     pub session_id: String,
+    /// ID of the message this feedback relates to.
     pub message_id: String,
+    /// Type of feedback provided.
     pub feedback_type: FeedbackType,
+    /// Optional user commentary.
     pub comment: Option<String>,
+    /// Timestamp when feedback was provided.
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    /// Contextual hash for auditing.
     pub context_hash: Option<String>,
 }
 
-/// Feedback type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
+/// Types of user feedback for messages.
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub enum FeedbackType {
+    /// Positive feedback.
     ThumbsUp,
+    /// Negative feedback.
     ThumbsDown,
+    /// Problematic response report.
     Report,
 }
 
-/// Pagination parameters for list operations
-#[derive(Debug, Clone, Copy)]
+/// Pagination parameters for message retrieval.
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Pagination {
+    /// Number of items to return.
     pub limit: usize,
+    /// Number of items to skip.
     pub offset: usize,
 }
 
 impl Default for Pagination {
     fn default() -> Self {
         Self {
-            limit: 100,  // Default 100 messages per page
+            limit: 100, // Default 100 messages per page
             offset: 0,
         }
     }
@@ -498,11 +554,11 @@ impl Pagination {
     /// Create a new pagination with the given limit and offset
     pub fn new(limit: usize, offset: usize) -> Self {
         Self {
-            limit: limit.min(1000),  // Cap at 1000 to prevent abuse
+            limit: limit.min(1000), // Cap at 1000 to prevent abuse
             offset,
         }
     }
-    
+
     /// Get the next page
     pub fn next_page(&self) -> Self {
         Self {
@@ -512,33 +568,49 @@ impl Pagination {
     }
 }
 
-/// Chat operations trait
+/// Operations for managing chat sessions and messages.
+///
+/// This trait provides a higher-level interface for chat-related database
+/// operations, including session management and message retrieval.
 pub trait ChatOperations {
+    /// Create a new chat session.
     fn create_session(&self, session: &ChatSession) -> Result<()>;
+    /// Retrieve a chat session by its unique ID.
     fn get_session(&self, session_id: &str) -> Result<Option<ChatSession>>;
+    /// List chat sessions, optionally filtered by repository path.
     fn list_sessions(&self, repo_path: Option<&str>) -> Result<Vec<ChatSession>>;
+    /// Delete a chat session and its associated messages.
     fn delete_session(&self, session_id: &str) -> Result<()>;
 
-    /// Add a message within a transaction for data integrity
+    /// Add a message within a transaction for data integrity.
     fn add_message(&self, message: &ChatMessage) -> Result<()>;
-    
-    /// Get messages with optional pagination
+
+    /// Get all messages for a session with default pagination.
     fn get_messages(&self, session_id: &str) -> Result<Vec<ChatMessage>> {
         self.get_messages_paginated(session_id, Pagination::default())
     }
-    
-    /// Get messages with pagination support
-    fn get_messages_paginated(&self, session_id: &str, pagination: Pagination) -> Result<Vec<ChatMessage>>;
-    
-    /// Get total message count for a session (useful for pagination UI)
+
+    /// Get messages with pagination support.
+    fn get_messages_paginated(
+        &self,
+        session_id: &str,
+        pagination: Pagination,
+    ) -> Result<Vec<ChatMessage>>;
+
+    /// Get total message count for a session (useful for pagination UI).
     fn get_message_count(&self, session_id: &str) -> Result<usize>;
-    
+
+    /// Retrieve a single message by its ID.
     fn get_message(&self, message_id: &str) -> Result<Option<ChatMessage>>;
 
+    /// Add an attachment to a session.
     fn add_attachment(&self, attachment: &Attachment) -> Result<()>;
+    /// Retrieve all attachments for a specific session.
     fn get_attachments(&self, session_id: &str) -> Result<Vec<Attachment>>;
 
+    /// Add user feedback for a specific message.
     fn add_feedback(&self, feedback: &FeedbackRecord) -> Result<()>;
+    /// Retrieve feedback associated with a specific message.
     fn get_feedback(&self, message_id: &str) -> Result<Vec<FeedbackRecord>>;
 }
 
@@ -612,12 +684,13 @@ impl ChatOperations for EncryptedDb {
                     id: row.get(0)?,
                     repo_path: row.get(1)?,
                     prompt_id: row.get(2)?,
-                    provider: row.get(3)?,
-                    model: row.get(4)?,
-                    created_at: parse_datetime(row.get(5)?).unwrap_or_else(chrono::Utc::now),
-                    updated_at: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
+                    name: row.get(3)?,
+                    provider: row.get(4)?,
+                    model: row.get(5)?,
+                    created_at: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
+                    updated_at: parse_datetime(row.get(7)?).unwrap_or_else(chrono::Utc::now),
                     metadata: row
-                        .get::<_, Option<String>>(7)?
+                        .get::<_, Option<String>>(8)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
                 })
             })
@@ -645,12 +718,13 @@ impl ChatOperations for EncryptedDb {
                     id: row.get(0)?,
                     repo_path: row.get(1)?,
                     prompt_id: row.get(2)?,
-                    provider: row.get(3)?,
-                    model: row.get(4)?,
-                    created_at: parse_datetime(row.get(5)?).unwrap_or_else(chrono::Utc::now),
-                    updated_at: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
+                    name: row.get(3)?,
+                    provider: row.get(4)?,
+                    model: row.get(5)?,
+                    created_at: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
+                    updated_at: parse_datetime(row.get(7)?).unwrap_or_else(chrono::Utc::now),
                     metadata: row
-                        .get::<_, Option<String>>(7)?
+                        .get::<_, Option<String>>(8)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
                 })
             })?
@@ -662,12 +736,13 @@ impl ChatOperations for EncryptedDb {
                     id: row.get(0)?,
                     repo_path: row.get(1)?,
                     prompt_id: row.get(2)?,
-                    provider: row.get(3)?,
-                    model: row.get(4)?,
-                    created_at: parse_datetime(row.get(5)?).unwrap_or_else(chrono::Utc::now),
-                    updated_at: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
+                    name: row.get(3)?,
+                    provider: row.get(4)?,
+                    model: row.get(5)?,
+                    created_at: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
+                    updated_at: parse_datetime(row.get(7)?).unwrap_or_else(chrono::Utc::now),
                     metadata: row
-                        .get::<_, Option<String>>(7)?
+                        .get::<_, Option<String>>(8)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
                 })
             })?
@@ -689,10 +764,10 @@ impl ChatOperations for EncryptedDb {
 
     fn add_message(&self, message: &ChatMessage) -> Result<()> {
         let mut conn = self.connection()?;
-        
+
         // Use a transaction to ensure both operations succeed or fail together
         let tx = conn.transaction()?;
-        
+
         // Insert/update the message
         tx.execute(
             "INSERT INTO chat_messages (id, session_id, parent_id, role, content, context_refs_json, timestamp, metadata_json)
@@ -718,14 +793,18 @@ impl ChatOperations for EncryptedDb {
             "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
             params![chrono::Utc::now().to_rfc3339(), message.session_id],
         )?;
-        
+
         // Commit the transaction
         tx.commit()?;
 
         Ok(())
     }
 
-    fn get_messages_paginated(&self, session_id: &str, pagination: Pagination) -> Result<Vec<ChatMessage>> {
+    fn get_messages_paginated(
+        &self,
+        session_id: &str,
+        pagination: Pagination,
+    ) -> Result<Vec<ChatMessage>> {
         let conn = self.connection()?;
         let mut stmt = conn.prepare(
             "SELECT id, session_id, parent_id, role, content, context_refs_json, timestamp, metadata_json
@@ -736,41 +815,44 @@ impl ChatOperations for EncryptedDb {
         )?;
 
         let rows: Vec<ChatMessage> = stmt
-            .query_map([
-                session_id,
-                &pagination.limit.to_string(),
-                &pagination.offset.to_string()
-            ], |row| {
-                let role_str: String = row.get(3)?;
-                let role = match role_str.as_str() {
-                    "system" => MessageRole::System,
-                    "user" => MessageRole::User,
-                    "assistant" => MessageRole::Assistant,
-                    "tool" => MessageRole::Tool,
-                    _ => MessageRole::User,
-                };
+            .query_map(
+                [
+                    session_id,
+                    &pagination.limit.to_string(),
+                    &pagination.offset.to_string(),
+                ],
+                |row| {
+                    let role_str: String = row.get(3)?;
+                    let role = match role_str.as_str() {
+                        "system" => MessageRole::System,
+                        "user" => MessageRole::User,
+                        "assistant" => MessageRole::Assistant,
+                        "tool" => MessageRole::Tool,
+                        _ => MessageRole::User,
+                    };
 
-                Ok(ChatMessage {
-                    id: row.get(0)?,
-                    session_id: row.get(1)?,
-                    parent_id: row.get(2)?,
-                    role,
-                    content: row.get(4)?,
-                    context_refs: row
-                        .get::<_, Option<String>>(5)?
-                        .and_then(|s| serde_json::from_str(&s).ok()),
-                    timestamp: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
-                    metadata: row
-                        .get::<_, Option<String>>(7)?
-                        .and_then(|s| serde_json::from_str(&s).ok()),
-                })
-            })?
+                    Ok(ChatMessage {
+                        id: row.get(0)?,
+                        session_id: row.get(1)?,
+                        parent_id: row.get(2)?,
+                        role,
+                        content: row.get(4)?,
+                        context_refs: row
+                            .get::<_, Option<String>>(5)?
+                            .and_then(|s| serde_json::from_str(&s).ok()),
+                        timestamp: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
+                        metadata: row
+                            .get::<_, Option<String>>(7)?
+                            .and_then(|s| serde_json::from_str(&s).ok()),
+                    })
+                },
+            )?
             .filter_map(|r| r.ok())
             .collect();
 
         Ok(rows)
     }
-    
+
     fn get_message_count(&self, session_id: &str) -> Result<usize> {
         let conn = self.connection()?;
         let count: i64 = conn.query_row(
@@ -845,7 +927,7 @@ impl ChatOperations for EncryptedDb {
         let conn = self.connection()?;
         let mut stmt = conn.prepare(
             "SELECT id, session_id, name, content_type, content_hash, content_size, created_at
-             FROM attachments WHERE session_id = ?1 ORDER BY created_at ASC"
+             FROM attachments WHERE session_id = ?1 ORDER BY created_at ASC",
         )?;
 
         let rows: Vec<Attachment> = stmt
@@ -857,6 +939,9 @@ impl ChatOperations for EncryptedDb {
                     content_type: row.get(3)?,
                     content_hash: row.get(4)?,
                     content_size: row.get(5)?,
+                    line_start: None,
+                    line_end: None,
+                    snippet: None,
                     created_at: parse_datetime(row.get(6)?).unwrap_or_else(chrono::Utc::now),
                 })
             })?
@@ -890,7 +975,7 @@ impl ChatOperations for EncryptedDb {
         let conn = self.connection()?;
         let mut stmt = conn.prepare(
             "SELECT id, session_id, message_id, feedback_type, comment, timestamp, context_hash
-             FROM feedback WHERE message_id = ?1 ORDER BY timestamp ASC"
+             FROM feedback WHERE message_id = ?1 ORDER BY timestamp ASC",
         )?;
 
         let rows: Vec<FeedbackRecord> = stmt
@@ -928,7 +1013,7 @@ fn parse_datetime(s: String) -> Option<chrono::DateTime<chrono::Utc>> {
 }
 
 /// Validate that a key is a valid hex string (64 characters, 0-9, a-f, A-F)
-/// 
+///
 /// This prevents SQL injection by ensuring only safe characters are present.
 fn is_valid_hex_key(key: &str) -> bool {
     key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit())

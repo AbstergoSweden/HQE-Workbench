@@ -135,86 +135,107 @@ impl ProviderSpecBuilder {
         }
     }
 
+    /// Set the display name of the provider.
     pub fn display_name(mut self, name: impl Into<String>) -> Self {
         self.display_name = Some(name.into());
         self
     }
 
+    /// Set the kind of provider.
     pub fn kind(mut self, kind: ProviderKind) -> Self {
         self.kind = Some(kind);
         self
     }
 
+    /// Set the base URL of the provider.
     pub fn base_url(mut self, url: impl Into<String>) -> Self {
         self.base_url = Some(url.into());
         self
     }
 
+    /// Set the authentication scheme of the provider.
     pub fn auth_scheme(mut self, scheme: AuthScheme) -> Self {
         self.auth_scheme = scheme;
         self
     }
 
+    /// Add a default header to the provider spec.
     pub fn default_header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.default_headers.insert(key.into(), value.into());
         self
     }
 
+    /// Set the discovery endpoint of the provider.
     pub fn discovery_endpoint(mut self, endpoint: impl Into<String>) -> Self {
         self.discovery_endpoint = Some(endpoint.into());
         self
     }
 
+    /// Set the default model for the provider.
     pub fn default_model(mut self, model: impl Into<String>) -> Self {
         self.default_model = Some(model.into());
         self
     }
 
+    /// Set the recommended timeout in seconds.
     pub fn timeout(mut self, seconds: u64) -> Self {
         self.recommended_timeout_s = seconds;
         self
     }
 
+    /// Add a quirk description to the provider spec.
     pub fn quirk(mut self, quirk: impl Into<String>) -> Self {
         self.quirks.push(quirk.into());
         self
     }
 
+    /// Set the provider website URL.
     pub fn website(mut self, url: impl Into<String>) -> Self {
         self.website_url = Some(url.into());
         self
     }
 
+    /// Set the provider documentation URL.
     pub fn docs(mut self, url: impl Into<String>) -> Self {
         self.docs_url = Some(url.into());
         self
     }
 
+    /// Set whether the provider supports streaming.
     pub fn streaming(mut self, supported: bool) -> Self {
         self.supports_streaming = supported;
         self
     }
 
+    /// Set whether the provider supports tools.
     pub fn tools(mut self, supported: bool) -> Self {
         self.supports_tools = supported;
         self
     }
 
+    /// Add rate limit notes to the provider spec.
     pub fn rate_limit_notes(mut self, notes: impl Into<String>) -> Self {
         self.rate_limit_notes = Some(notes.into());
         self
     }
 
+    /// Build the final ProviderSpec.
     pub fn build(self) -> ProviderSpec {
         ProviderSpec {
-            id: self.id.clone(),
-            display_name: self.display_name.unwrap_or_else(|| self.id.clone()),
+            id: self.id,
+            display_name: self
+                .display_name
+                .unwrap_or_else(|| "Unknown Provider".to_string()),
             kind: self.kind.unwrap_or(ProviderKind::Generic),
-            base_url: self.base_url.expect("base_url is required"),
+            base_url: self
+                .base_url
+                .unwrap_or_else(|| "http://localhost:8080".to_string()),
             auth_scheme: self.auth_scheme,
             default_headers: self.default_headers,
             discovery_endpoint: self.discovery_endpoint,
-            default_model: self.default_model.unwrap_or_else(|| "gpt-4o-mini".to_string()),
+            default_model: self
+                .default_model
+                .unwrap_or_else(|| "gpt-4o-mini".to_string()),
             recommended_timeout_s: self.recommended_timeout_s,
             quirks: self.quirks,
             website_url: self.website_url.unwrap_or_default(),

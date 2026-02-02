@@ -15,33 +15,33 @@ pub struct RedactionEngine {
     counters: HashMap<SecretType, usize>,
 }
 
+/// Types of secrets that can be detected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-/// Enumeration of secret types that can be detected and redacted
 pub enum SecretType {
-    /// AWS Access Key
+    /// AWS Access Key.
     AwsAccessKey,
-    /// AWS Secret Key
+    /// AWS Secret Key.
     AwsSecretKey,
-    /// Private key (RSA, ECDSA, etc.)
+    /// Private key (RSA, ECDSA, etc.).
     PrivateKey,
-    /// SSH key
+    /// SSH key.
     SshKey,
-    /// Slack token
+    /// Slack token.
     SlackToken,
-    /// GitHub token
+    /// GitHub token.
     GitHubToken,
-    /// GitHub Personal Access Token
+    /// GitHub Personal Access Token.
     GitHubPat,
-    /// Google API key
+    /// Google API key.
     GoogleApiKey,
-    /// Generic secret pattern
+    /// Generic secret pattern.
     GenericSecret,
-    /// Password
+    /// Password.
     Password,
-    /// API key
+    /// API key.
     ApiKey,
-    /// Bearer token
+    /// Bearer token.
     BearerToken,
 }
 

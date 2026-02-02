@@ -8,7 +8,7 @@ pub mod commands;
 pub mod prompts;
 use chat::*;
 use commands::*;
-use hqe_core::encrypted_db::{ChatOperations, EncryptedDb};
+use hqe_core::encrypted_db::EncryptedDb;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -24,7 +24,7 @@ pub struct AppState {
 pub fn run() {
     // Initialize the encrypted database once at startup
     let db = EncryptedDb::init().expect("Failed to initialize encrypted database");
-    
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
