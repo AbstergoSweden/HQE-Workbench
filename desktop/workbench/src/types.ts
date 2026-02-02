@@ -122,6 +122,19 @@ export interface ChatMessage {
 }
 
 // Enhanced Prompt Types
+export type PromptCategory = 
+  | 'security' 
+  | 'quality' 
+  | 'refactor' 
+  | 'explain' 
+  | 'test' 
+  | 'document' 
+  | 'architecture' 
+  | 'performance' 
+  | 'dependencies' 
+  | 'custom' 
+  | 'agent'
+
 export interface PromptInput {
   name: string
   description: string
@@ -134,12 +147,14 @@ export interface PromptInput {
 export interface PromptMetadata {
   id: string
   title: string
-  category: string
+  category: PromptCategory
   description: string
   explanation: string
   version: string
   inputs: PromptInput[]
   allowed_tools: string[]
+  tags?: string[]
+  author?: string
 }
 
 // Provider Spec Types

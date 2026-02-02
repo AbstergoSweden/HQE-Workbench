@@ -27,7 +27,7 @@ export function SettingsScreen() {
   const [discoverError, setDiscoverError] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<boolean | null>(null)
   const [keyLocked, setKeyLocked] = useState(true) // When locked, key is persisted to secure storage
-  const [providerSpecs, setProviderSpecs] = useState<ProviderSpec[]>([])
+  const [providerSpecs, setProviderSpecs] = useState<ProviderSpec[] | null>(null)
   const [selectedSpec, setSelectedSpec] = useState<string>('')
   const toast = useToast()
 
@@ -387,7 +387,7 @@ export function SettingsScreen() {
                 onChange={(e) => {
                   const specId = e.target.value
                   setSelectedSpec(specId)
-                  if (specId) {
+                  if (specId && providerSpecs) {
                     const spec = providerSpecs.find(s => s.id === specId)
                     if (spec) {
                       setName(spec.display_name.toLowerCase().replace(/\s+/g, '_'))
@@ -404,7 +404,7 @@ export function SettingsScreen() {
                 className="input"
               >
                 <option value="">Select a provider template...</option>
-                {providerSpecs.map((spec) => (
+                {providerSpecs?.map((spec) => (
                   <option key={spec.id} value={spec.id}>
                     {spec.display_name}
                   </option>
@@ -415,11 +415,11 @@ export function SettingsScreen() {
                   <p className="text-xs mt-1" style={{ color: 'var(--dracula-comment)' }}>
                     Template loaded. Paste your API key and click Discover.
                   </p>
-                  {providerSpecs.find(s => s.id === selectedSpec)?.quirks.length > 0 && (
+                  {(providerSpecs?.find(s => s.id === selectedSpec)?.quirks.length || 0) > 0 && (
                     <div className="mt-2 p-2 rounded text-xs" style={{ background: 'var(--dracula-bg)' }}>
                       <span style={{ color: 'var(--dracula-yellow)' }}>⚠ Notes:</span>
                       <ul className="mt-1 ml-4 list-disc">
-                        {providerSpecs.find(s => s.id === selectedSpec)?.quirks.map((quirk, i) => (
+                        {providerSpecs?.find(s => s.id === selectedSpec)?.quirks.map((quirk, i) => (
                           <li key={i} style={{ color: 'var(--dracula-comment)' }}>{quirk}</li>
                         ))}
                       </ul>

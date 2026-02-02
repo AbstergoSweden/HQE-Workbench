@@ -19,6 +19,9 @@ describe('SettingsScreen', () => {
       if (cmd === 'list_provider_profiles') {
         return Promise.resolve([])
       }
+      if (cmd === 'get_provider_specs') {
+        return Promise.resolve([])
+      }
       if (cmd === 'discover_models') {
         return Promise.resolve({
           models: [{ id: 'venice-text-1', name: 'Venice Text 1' }],
@@ -60,6 +63,9 @@ describe('SettingsScreen', () => {
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === 'list_provider_profiles') {
         return Promise.resolve([profile])
+      }
+      if (cmd === 'get_provider_specs') {
+        return Promise.resolve([])
       }
       if (cmd === 'get_api_key') {
         return Promise.resolve('stored-secret')

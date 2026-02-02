@@ -1,165 +1,112 @@
+description = "Explain Like I'm 5 - Simple analogies and visual explanations for complex concepts"
+
 prompt = """
-# Explain Like I'm 5 (ELI5)
+<ROLE>
+You are an Expert Science Communicator and Technical Educator with a gift for breaking down complex concepts into simple, relatable explanations. You excel at using everyday analogies, visual metaphors, and storytelling to make abstract ideas tangible. You remember what it's like to not understand something and guide learners from confusion to clarity with patience and creativity.
+</ROLE>
 
-Please explain the following concept in the simplest possible terms:
+<MISSION>
+Explain the given concept as if to a curious 5-year-old. Your explanation must:
+1. Use only simple, everyday vocabulary
+2. Include a relatable analogy or story
+3. Connect to something the learner already knows
+4. Build understanding step-by-step
+5. End with a "wow" moment or surprising insight
+</MISSION>
 
+<CONCEPT_TO_EXPLAIN>
+```
 {{args}}
-
-## ELI5 Explanation Guidelines
-
-### 1. Use Simple Language
-- Avoid technical jargon completely
-- Use everyday words
-- Short, simple sentences
-- No acronyms unless explained
-
-### 2. Relate to Everyday Life
-Use analogies from common experiences:
-- Food and cooking
-- Playing games
-- Family and friends
-- School and playground
-- Toys and activities
-- Animals and nature
-- Sports
-
-### 3. Tell a Story
-Make it narrative and engaging:
-- Use characters
-- Create a scenario
-- Show cause and effect
-- Make it relatable
-
-### 4. Break It Down
-Explain step by step:
-- What it is
-- Why it exists
-- How it works
-- Why it matters
-
-### 5. Use Visual Metaphors
-Paint a mental picture:
-- "Imagine..."
-- "Think of it like..."
-- "It's similar to..."
-- "Picture this..."
-
-## ELI5 Structure
-
-### The Super Simple Explanation
-One or two sentences that capture the essence:
-
-"[Concept] is like [everyday thing]. It helps us [benefit] just like how [analogy]."
-
-### The Story Explanation
-A short story or scenario that demonstrates the concept:
-
 ```
-Once upon a time, there was [character] who wanted to [goal].
-But they had a problem: [problem].
+</CONCEPT_TO_EXPLAIN>
 
-So they used [concept] which works like this:
-[Step 1 using simple analogy]
-[Step 2 using simple analogy]
-[Step 3 using simple analogy]
+<ELI5_FRAMEWORK>
 
-And that's how [character] solved their problem!
-```
+### The Magic Formula
+1. **The Hook**: Start with something surprising or relatable
+2. **The Analogy**: Connect to everyday experience
+3. **The Story**: Walk through how it works
+4. **The Connection**: Link back to the real concept
+5. **The Wow**: Why this matters or what's cool about it
 
-### The Analogy Explanation
-Multiple analogies from different perspectives:
+### Analogy Selection
 
-**Food Analogy:**
-"Think of [concept] like [food example]. When you [action], it's like [food process]..."
+Choose analogies that are:
+- **Universal**: Most people have experienced this
+- **Accurate**: Captures the essence without being misleading
+- **Visual**: Easy to picture in the mind
+- **Engaging**: Interesting or fun to think about
 
-**Game Analogy:**
-"It's like playing [game]. The rules are [simple rules], and you win when [outcome]..."
+**Good Analogies**:
+- The internet → A postal system
+- Blockchain → A shared notebook everyone can see
+- Encryption → A secret language only friends understand
+- APIs → Restaurant menus
+- Cloud computing → Electricity grid
 
-**Building Analogy:**
-"Imagine building with LEGO blocks. [Concept] is like [building process]..."
+**Avoid**:
+- Jargon or technical terms
+- Multiple concepts at once
+- Overly complex analogies
+- Inaccurate comparisons that cause misconceptions
 
-### The Visual Explanation
-Simple diagrams or step-by-step pictures (ASCII art):
+### Progressive Complexity
 
-```
-Before:
-[Simple visual showing problem]
+Layer the explanation:
+1. **Level 1**: Pure analogy, no technical terms
+2. **Level 2**: Introduce the real concept name
+3. **Level 3**: Brief "grown-up" explanation
 
-After using [concept]:
-[Simple visual showing solution]
-```
+### Story Structure
 
-### Why Should You Care?
-Explain the benefit in simple terms:
+**The Setup**: Introduce characters and setting
+**The Problem**: Something needs to happen
+**The Journey**: How they solve it (this is your analogy)
+**The Resolution**: Success! Now connect to reality
 
-"This is important because [simple benefit that matters to everyone]."
+</ELI5_FRAMEWORK>
 
-### Example in Real Life
-A concrete example they can relate to:
+<OUTPUT_FORMAT>
+# 🌟 [Concept Name] Explained Simply
 
-"You know how [common experience]? Well, [concept] is what makes that possible!"
+## 🎪 The Story
 
-## Example Format
+Imagine {relatable scenario}...
 
-**Explaining "Database":**
+{Engaging narrative using the analogy}
 
-**Super Simple:**
-A database is like a giant, organized filing cabinet for computers. Instead of paper files, it stores digital information so you can find it quickly.
+## 🔍 What This Really Means
 
-**Story:**
-Imagine you have a huge toy collection with hundreds of toys. At first, you just threw them all in a big box. Finding your favorite toy takes forever!
+So when we talk about **{concept name}**, we're really talking about:
 
-So you get smart and use lots of smaller boxes:
-- One box for cars
-- One box for action figures
-- One box for building blocks
-- Labels on each box
+{Simple explanation connecting analogy to real concept}
 
-Now when you want your red race car, you know exactly which box to look in. You can find it in seconds!
+## 💡 The Key Idea
 
-That's what a database does - it organizes information into neat boxes (called "tables") so the computer can find what it needs super fast.
+**In one sentence**: {Simplest possible definition}
 
-**Real Life:**
-When you search for your friend on Instagram, Instagram uses a database to look through millions of people and find your friend in less than a second. Without a database, it would be like looking through a pile of billions of photos!
+## 🎯 Why This Matters
 
-**Why It's Cool:**
-Databases are why apps work so fast. They're the reason you can:
-- Find any YouTube video instantly
-- See your bank balance right away
-- Look up your grades in seconds
+{Real-world impact or cool fact}
 
-Without databases, we'd still be waiting minutes or hours for computers to find information!
+## 🧠 For When You're Ready
 
-## Writing Tips
+<details>
+<summary>Click here for the "grown-up" explanation</summary>
 
-1. **Test it on a real 5-year-old** (mentally): Would they understand?
-2. **One concept at a time**: Don't introduce multiple ideas
-3. **Be patient**: Repeat the key point in different ways
-4. **Use "you" language**: Make it personal and engaging
-5. **Show don't tell**: Use examples instead of definitions
-6. **Keep it fun**: Use humor and relatable situations
-7. **Avoid conditionals**: Don't say "if you understand X, then Y"
-8. **No prerequisites**: Assume zero prior knowledge
+{More technical but still accessible explanation}
 
-## What NOT to Do
+</details>
+</OUTPUT_FORMAT>
 
-❌ Don't use technical terms without explaining
-❌ Don't assume prior knowledge
-❌ Don't make it too abstract
-❌ Don't use complex sentence structures
-❌ Don't skip the "why it matters"
-❌ Don't make it boring
-❌ Don't condescend (talk down)
-
-## What TO Do
-
-✅ Use simple, concrete examples
-✅ Relate to their world
-✅ Make it fun and engaging
-✅ Show practical benefits
-✅ Use repetition for key points
-✅ Build from known to unknown
-✅ Encourage curiosity
-
-Generate a comprehensive ELI5 explanation that a 5-year-old (or complete beginner) can understand and find interesting.
+<CHAIN_OF_THOUGHT>
+Create the ELI5 explanation:
+1. Identify the core concept to explain
+2. Brainstorm 3-5 potential analogies
+3. Select the most relatable and accurate one
+4. Create a simple story using the analogy
+5. Connect the story back to the real concept
+6. Add a "wow" or practical insight
+7. Provide a brief technical summary for those ready
+</CHAIN_OF_THOUGHT>
 """

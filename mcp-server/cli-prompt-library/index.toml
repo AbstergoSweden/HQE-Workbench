@@ -1,0 +1,232 @@
+# HQE Prompt Library Index
+# Enhanced prompts with chain-of-thought reasoning and structured outputs
+
+[metadata]
+name = "HQE Enhanced Prompt Library"
+version = "2.0.0"
+description = "Comprehensive prompt templates with structured reasoning, XML formatting, and actionable outputs"
+total_prompts = 30
+
+[[categories]]
+name = "code-review"
+description = "Code analysis, security audits, refactoring, and best practices"
+
+[[categories.prompts]]
+name = "security"
+file = "commands/code-review/security.toml"
+description = "Comprehensive security audit with exploit chain analysis and remediation"
+tags = ["security", "audit", "vulnerabilities", "owasp"]
+
+[[categories.prompts]]
+name = "refactor"
+file = "commands/code-review/refactor.toml"
+description = "Intelligent code refactoring with architecture analysis and incremental improvement plan"
+tags = ["refactoring", "clean-code", "patterns", "technical-debt"]
+
+[[categories.prompts]]
+name = "performance"
+file = "commands/code-review/performance.toml"
+description = "Performance analysis with profiling, bottleneck identification and optimization strategies"
+tags = ["performance", "optimization", "profiling", "benchmarking"]
+
+[[categories.prompts]]
+name = "best-practices"
+file = "commands/code-review/best-practices.toml"
+description = "Code review against language-specific best practices and standards"
+tags = ["best-practices", "standards", "review"]
+
+[[categories]]
+name = "testing"
+description = "Test generation, coverage analysis, and quality assurance"
+
+[[categories.prompts]]
+name = "generate-unit-tests"
+file = "commands/testing/generate-unit-tests.toml"
+description = "Comprehensive unit test generation with coverage analysis and edge case detection"
+tags = ["unit-testing", "jest", "pytest", "coverage"]
+
+[[categories.prompts]]
+name = "generate-e2e-tests"
+file = "commands/testing/generate-e2e-tests.toml"
+description = "End-to-end test generation with user journey mapping and test data management"
+tags = ["e2e", "playwright", "cypress", "user-journey"]
+
+[[categories.prompts]]
+name = "edge-cases"
+file = "commands/testing/edge-cases.toml"
+description = "Identify and test edge cases, boundary conditions, and error scenarios"
+tags = ["edge-cases", "boundaries", "testing"]
+
+[[categories.prompts]]
+name = "coverage-analysis"
+file = "commands/testing/coverage-analysis.toml"
+description = "Analyze test coverage gaps and recommend test additions"
+tags = ["coverage", "metrics", "quality"]
+
+[[categories]]
+name = "debugging"
+description = "Error diagnosis, root cause analysis, and debugging strategies"
+
+[[categories.prompts]]
+name = "debug-error"
+file = "commands/debugging/debug-error.toml"
+description = "Systematic debugging with root cause analysis and prevention strategies"
+tags = ["debugging", "errors", "root-cause", "troubleshooting"]
+
+[[categories.prompts]]
+name = "trace-issue"
+file = "commands/debugging/trace-issue.toml"
+description = "Trace complex issues through distributed systems and logs"
+tags = ["tracing", "distributed", "logs"]
+
+[[categories.prompts]]
+name = "performance-profile"
+file = "commands/debugging/performance-profile.toml"
+description = "Profile and diagnose performance issues in production"
+tags = ["profiling", "performance", "production"]
+
+[[categories]]
+name = "architecture"
+description = "System design, patterns, and architectural decision making"
+
+[[categories.prompts]]
+name = "design-patterns"
+file = "commands/architecture/design-patterns.toml"
+description = "Advanced design pattern analysis with implementation guidance and trade-off evaluation"
+tags = ["design-patterns", "gof", "patterns", "architecture"]
+
+[[categories.prompts]]
+name = "system-design"
+file = "commands/architecture/system-design.toml"
+description = "System design with scalability, reliability, and trade-off analysis"
+tags = ["system-design", "scalability", "distributed-systems"]
+
+[[categories.prompts]]
+name = "ddd-modeling"
+file = "commands/architecture/ddd-modeling.toml"
+description = "Domain-Driven Design modeling with bounded contexts and aggregate design"
+tags = ["ddd", "domain-modeling", "bounded-contexts", "aggregates"]
+
+[[categories.prompts]]
+name = "design-api"
+file = "commands/architecture/design-api.toml"
+description = "RESTful and GraphQL API design with versioning and documentation"
+tags = ["api-design", "rest", "graphql", "openapi"]
+
+[[categories.prompts]]
+name = "design-database"
+file = "commands/architecture/design-database.toml"
+description = "Database schema design with normalization and indexing strategies"
+tags = ["database", "schema", "normalization", "indexing"]
+
+[[categories]]
+name = "documentation"
+description = "Technical writing and documentation generation"
+
+[[categories.prompts]]
+name = "write-api-docs"
+file = "commands/docs/write-api-docs.toml"
+description = "Professional API documentation with examples, SDKs, and developer experience focus"
+tags = ["documentation", "api", "openapi", "developer-experience"]
+
+[[categories.prompts]]
+name = "write-readme"
+file = "commands/docs/write-readme.toml"
+description = "Professional README generation with project positioning and developer onboarding"
+tags = ["readme", "documentation", "open-source"]
+
+[[categories.prompts]]
+name = "write-changelog"
+file = "commands/docs/write-changelog.toml"
+description = "Generate changelogs from commits following semantic versioning"
+tags = ["changelog", "versioning", "conventional-commits"]
+
+[[categories.prompts]]
+name = "write-contributing"
+file = "commands/docs/write-contributing.toml"
+description = "Create contribution guidelines for open source projects"
+tags = ["contributing", "guidelines", "open-source"]
+
+[[categories]]
+name = "learning"
+description = "Educational content and concept explanations"
+
+[[categories.prompts]]
+name = "explain-code"
+file = "commands/learning/explain-code.toml"
+description = "Comprehensive code explanation with visualizations and knowledge scaffolding"
+tags = ["education", "explanation", "visualization"]
+
+[[categories.prompts]]
+name = "explain-concept"
+file = "commands/learning/explain-concept.toml"
+description = "Deep dive into technical concepts with examples and analogies"
+tags = ["concepts", "education", "deep-dive"]
+
+[[categories.prompts]]
+name = "eli5"
+file = "commands/learning/eli5.toml"
+description = "Explain Like I'm 5 - Simple analogies and visual explanations for complex concepts"
+tags = ["eli5", "analogies", "simple", "beginner"]
+
+[[categories.prompts]]
+name = "compare-tech"
+file = "commands/learning/compare-tech.toml"
+description = "Compare technologies, frameworks, or approaches with decision matrix"
+tags = ["comparison", "decision-matrix", "evaluation"]
+
+[[categories.prompts]]
+name = "roadmap"
+file = "commands/learning/roadmap.toml"
+description = "Create learning roadmaps for technologies and career paths"
+tags = ["roadmap", "learning", "career"]
+
+[[categories]]
+name = "prompts"
+description = "Prompt engineering and optimization"
+
+[[categories.prompts]]
+name = "optimize-prompt"
+file = "commands/prompts/optimize-prompt.toml"
+description = "Systematic prompt optimization using chain-of-thought and few-shot techniques"
+tags = ["prompt-engineering", "optimization", "chain-of-thought"]
+
+[[categories.prompts]]
+name = "create-template"
+file = "commands/prompts/create-template.toml"
+description = "Create reusable prompt templates for common tasks"
+tags = ["templates", "reusability"]
+
+[[categories.prompts]]
+name = "improve"
+file = "commands/prompts/improve.toml"
+description = "Improve existing prompts for better results"
+tags = ["improvement", "iteration"]
+
+[[categories.prompts]]
+name = "best-practices"
+file = "commands/prompts/best-practices.toml"
+description = "Guidelines for effective prompt engineering"
+tags = ["best-practices", "guidelines"]
+
+[[categories]]
+name = "writing"
+description = "Technical writing and content creation"
+
+[[categories.prompts]]
+name = "presentation"
+file = "commands/writing/presentation.toml"
+description = "Create technical presentations and slide decks"
+tags = ["presentation", "slides", "talks"]
+
+[[categories.prompts]]
+name = "blog-post"
+file = "commands/writing/blog-post.toml"
+description = "Write technical blog posts and articles"
+tags = ["blog", "writing", "content"]
+
+[[categories.prompts]]
+name = "documentation"
+file = "commands/writing/documentation.toml"
+description = "Write comprehensive technical documentation"
+tags = ["documentation", "technical-writing"]

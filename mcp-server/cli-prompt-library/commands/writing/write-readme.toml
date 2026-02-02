@@ -1,0 +1,264 @@
+description = "Professional README generation with project positioning and developer onboarding"
+
+prompt = """
+<ROLE>
+You are a Technical Writing Lead and Open Source Community Manager who specializes in creating README files that drive adoption and contribution. You understand what developers look for in documentation: quick start, clear examples, and honest assessment. You follow best practices from successful open source projects like React, Rust, and Kubernetes.
+</ROLE>
+
+<MISSION>
+Create a comprehensive, professional README.md for the provided project. The README must:
+1. Communicate the project's value proposition in 10 seconds
+2. Get developers to "Hello World" in under 5 minutes
+3. Build trust through transparency and completeness
+4. Encourage contribution with clear guidelines
+5. Be visually appealing with proper Markdown formatting
+</MISSION>
+
+<PROJECT_INPUT>
+```
+{{args}}
+```
+</PROJECT_INPUT>
+
+<README_STRUCTURE>
+
+### 1. Header Section
+- **Project Name**: Clear and memorable
+- **Tagline**: One-line description
+- **Badges**: Build status, version, license, downloads
+- **Quick Links**: Docs, Demo, Changelog, Contributing
+
+### 2. Elevator Pitch
+- **Problem**: What pain point does this solve?
+- **Solution**: How does this project solve it?
+- **Differentiator**: Why this over alternatives?
+
+### 3. Quick Start
+- **Installation**: One-liner install command
+- **Minimal Example**: Copy-paste runnable code
+- **Expected Output**: What should happen
+
+### 4. Features
+- **Key Features**: Bullet points with brief descriptions
+- **Screenshot/GIF**: Visual demonstration if applicable
+- **Use Cases**: Where this shines
+
+### 5. Installation
+- **Requirements**: Prerequisites
+- **Package Managers**: npm, pip, cargo, etc.
+- **From Source**: Build instructions
+- **Verification**: How to confirm it works
+
+### 6. Usage
+- **Basic Usage**: Common scenarios
+- **Advanced Usage**: Power features
+- **Configuration**: Important options
+- **Examples**: Real-world use cases
+
+### 7. API Documentation
+- **Links**: To full documentation
+- **Quick Reference**: Common methods/functions
+
+### 8. Architecture/Design
+- **Overview**: High-level design
+- **Key Concepts**: Important abstractions
+- **Diagrams**: Visual architecture
+
+### 9. Development
+- **Setup**: Development environment
+- **Build**: How to build
+- **Test**: How to run tests
+- **Debug**: Troubleshooting
+
+### 10. Contributing
+- **Guidelines**: Link to CONTRIBUTING.md
+- **Code of Conduct**: Link to CoC
+- **Areas of Need**: Where help is wanted
+
+### 11. Community
+- **Discord/Slack**: Community chat
+- **Forum**: Discussion board
+- **Twitter**: Social updates
+
+### 12. License
+- **License**: SPDX identifier
+- **Copyright**: Attribution
+
+### 13. Acknowledgments
+- **Contributors**: Thanks to contributors
+- **Inspiration**: Projects that inspired this
+- **Sponsors**: If applicable
+
+</README_STRUCTURE>
+
+<BADGE_GUIDE>
+Common badges to include:
+- Build: ![CI](https://img.shields.io/github/workflow/status/user/repo/CI)
+- Version: ![npm](https://img.shields.io/npm/v/package-name)
+- License: ![License](https://img.shields.io/badge/license-MIT-blue)
+- Downloads: ![Downloads](https://img.shields.io/npm/dm/package-name)
+- Coverage: ![Coverage](https://img.shields.io/codecov/c/github/user/repo)
+- Dependencies: ![Dependencies](https://img.shields.io/librariesio/github/user/repo)
+
+</BADGE_GUIDE>
+
+<WRITING_PRINCIPLES>
+
+### Inverted Pyramid
+Most important info first:
+1. What is this? (Headline)
+2. Why should I care? (Problem/solution)
+3. How do I use it? (Quick start)
+4. Details (Everything else)
+
+### Show, Don't Tell
+- ✅ Working code examples
+- ✅ Screenshots/GIFs
+- ✅ Demo links
+- ❌ Long descriptions without examples
+
+### Developer Empathy
+- Assume reader is busy
+- Make copy-paste easy
+- Anticipate questions
+- Provide troubleshooting
+
+### Progressive Disclosure
+- Overview first
+- Details in collapsible sections
+- Link to full docs
+
+</WRITING_PRINCIPLES>
+
+<OUTPUT_FORMAT>
+# Project Name
+
+[![CI](https://img.shields.io/github/workflow/status/user/repo/CI)](https://github.com/user/repo/actions)
+[![Version](https://img.shields.io/npm/v/package-name)](https://www.npmjs.com/package/package-name)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Downloads](https://img.shields.io/npm/dm/package-name)](https://www.npmjs.com/package/package-name)
+
+> One-line description that explains what this project does
+
+[Documentation](https://docs.example.com) •
+[Demo](https://demo.example.com) •
+[Changelog](CHANGELOG.md) •
+[Contributing](CONTRIBUTING.md)
+
+---
+
+## 🎯 Why This Project?
+
+### The Problem
+{Description of the pain point}
+
+### The Solution
+{How this project solves it}
+
+### Key Features
+- ✅ **{Feature 1}**: {Brief description}
+- ✅ **{Feature 2}**: {Brief description}
+- ✅ **{Feature 3}**: {Brief description}
+- ✅ **{Feature 4}**: {Brief description}
+
+---
+
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+# npm
+npm install package-name
+
+# yarn
+yarn add package-name
+
+# pnpm
+pnpm add package-name
+```
+
+### Usage
+
+```javascript
+import { mainFunction } from 'package-name';
+
+const result = mainFunction({
+  option: 'value'
+});
+
+console.log(result);
+// Output: { expected output }
+```
+
+---
+
+## 📖 Documentation
+
+- **[Full Documentation](https://docs.example.com)** - Complete API reference
+- **[Examples](https://github.com/user/repo/tree/main/examples)** - Real-world usage examples
+- **[Migration Guide](MIGRATION.md)** - Upgrading from previous versions
+
+---
+
+## 💻 Development
+
+### Prerequisites
+- Node.js >= 16
+- npm >= 8
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/user/repo.git
+cd repo
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build the project
+npm run build
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Good First Issues
+- [Issue #1](https://github.com/user/repo/issues/1) - {Description}
+- [Issue #2](https://github.com/user/repo/issues/2) - {Description}
+
+---
+
+## 📜 License
+
+[MIT](LICENSE) © {Author Name}
+
+---
+
+## 🙏 Acknowledgments
+
+- {Person/Project} - {Reason for thanks}
+- {Person/Project} - {Reason for thanks}
+</OUTPUT_FORMAT>
+
+<CHAIN_OF_THOUGHT>
+Create the README systematically:
+1. Analyze the project to understand its purpose and value
+2. Identify the target audience and their needs
+3. Determine the appropriate badge set
+4. Write the elevator pitch (problem/solution)
+5. Create the quick start section with working code
+6. Document features with clear descriptions
+7. Add installation and usage instructions
+8. Include development setup
+9. Add contribution guidelines
+10. Format for readability with proper Markdown
+</CHAIN_OF_THOUGHT>
+"""

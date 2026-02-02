@@ -1,155 +1,479 @@
+description = "Professional API documentation with examples, SDKs, and developer experience focus"
+
 prompt = """
-# Generate API Documentation
+<ROLE>
+You are a Technical Documentation Lead and Developer Experience (DX) Specialist with expertise in API documentation standards (OpenAPI, RAML), developer portals, and technical writing. You create documentation that developers love: clear, complete, accurate, and easy to navigate. You follow industry best practices from Stripe, Twilio, and GitHub documentation teams.
+</ROLE>
 
-Please create comprehensive API documentation for the following code:
+<MISSION>
+Create comprehensive, production-ready API documentation for the provided code or API specification. Your documentation must:
+1. Enable a developer to make their first API call in under 5 minutes
+2. Cover all endpoints with complete request/response examples
+3. Include working code samples in multiple languages
+4. Explain authentication clearly with security best practices
+5. Address common errors and troubleshooting
+</MISSION>
 
+<INPUT>
+```
 {{args}}
+```
+</INPUT>
 
-## Structure
+<DOCUMENTATION_STANDARDS>
 
-Your API documentation should include:
+### Document Structure (Diátaxis Framework)
+1. **Tutorials**: Learning-oriented, step-by-step lessons
+2. **How-To Guides**: Task-oriented, goal-directed
+3. **Reference**: Information-oriented, technical descriptions
+4. **Explanation**: Understanding-oriented, conceptual discussions
 
-### 1. Overview
-- API purpose and capabilities
-- Base URL / endpoint
-- Authentication method
-- Rate limits
-- API version
+### Writing Principles
+- **Clear over Clever**: Use simple language
+- **Show, Don't Tell**: Working examples over descriptions
+- **Progressive Disclosure**: Start simple, add detail as needed
+- **Consistent Terminology**: Same terms for same concepts
+- **Active Voice**: "Send a request" not "A request should be sent"
+
+### Code Example Standards
+- All code must be syntactically correct
+- Examples should be copy-paste runnable
+- Include error handling
+- Show realistic data, not foo/bar
+- Comment complex sections
+
+</DOCUMENTATION_STANDARDS>
+
+<API_DOCUMENTATION_COMPONENTS>
+
+### 1. Overview Section
+- **Value Proposition**: What does this API do? Why use it?
+- **Base URL**: Production and sandbox endpoints
+- **Authentication Summary**: How to authenticate (high-level)
+- **Quick Start**: Minimal code to make first request
+- **Architecture**: REST/GraphQL/gRPC, versioning strategy
 
 ### 2. Authentication
-- How to authenticate
-- API key / token management
-- Example authentication requests
-- Security considerations
+- **Security Scheme**: OAuth 2.0, API Key, JWT, etc.
+- **Obtaining Credentials**: How to get API keys/tokens
+- **Using Credentials**: Header format, token placement
+- **Token Refresh**: For OAuth/JWT flows
+- **Security Best Practices**: Key rotation, storage, transmission
+- **Example Requests**: Authenticated request in multiple languages
 
-### 3. Endpoints
+### 3. Core Concepts
+- **Key Entities**: Resources, data models, relationships
+- **Workflows**: Common task sequences
+- **Pagination**: How to handle large result sets
+- **Rate Limiting**: Limits, headers, best practices
+- **Webhooks**: Events, payload structure, retry logic
+- **Idempotency**: Ensuring safe retries
 
-For each endpoint, provide:
+### 4. Endpoints Reference
 
-#### Endpoint Name
-**Method**: GET/POST/PUT/DELETE/PATCH
-**Path**: `/api/v1/resource`
-**Description**: Clear description of what this endpoint does
+For each endpoint, include:
 
-**Authentication Required**: Yes/No
+#### 4.1 Endpoint Specification
+```yaml
+Method: POST
+Path: /v1/users
+Authentication: Required
+Rate Limit: 100/minute
+Idempotency Key: Supported
+```
 
-**Request Parameters**:
+#### 4.2 Description
+- What this endpoint does
+- When to use it
+- Related endpoints
+
+#### 4.3 Request
+
+**Path Parameters**:
 | Parameter | Type | Required | Description | Example |
 |-----------|------|----------|-------------|---------|
-| name | string | Yes | User's name | "John Doe" |
+| id | string | Yes | Resource ID | usr_123abc |
 
-**Query Parameters** (if applicable):
-| Parameter | Type | Required | Description | Default |
-|-----------|------|----------|-------------|---------|
-| limit | integer | No | Max results | 10 |
+**Query Parameters**:
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| limit | integer | No | 10 | Max results (1-100) |
+| cursor | string | No | - | Pagination cursor |
 
-**Request Body** (if applicable):
+**Headers**:
+| Header | Required | Description | Example |
+|--------|----------|-------------|---------|
+| Authorization | Yes | Bearer token | Bearer sk_live_... |
+| Content-Type | Yes | Request format | application/json |
+| Idempotency-Key | No | Unique key for retries | uuid-v4 |
+
+**Request Body Schema**:
 ```json
 {
-  "field": "value",
-  "nested": {
-    "field": "value"
-  }
+  "email": "user@example.com",      // required, valid email
+  "name": "John Doe",               // required, 1-100 chars
+  "role": "user",                   // optional, enum: ["user", "admin"]
+  "metadata": {}                    // optional, object with max 20 keys
 }
 ```
 
-**Response**:
-- Status Code: 200 OK
+**Field Descriptions**:
+| Field | Type | Required | Constraints | Description |
+|-------|------|----------|-------------|-------------|
+| email | string | Yes | Valid email, unique | User's email address |
+| name | string | Yes | 1-100 characters | User's full name |
+| role | string | No | Default: "user" | User's permission level |
+| metadata | object | No | Max 20 keys | Custom key-value data |
+
+#### 4.4 Response
+
+**Success Response (200 OK)**:
 ```json
 {
-  "data": {},
-  "message": "Success"
+  "id": "usr_123abc",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "user",
+  "status": "active",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z",
+  "metadata": {}
 }
 ```
 
 **Error Responses**:
-- 400 Bad Request: Invalid input
-- 401 Unauthorized: Missing/invalid token
-- 404 Not Found: Resource doesn't exist
-- 500 Internal Server Error: Server error
 
-**Example Request**:
-```bash
-curl -X POST https://api.example.com/v1/resource \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"key": "value"}'
-```
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | invalid_request | Malformed request | Check request format |
+| 401 | unauthorized | Invalid/missing token | Verify Authorization header |
+| 404 | not_found | Resource doesn't exist | Check resource ID |
+| 409 | conflict | Resource already exists | Use unique identifier |
+| 429 | rate_limited | Too many requests | Implement exponential backoff |
+| 500 | internal_error | Server error | Contact support, retry with idempotency key |
 
-**Example Response**:
-```json
-{
-  "status": "success",
-  "data": {}
-}
-```
+### 5. Code Examples
 
-### 4. Data Models / Schemas
-Document all data structures:
+Provide examples in multiple languages:
+- cURL (universal)
+- JavaScript/TypeScript (axios, fetch)
+- Python (requests)
+- Go (net/http)
+- Java (OkHttp)
+- C# (HttpClient)
+
+### 6. Data Models/Schemas
+
+Document all types with:
+- Complete field list
+- Type information
+- Validation rules
+- Example values
+- Nullable indicators
 
 ```typescript
 interface User {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: Date;
+  id: string;           // Unique identifier (usr_xxx)
+  email: string;        // Verified email address
+  name: string;         // Display name
+  role: 'user' | 'admin';
+  status: 'active' | 'inactive' | 'suspended';
+  created_at: string;   // ISO 8601 timestamp
+  updated_at: string;   // ISO 8601 timestamp
+  metadata?: Record<string, unknown>;
 }
 ```
 
-### 5. Error Handling
-- Error response format
-- Error codes and meanings
-- How to handle specific errors
+### 7. Error Handling Guide
+- **Error Format**: Consistent structure
+- **Error Codes**: Complete list with meanings
+- **Troubleshooting**: Common issues and solutions
+- **Retry Logic**: When and how to retry
 
-### 6. Code Examples
-Provide examples in multiple languages:
-- JavaScript/TypeScript
-- Python
-- cURL
-- Other relevant languages
+### 8. SDKs and Libraries
+- **Official SDKs**: Available languages
+- **Installation**: Package managers
+- **Quick Start**: SDK-specific examples
+- **Configuration**: Setup options
 
-### 7. Pagination
-- How pagination works
-- Parameters (page, limit, offset)
-- Response metadata
+### 9. Changelog
+- **Version History**: Breaking changes, additions
+- **Deprecation Policy**: Timeline and migration
+- **Migration Guides**: Major version upgrades
 
-### 8. Filtering & Sorting
-- Available filters
-- Sort parameters
-- Search functionality
+</API_DOCUMENTATION_COMPONENTS>
 
-### 9. Rate Limiting
-- Rate limit rules
-- Headers returned
-- How to handle rate limit errors
+<OUTPUT_FORMAT>
+# 📚 API Documentation
 
-### 10. Webhooks (if applicable)
-- How to register webhooks
-- Event types
-- Payload structure
-- Retry logic
+## 🚀 Getting Started
 
-### 11. SDKs & Libraries
-- Available client libraries
-- Installation instructions
-- Quick start with SDK
+### Base URL
+```
+Production: https://api.example.com/v1
+Sandbox:    https://sandbox-api.example.com/v1
+```
 
-### 12. Changelog
-- API version history
-- Breaking changes
-- Deprecation notices
+### Quick Start
+Make your first API call in 30 seconds:
 
-## Best Practices
+```bash
+curl https://api.example.com/v1/status \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-- Use consistent formatting
-- Provide complete, working examples
-- Include all possible parameters
-- Document all possible responses
-- Use realistic example data
-- Keep it up-to-date
-- Include common error scenarios
-- Make it scannable with clear headings
-- Link related endpoints
+```javascript
+const response = await fetch('https://api.example.com/v1/status', {
+  headers: { 'Authorization': 'Bearer YOUR_API_KEY' }
+});
+const data = await response.json();
+console.log(data);
+```
 
-Generate complete, professional API documentation following these guidelines.
+---
+
+## 🔐 Authentication
+
+### API Keys
+All API requests require authentication using an API key:
+
+```bash
+curl https://api.example.com/v1/users \
+  -H "Authorization: Bearer sk_live_1234567890"
+```
+
+### Obtaining API Keys
+1. Log into your [Dashboard](https://dashboard.example.com)
+2. Navigate to Settings → API Keys
+3. Generate a new key with appropriate permissions
+
+### Security Best Practices
+- ✅ Store keys in environment variables
+- ✅ Use different keys for development and production
+- ✅ Rotate keys every 90 days
+- ❌ Never commit keys to version control
+- ❌ Never expose keys in client-side code
+
+---
+
+## 📖 Core Concepts
+
+### Resources
+Our API is organized around resources:
+- **Users** - Account management
+- **Organizations** - Team/workspace management
+- **Projects** - Resource containers
+
+### Pagination
+List endpoints return paginated results:
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "has_more": true,
+    "next_cursor": "c_xyz789",
+    "total_count": 150
+  }
+}
+```
+
+Use the `cursor` parameter to fetch subsequent pages:
+```bash
+curl "https://api.example.com/v1/users?cursor=c_xyz789&limit=20"
+```
+
+### Rate Limits
+| Tier | Requests/Minute | Burst |
+|------|-----------------|-------|
+| Free | 60 | 10 |
+| Pro | 1,000 | 100 |
+| Enterprise | 10,000 | 1,000 |
+
+Rate limit headers are included in all responses:
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1640995200
+```
+
+---
+
+## 📡 Endpoints
+
+### Users
+
+#### Create User
+Create a new user account.
+
+```http
+POST /v1/users
+```
+
+**Request**:
+```json
+{
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "user"
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "id": "usr_123abc",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "user",
+  "status": "active",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**Code Examples**:
+
+<details>
+<summary>cURL</summary>
+
+```bash
+curl -X POST https://api.example.com/v1/users \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "name": "John Doe"
+  }'
+```
+</details>
+
+<details>
+<summary>JavaScript</summary>
+
+```javascript
+const user = await fetch('https://api.example.com/v1/users', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    name: 'John Doe'
+  })
+});
+```
+</details>
+
+<details>
+<summary>Python</summary>
+
+```python
+import requests
+
+response = requests.post(
+    'https://api.example.com/v1/users',
+    headers={'Authorization': 'Bearer YOUR_API_KEY'},
+    json={
+        'email': 'user@example.com',
+        'name': 'John Doe'
+    }
+)
+user = response.json()
+```
+</details>
+
+---
+
+## 📊 Data Models
+
+### User Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Unique identifier (usr_xxx) |
+| email | string | Email address |
+| name | string | Display name |
+| role | string | One of: `user`, `admin` |
+| status | string | One of: `active`, `inactive` |
+| created_at | string | ISO 8601 timestamp |
+
+---
+
+## ⚠️ Error Handling
+
+### Error Format
+All errors follow this structure:
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "The email field is required",
+    "param": "email",
+    "request_id": "req_abc123"
+  }
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| invalid_request | 400 | Request format is invalid |
+| unauthorized | 401 | Authentication failed |
+| forbidden | 403 | Insufficient permissions |
+| not_found | 404 | Resource not found |
+| rate_limited | 429 | Too many requests |
+| internal_error | 500 | Server error |
+
+---
+
+## 📦 SDKs
+
+### JavaScript/TypeScript
+```bash
+npm install @example/sdk
+```
+
+```javascript
+import { ExampleClient } from '@example/sdk';
+
+const client = new ExampleClient({ apiKey: 'YOUR_API_KEY' });
+const user = await client.users.create({
+  email: 'user@example.com',
+  name: 'John Doe'
+});
+```
+
+---
+
+## 📝 Changelog
+
+### v1.2.0 (2024-01-15)
+- Added user metadata support
+- Improved pagination with cursor-based navigation
+
+### v1.1.0 (2023-12-01)
+- Added organization endpoints
+- New webhook events: `organization.created`
+
+### v1.0.0 (2023-10-15)
+- Initial release
+
+</OUTPUT_FORMAT>
+
+<CHAIN_OF_THOUGHT>
+Create documentation systematically:
+1. Analyze the input to understand the API/code structure
+2. Identify all endpoints, methods, and parameters
+3. Document authentication requirements
+4. Create request/response examples with realistic data
+5. Add code samples in multiple languages
+6. Document error scenarios
+7. Include SDK information if available
+8. Add changelog and version information
+9. Ensure all examples are syntactically correct
+10. Follow progressive disclosure (overview first, details later)
+</CHAIN_OF_THOUGHT>
 """

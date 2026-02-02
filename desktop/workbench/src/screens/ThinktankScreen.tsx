@@ -1,9 +1,9 @@
 import { FC, useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { invoke } from '@tauri-apps/api/core'
 import { useToast } from '../context/ToastContext'
 import { ConversationPanel } from '../components/ConversationPanel'
-import { ChatMessage, PromptMetadata } from '../types'
+import { usePrompts, usePromptExecution } from '../hooks'
+import { ChatMessage, PromptCategory } from '../types'
 
 // Extended Prompt interface with metadata
 interface PromptTool {
@@ -14,7 +14,6 @@ interface PromptTool {
   version?: string
   input_schema?: { properties?: Record<string, JSONSchemaProperty> }
   template: string
-  metadata?: PromptMetadata
 }
 
 interface JSONSchemaProperty {
@@ -122,65 +121,66 @@ const getCategoryStyle = (category?: string) => {
   return categoryColors[key] || categoryColors.custom
 }
 
+const isAgentPrompt = (name: string): boolean => {
+  return name.startsWith('conductor_') || name.startsWith('cli_security_')
+}
+
 export const ThinktankScreen: FC = () => {
   const location = useLocation()
-  const [prompts, setPrompts] = useState<PromptTool[]>([])
-  const [filteredPrompts, setFilteredPrompts] = useState<PromptTool[]>([])
+  const toast = useToast()
+  
+  // Local UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [showAgentPrompts, setShowAgentPrompts] = useState(false)
-  const [showIncompatible, setShowIncompatible] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTool | null>(null)
   const [args, setArgs] = useState<Record<string, unknown>>({})
-  const [result, setResult] = useState<string>('')
-  const [loading, setLoading] = useState(false)
-  const [executing, setExecuting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [chatMode, setChatMode] = useState(false)
   const [initialMessages, setInitialMessages] = useState<ChatMessage[]>([])
-  const toast = useToast()
 
-  const isAgentPrompt = useCallback((name: string) => {
-    return name.startsWith('conductor_') || name.startsWith('cli_security_')
-  }, [])
+  // Use the enhanced prompts hook
+  const { 
+    prompts, 
+    filteredPrompts,
+    loading, 
+    error: promptsError, 
+    refresh,
+    categories,
+    countByCategory,
+  } = usePrompts({
+    includeAgentPrompts: showAgentPrompts,
+    category: selectedCategory,
+    search: searchQuery,
+  })
 
-  // Get unique categories from prompts
-  const categories = Array.from(new Set(prompts.map(p => p.category || 'custom'))).sort()
+  // Use the prompt execution hook
+  const {
+    execute,
+    executing,
+    error: executionError,
+    result,
+    reset,
+  } = usePromptExecution()
 
-  // Filter prompts based on search, category, and agent visibility
+  // Handle incoming navigation state
   useEffect(() => {
-    let filtered = prompts
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query) ||
-        p.explanation?.toLowerCase().includes(query) ||
-        p.category?.toLowerCase().includes(query)
+    const state = location.state as { promptName?: string; args?: Record<string, unknown> } | null
+    if (state?.promptName && prompts.length > 0) {
+      const target = prompts.find(p => 
+        p.name === state.promptName || `prompts__${p.name}` === state.promptName
       )
+      if (target) {
+        if (isAgentPrompt(target.name)) {
+          setShowAgentPrompts(true)
+        }
+        handleSelectPrompt(target, state.args)
+      }
     }
-
-    // Category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => 
-        (p.category || 'custom').toLowerCase() === selectedCategory.toLowerCase()
-      )
-    }
-
-    // Agent prompt filter
-    if (!showAgentPrompts) {
-      filtered = filtered.filter(p => !isAgentPrompt(p.name))
-    }
-
-    setFilteredPrompts(filtered)
-  }, [prompts, searchQuery, selectedCategory, showAgentPrompts, isAgentPrompt])
+  }, [location.state, prompts])
 
   const handleSelectPrompt = useCallback((prompt: PromptTool, initialArgs?: Record<string, unknown>) => {
     setSelectedPrompt(prompt)
-    setResult('')
-    setError(null)
+    reset()
     setChatMode(false)
     setInitialMessages([])
 
@@ -205,79 +205,32 @@ export const ThinktankScreen: FC = () => {
       }
     })
     setArgs(newArgs)
-  }, [])
-
-  const loadPrompts = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      // Try to load enhanced prompts with metadata first
-      let loaded: PromptTool[] = []
-      try {
-        loaded = await invoke<PromptTool[]>('get_available_prompts_with_metadata')
-      } catch {
-        // Fallback to basic prompts
-        loaded = await invoke<PromptTool[]>('get_available_prompts')
-      }
-      setPrompts(loaded)
-
-      // Check if we have incoming state
-      const state = location.state as { promptName?: string; args?: Record<string, unknown> } | null
-      if (state?.promptName) {
-        const target = loaded.find(p => p.name === state.promptName || `prompts__${p.name}` === state.promptName)
-        if (target) {
-          if (isAgentPrompt(target.name)) {
-            setShowAgentPrompts(true)
-          }
-          handleSelectPrompt(target, state.args)
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load prompts:', err)
-      setError(`Failed to load prompt library: ${err}`)
-      toast.error('Failed to load prompt library')
-    } finally {
-      setLoading(false)
-    }
-  }, [handleSelectPrompt, isAgentPrompt, location.state, toast])
-
-  useEffect(() => {
-    loadPrompts()
-  }, [loadPrompts])
+  }, [reset])
 
   const handleExecute = async () => {
     if (!selectedPrompt) return
 
-    setExecuting(true)
-    setError(null)
+    const properties = selectedPrompt.input_schema?.properties || {}
+    const typedArgs =
+      Object.keys(properties).length === 0 ? args : buildTypedArgs(properties, args)
+
     try {
-      const properties = selectedPrompt.input_schema?.properties || {}
-      const typedArgs =
-        Object.keys(properties).length === 0 ? args : buildTypedArgs(properties, args)
-      const response = await invoke<{ result: string }>('execute_prompt', {
-        request: {
-          tool_name: selectedPrompt.name,
-          args: typedArgs,
-          profile_name: null // will use default
-        }
+      const response = await execute({
+        tool_name: selectedPrompt.name,
+        args: typedArgs,
       })
-      setResult(response.result)
-      
+
       // Create initial message for potential chat transition
       const assistantMessage: ChatMessage = {
         id: `report-${Date.now()}`,
         session_id: '',
         role: 'assistant',
-        content: response.result,
+        content: response,
         timestamp: new Date().toISOString(),
       }
       setInitialMessages([assistantMessage])
     } catch (err) {
-      console.error('Execution failed:', err)
-      setError(`Execution failed: ${err}`)
       toast.error('Prompt execution failed')
-    } finally {
-      setExecuting(false)
     }
   }
 
@@ -287,9 +240,10 @@ export const ThinktankScreen: FC = () => {
     }
   }
 
+  const displayedError = promptsError || executionError
   const hiddenAgentCount = prompts.filter(p => isAgentPrompt(p.name)).length
-  const incompatibleCount = prompts.length - filteredPrompts.length
 
+  // Chat mode view
   if (chatMode && result) {
     return (
       <div className="flex h-full gap-4">
@@ -365,7 +319,7 @@ export const ThinktankScreen: FC = () => {
               Prompt Library
             </span>
             <button
-              onClick={loadPrompts}
+              onClick={refresh}
               className="text-xs p-1 rounded transition-colors hover:text-terminal-cyan"
               disabled={loading}
               style={{ color: 'var(--dracula-comment)' }}
@@ -384,7 +338,7 @@ export const ThinktankScreen: FC = () => {
             <option value="all">All Categories ({prompts.length})</option>
             {categories.map(cat => (
               <option key={cat} value={cat}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)} ({prompts.filter(p => (p.category || 'custom') === cat).length})
+                {cat.charAt(0).toUpperCase() + cat.slice(1)} ({countByCategory[cat] || 0})
               </option>
             ))}
           </select>
@@ -398,28 +352,15 @@ export const ThinktankScreen: FC = () => {
             className="input text-sm"
           />
 
-          {/* Toggles */}
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
-              <input
-                type="checkbox"
-                checked={showAgentPrompts}
-                onChange={(e) => setShowAgentPrompts(e.target.checked)}
-              />
-              Show agent prompts {hiddenAgentCount > 0 && `(${hiddenAgentCount} hidden)`}
-            </label>
-            
-            {incompatibleCount > 0 && (
-              <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
-                <input
-                  type="checkbox"
-                  checked={showIncompatible}
-                  onChange={(e) => setShowIncompatible(e.target.checked)}
-                />
-                Show incompatible prompts ({incompatibleCount} filtered)
-              </label>
-            )}
-          </div>
+          {/* Agent prompt toggle */}
+          <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
+            <input
+              type="checkbox"
+              checked={showAgentPrompts}
+              onChange={(e) => setShowAgentPrompts(e.target.checked)}
+            />
+            Show agent prompts {hiddenAgentCount > 0 && `(${hiddenAgentCount} hidden)`}
+          </label>
         </div>
 
         <div className="flex-1 overflow-auto">
@@ -433,34 +374,21 @@ export const ThinktankScreen: FC = () => {
                 />
               ))}
             </div>
-          ) : prompts.length === 0 ? (
+          ) : filteredPrompts.length === 0 ? (
             <div className="p-6 text-center flex flex-col items-center gap-3">
               <div className="text-3xl opacity-50">📭</div>
               <p className="text-sm font-medium" style={{ color: 'var(--dracula-fg)' }}>
                 No prompts found
               </p>
               <p className="text-xs" style={{ color: 'var(--dracula-comment)' }}>
-                Add <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>.yaml</code> files to your <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>prompts/</code> folder
+                Add <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>.toml</code> files to your <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>prompts/</code> folder
               </p>
               <button
-                onClick={loadPrompts}
+                onClick={refresh}
                 className="btn text-xs mt-2"
                 style={{ borderColor: 'var(--dracula-cyan)' }}
               >
                 ↻ refresh
-              </button>
-            </div>
-          ) : filteredPrompts.length === 0 ? (
-            <div className="p-6 text-center flex flex-col items-center gap-3">
-              <div className="text-3xl opacity-50">🔍</div>
-              <p className="text-sm" style={{ color: 'var(--dracula-comment)' }}>
-                No prompts match &quot;{searchQuery}&quot;
-              </p>
-              <button
-                onClick={() => { setSearchQuery(''); setSelectedCategory('all') }}
-                className="text-xs text-terminal-cyan hover:underline"
-              >
-                Clear filters
               </button>
             </div>
           ) : (
@@ -468,7 +396,7 @@ export const ThinktankScreen: FC = () => {
               {filteredPrompts.map(p => (
                 <button
                   key={p.name}
-                  onClick={() => handleSelectPrompt(p)}
+                  onClick={() => handleSelectPrompt(p as PromptTool)}
                   className="p-3 text-left text-sm border-b transition-all duration-150"
                   style={{
                     borderColor: 'var(--dracula-comment)',
@@ -533,13 +461,26 @@ export const ThinktankScreen: FC = () => {
           className="p-2 border-t text-center text-xs"
           style={{ borderColor: 'var(--dracula-comment)', color: 'var(--dracula-comment)' }}
         >
-          {filteredPrompts.length} of {prompts.length} prompts
+          {filteredPrompts.length} prompts displayed
           {hiddenAgentCount > 0 && !showAgentPrompts && ` • ${hiddenAgentCount} agent prompts hidden`}
         </div>
       </div>
 
       {/* Main Content: Input & Execution */}
       <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+        {displayedError && (
+          <div 
+            className="p-3 rounded text-sm"
+            style={{ 
+              background: 'var(--dracula-red)20',
+              border: '1px solid var(--dracula-red)',
+              color: 'var(--dracula-red)'
+            }}
+          >
+            ⚠️ {displayedError}
+          </div>
+        )}
+
         {!selectedPrompt ? (
           <div
             className="flex-1 flex items-center justify-center card"
@@ -713,7 +654,7 @@ export const ThinktankScreen: FC = () => {
             </div>
 
             {/* Output Section */}
-            {(result || executing || error) && (
+            {(result || executing) && (
               <div
                 className="flex-1 card flex flex-col p-0 overflow-hidden"
                 style={{ borderColor: 'var(--dracula-comment)' }}

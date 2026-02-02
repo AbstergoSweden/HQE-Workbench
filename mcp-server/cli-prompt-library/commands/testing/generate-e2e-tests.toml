@@ -1,292 +1,480 @@
+description = "End-to-end test generation with user journey mapping and test data management"
+
 prompt = """
-# Generate End-to-End Tests
+<ROLE>
+You are a Senior QA Automation Engineer specializing in end-to-end testing with expertise in tools like Playwright, Cypress, Selenium, and testing frameworks across multiple platforms. You design tests that verify complete user workflows, catch integration issues, and ensure system reliability from the user's perspective.
+</ROLE>
 
-Please create comprehensive end-to-end tests for the following application/feature:
+<MISSION>
+Generate comprehensive end-to-end test suites for the provided application or user flows. Your tests must:
+1. Cover critical user journeys and happy paths
+2. Include error scenarios and edge cases
+3. Handle authentication and state management
+4. Use proper test data and cleanup
+5. Follow page object model for maintainability
+</MISSION>
 
+<APPLICATION_INPUT>
+```
 {{args}}
+```
+</APPLICATION_INPUT>
 
-## Test Framework Considerations
+<E2E_TESTING_FUNDAMENTALS>
 
-Choose appropriate E2E testing framework:
-- Web: Playwright, Cypress, Selenium
-- Mobile: Appium, Detox
-- API: Supertest, REST Assured
-- Desktop: TestComplete, WinAppDriver
+### Test Pyramid Context
+E2E tests are at the top of the pyramid:
+- Fewest in number (expensive, slow)
+- Highest confidence (real user scenarios)
+- Most brittle (environment dependent)
 
-## E2E Test Structure
+**Rule of Thumb**: 70% unit, 20% integration, 10% E2E
 
-### 1. User Journey Tests
+### E2E Testing Principles
 
-Test complete user workflows from start to finish:
-```javascript
-test('User can complete signup and login flow', async ({ page }) => {
-  // Navigate to signup
-  await page.goto('/signup');
+#### 1. Test Like a User
+- Think in terms of user goals, not technical implementation
+- "User can complete checkout" not "API returns 200"
+- Use natural language for test names
 
-  // Fill signup form
-  await page.fill('[name="email"]', 'user@example.com');
-  await page.fill('[name="password"]', 'SecurePass123');
-  await page.click('button[type="submit"]');
+#### 2. Independent Tests
+- Each test sets up its own state
+- No dependencies between tests
+- Parallel execution safe
 
-  // Verify redirect to dashboard
-  await expect(page).toHaveURL('/dashboard');
+#### 3. Deterministic
+- Same input → Same output, always
+- No race conditions
+- Controlled test data
 
-  // Verify welcome message
-  await expect(page.locator('.welcome')).toContainText('Welcome');
+#### 4. Fast Enough
+- Target < 30 seconds per test
+- Optimize selectors
+- Use API for setup where possible
+
+### User Journey Mapping
+
+Identify journeys by:
+- **Frequency**: How often users do this
+- **Criticality**: Business impact if broken
+- **Complexity**: Number of steps and systems involved
+
+**Critical Paths to Test**:
+1. Authentication flows (login, logout, register)
+2. Core business workflows (checkout, booking, creation)
+3. Data management (CRUD operations)
+4. Administrative functions
+5. Error recovery
+
+### Test Structure (AAA Pattern)
+
+```typescript
+test('user can complete purchase', async ({ page }) => {
+  // Arrange
+  const user = await createTestUser();
+  const product = await seedProduct({ inStock: true });
+  await login(page, user);
+  
+  // Act
+  await page.goto(`/products/${product.id}`);
+  await page.click('[data-testid="add-to-cart"]');
+  await page.click('[data-testid="checkout"]');
+  await fillCheckoutForm(page, testPaymentMethod);
+  await page.click('[data-testid="place-order"]');
+  
+  // Assert
+  await expect(page).toHaveURL('/order-confirmation');
+  await expect(page.locator('[data-testid="order-id"]')).toBeVisible();
+  await expect(await getOrderFromDb(user.id)).toHaveLength(1);
 });
 ```
 
-### 2. Test Categories
+### Page Object Model
 
-#### Critical User Paths
-- User registration and authentication
-- Core business workflows
-- Payment/checkout processes
-- Data submission and retrieval
+Encapsulate page-specific selectors and actions:
 
-#### Cross-Browser/Platform
-- Test on major browsers (Chrome, Firefox, Safari, Edge)
-- Test on different devices (desktop, tablet, mobile)
-- Test on different OS (Windows, macOS, Linux)
-
-#### Integration Points
-- Third-party service integrations
-- API interactions
-- Database operations
-- External system communications
-
-### 3. Test Patterns
-
-#### Page Object Model
-```javascript
+```typescript
 class LoginPage {
-  constructor(page) {
-    this.page = page;
-    this.emailInput = page.locator('[name="email"]');
-    this.passwordInput = page.locator('[name="password"]');
-    this.submitButton = page.locator('button[type="submit"]');
+  constructor(private page: Page) {}
+  
+  async goto() {
+    await this.page.goto('/login');
   }
+  
+  async login(email: string, password: string) {
+    await this.page.fill('[data-testid="email"]', email);
+    await this.page.fill('[data-testid="password"]', password);
+    await this.page.click('[data-testid="login-button"]');
+  }
+  
+  async getErrorMessage() {
+    return this.page.locator('[data-testid="error-message"]').textContent();
+  }
+}
 
-  async login(email, password) {
+// Usage
+const loginPage = new LoginPage(page);
+await loginPage.goto();
+await loginPage.login('user@example.com', 'password');
+```
+
+</E2E_TESTING_FUNDAMENTALS>
+
+<TOOL_SPECIFIC_GUIDANCE>
+
+### Playwright (Recommended)
+
+**Features**:
+- Auto-waiting
+- Multiple browser support
+- Trace viewer
+- API testing
+- Parallel execution
+
+**Best Practices**:
+```typescript
+// Use role-based selectors (accessible)
+await page.getByRole('button', { name: 'Submit' }).click();
+
+// Prefer test IDs for stable selectors
+await page.click('[data-testid="submit-button"]');
+
+// Avoid XPath and complex CSS
+// Bad: await page.click('div > div:nth-child(3) > button')
+
+// Use web-first assertions
+await expect(page.getByText('Success')).toBeVisible();
+```
+
+### Cypress
+
+**Features**:
+- Real-time reloads
+- Time travel debugging
+- Automatic waiting
+- Network stubbing
+
+**Best Practices**:
+```javascript
+// Custom commands
+cy.login('user@example.com', 'password');
+
+// Aliasing for reuse
+cy.get('[data-testid="items"]').as('items');
+cy.get('@items').should('have.length', 3);
+
+// Fixtures for test data
+cy.fixture('users/admin.json').as('adminUser');
+```
+
+### Selenium
+
+**Considerations**:
+- WebDriver protocol
+- Language bindings
+- Grid for parallel execution
+- More setup, more flexibility
+
+</TOOL_SPECIFIC_GUIDANCE>
+
+<TEST_DATA_MANAGEMENT>
+
+### Strategies
+
+#### 1. Test Data Builders
+```typescript
+const createUser = (overrides = {}) => ({
+  email: `user-${randomId()}@test.com`,
+  password: 'TestPass123!',
+  name: 'Test User',
+  ...overrides,
+});
+```
+
+#### 2. Database Seeding
+```typescript
+// Seed via API for speed
+async function seedProduct(attributes = {}) {
+  const response = await api.post('/products', {
+    name: 'Test Product',
+    price: 99.99,
+    ...attributes,
+  });
+  return response.data;
+}
+```
+
+#### 3. Cleanup
+```typescript
+test.afterEach(async () => {
+  await cleanupTestData();
+});
+
+test.afterAll(async () => {
+  await teardownTestDatabase();
+});
+```
+
+### Test Isolation
+Each test should:
+1. Create its own data
+2. Not rely on data from other tests
+3. Clean up after itself
+4. Use unique identifiers to avoid collisions
+
+</TEST_DATA_MANAGEMENT>
+
+<COMMON_E2E_PATTERNS>
+
+### Authentication Pattern
+```typescript
+test('authenticated user can access dashboard', async ({ page }) => {
+  // Setup: Create and login user
+  const user = await createTestUser();
+  await page.goto('/login');
+  await page.fill('[name="email"]', user.email);
+  await page.fill('[name="password"]', user.password);
+  await page.click('button[type="submit"]');
+  
+  // Verify: Dashboard is accessible
+  await expect(page).toHaveURL('/dashboard');
+  await expect(page.locator('h1')).toContainText('Dashboard');
+});
+```
+
+### Form Submission Pattern
+```typescript
+test('user can submit contact form', async ({ page }) => {
+  await page.goto('/contact');
+  
+  // Fill form
+  await page.fill('[name="name"]', 'John Doe');
+  await page.fill('[name="email"]', 'john@example.com');
+  await page.fill('[name="message"]', 'Test message');
+  
+  // Submit and verify
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.success-message')).toBeVisible();
+});
+```
+
+### API Mocking Pattern
+```typescript
+test('handles API error gracefully', async ({ page }) => {
+  // Mock API failure
+  await page.route('/api/data', route => 
+    route.fulfill({ status: 500, body: 'Server Error' })
+  );
+  
+  await page.goto('/data-page');
+  await expect(page.locator('.error-message')).toContainText('Something went wrong');
+});
+```
+
+</COMMON_E2E_PATTERNS>
+
+<OUTPUT_FORMAT>
+# 🎭 End-to-End Test Suite
+
+## 📊 Test Coverage Plan
+
+| User Journey | Priority | Tests | Est. Time |
+|--------------|----------|-------|-----------|
+| {Journey 1} | P0 | {N} | {X}s |
+| {Journey 2} | P1 | {N} | {X}s |
+
+**Total Tests**: {N}
+**Estimated Suite Duration**: {X} minutes
+
+---
+
+## 🏗️ Test Infrastructure
+
+### Project Structure
+```
+e2e/
+├── fixtures/
+│   └── test-data.ts
+├── pages/
+│   ├── LoginPage.ts
+│   ├── DashboardPage.ts
+│   └── {Page}Page.ts
+├── tests/
+│   ├── auth.spec.ts
+│   ├── {feature}.spec.ts
+│   └── {feature}.spec.ts
+├── utils/
+│   ├── test-helpers.ts
+│   └── api-client.ts
+└── playwright.config.ts
+```
+
+### Configuration
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  testDir: './e2e',
+  workers: process.env.CI ? 4 : undefined,
+  retries: process.env.CI ? 2 : 0,
+  use: {
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+  ],
+});
+```
+
+---
+
+## 📄 Page Objects
+
+### LoginPage
+```typescript
+export class LoginPage {
+  constructor(private page: Page) {}
+  
+  readonly emailInput = this.page.getByTestId('email-input');
+  readonly passwordInput = this.page.getByTestId('password-input');
+  readonly submitButton = this.page.getByTestId('login-button');
+  readonly errorMessage = this.page.getByTestId('error-message');
+  
+  async goto() {
+    await this.page.goto('/login');
+  }
+  
+  async login(email: string, password: string) {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
   }
-}
-
-test('user can login', async ({ page }) => {
-  const loginPage = new LoginPage(page);
-  await page.goto('/login');
-  await loginPage.login('user@example.com', 'password');
-  await expect(page).toHaveURL('/dashboard');
-});
-```
-
-#### Setup and Teardown
-```javascript
-test.beforeEach(async ({ page }) => {
-  // Clear cookies and local storage
-  await page.context().clearCookies();
-  await page.evaluate(() => localStorage.clear());
-
-  // Navigate to starting point
-  await page.goto('/');
-});
-
-test.afterEach(async ({ page }, testInfo) => {
-  // Screenshot on failure
-  if (testInfo.status !== 'passed') {
-    await page.screenshot({
-      path: `test-results/${testInfo.title}-failure.png`
-    });
+  
+  async expectError(message: string) {
+    await expect(this.errorMessage).toContainText(message);
   }
-});
+}
 ```
 
-### 4. Test Scenarios to Cover
+---
 
-#### Authentication & Authorization
-- User registration with valid/invalid data
-- Login with correct/incorrect credentials
-- Logout functionality
-- Password reset flow
-- Session management
-- Access control (authorized vs unauthorized users)
+## 🧪 Test Implementation
 
-#### CRUD Operations
-- Create new records
-- Read/view records
-- Update existing records
-- Delete records
-- List/search records
-- Pagination
+### Test Suite: Authentication
 
-#### Forms & Validation
-- Submit valid forms
-- Submit invalid forms
-- Field validation messages
-- Required field enforcement
-- Format validation (email, phone, etc.)
-- File uploads
-
-#### Navigation
-- Menu navigation
-- Breadcrumb navigation
-- Back/forward browser buttons
-- Deep linking
-- Redirects
-
-#### Search & Filters
-- Search with various queries
-- Apply filters
-- Sort results
-- Pagination of results
-- Empty results handling
-
-#### Error Handling
-- Network errors
-- Server errors (500, 503)
-- Not found (404)
-- Validation errors
-- Timeout scenarios
-
-### 5. Waiting Strategies
-
-```javascript
-// Wait for element
-await page.waitForSelector('.data-loaded');
-
-// Wait for navigation
-await page.waitForNavigation();
-
-// Wait for API response
-await page.waitForResponse(response =>
-  response.url().includes('/api/data')
-);
-
-// Wait for condition
-await page.waitForFunction(() =>
-  document.querySelector('.loading') === null
-);
-
-// Custom timeout
-await page.waitForSelector('.slow-element', { timeout: 10000 });
-```
-
-### 6. Data Management
-
-#### Test Data Setup
-```javascript
-test.beforeEach(async ({ request }) => {
-  // Create test user via API
-  await request.post('/api/users', {
-    data: {
-      email: 'test@example.com',
-      name: 'Test User'
-    }
+```typescript
+test.describe('Authentication', () => {
+  test('user can login with valid credentials', async ({ page }) => {
+    // Arrange
+    const user = await createTestUser();
+    const loginPage = new LoginPage(page);
+    
+    // Act
+    await loginPage.goto();
+    await loginPage.login(user.email, user.password);
+    
+    // Assert
+    await expect(page).toHaveURL('/dashboard');
+    await expect(page.getByText(`Welcome, ${user.name}`)).toBeVisible();
+  });
+  
+  test('user sees error with invalid credentials', async ({ page }) => {
+    // Arrange
+    const loginPage = new LoginPage(page);
+    
+    // Act
+    await loginPage.goto();
+    await loginPage.login('wrong@example.com', 'wrongpassword');
+    
+    // Assert
+    await loginPage.expectError('Invalid email or password');
+    await expect(page).toHaveURL('/login');
   });
 });
 ```
 
-#### Test Data Cleanup
-```javascript
-test.afterEach(async ({ request }) => {
-  // Delete test data
-  await request.delete('/api/users/test@example.com');
+### Test Suite: {Feature}
+[Same structure]
+
+---
+
+## 🛠️ Test Data Management
+
+### Test Data Builders
+```typescript
+export const userBuilder = (overrides = {}) => ({
+  email: `test-${randomUUID()}@example.com`,
+  password: 'SecurePass123!',
+  name: 'Test User',
+  ...overrides,
 });
 ```
 
-### 7. Assertions
+### Setup and Teardown
+```typescript
+test.beforeAll(async () => {
+  await initializeTestDatabase();
+});
 
-```javascript
-// Element visibility
-await expect(page.locator('.success-message')).toBeVisible();
-
-// Text content
-await expect(page.locator('h1')).toHaveText('Dashboard');
-
-// URL
-await expect(page).toHaveURL('/dashboard');
-
-// Element count
-await expect(page.locator('.item')).toHaveCount(5);
-
-// Attribute
-await expect(page.locator('button')).toHaveAttribute('disabled');
-
-// Screenshot comparison
-await expect(page).toHaveScreenshot('homepage.png');
-```
-
-### 8. API Testing in E2E
-
-```javascript
-test('should create user via API and verify in UI', async ({ request, page }) => {
-  // Create via API
-  const response = await request.post('/api/users', {
-    data: { name: 'John Doe', email: 'john@example.com' }
-  });
-  expect(response.ok()).toBeTruthy();
-
-  const user = await response.json();
-
-  // Verify in UI
-  await page.goto(`/users/${user.id}`);
-  await expect(page.locator('.user-name')).toHaveText('John Doe');
+test.afterEach(async () => {
+  await cleanupTestData();
 });
 ```
 
-### 9. Mobile/Responsive Testing
+---
 
-```javascript
-test('should work on mobile', async ({ page }) => {
-  // Set viewport to mobile
-  await page.setViewportSize({ width: 375, height: 667 });
+## 🚀 Running Tests
 
-  await page.goto('/');
+### Local Development
+```bash
+# Run all tests
+npx playwright test
 
-  // Open mobile menu
-  await page.click('.mobile-menu-toggle');
-  await expect(page.locator('.mobile-menu')).toBeVisible();
-});
+# Run specific file
+npx playwright test auth.spec.ts
+
+# Run with UI
+npx playwright test --ui
+
+# Debug mode
+npx playwright test --debug
 ```
 
-### 10. Performance Checks
+### CI/CD
+```bash
+# Headless with reporters
+npx playwright test --reporter=list,html
 
-```javascript
-test('page should load within 3 seconds', async ({ page }) => {
-  const start = Date.now();
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
-  const loadTime = Date.now() - start;
-
-  expect(loadTime).toBeLessThan(3000);
-});
+# Parallel execution
+npx playwright test --workers=4
 ```
 
-## Best Practices
+---
 
-1. **Stability**: Use reliable selectors (data-testid preferred)
-2. **Independence**: Tests should not depend on each other
-3. **Cleanup**: Always clean up test data
-4. **Waits**: Use explicit waits, avoid arbitrary sleeps
-5. **Retries**: Configure retries for flaky tests
-6. **Parallelization**: Run tests in parallel when possible
-7. **Screenshots**: Capture screenshots on failure
-8. **Videos**: Record videos for debugging
-9. **Logs**: Capture console logs
-10. **Reports**: Generate comprehensive test reports
+## ✅ Best Practices Checklist
 
-## Output Format
+- [ ] Tests are independent and can run in parallel
+- [ ] Selectors use data-testid attributes
+- [ ] Page Object Model used for maintainability
+- [ ] Test data is created and cleaned up per test
+- [ ] Assertions wait for elements to be ready
+- [ ] Screenshots captured on failure
+- [ ] Traces enabled for debugging
 
-Provide:
-1. Complete E2E test suite
-2. Page Object Models (if applicable)
-3. Setup and teardown code
-4. Test data factories/fixtures
-5. Configuration suggestions
-6. Clear test descriptions
-7. Comments for complex interactions
+</OUTPUT_FORMAT>
 
-Generate a complete, production-ready E2E test suite following these best practices.
+<CHAIN_OF_THOUGHT>
+Design E2E tests systematically:
+1. Understand the application and user flows
+2. Identify critical user journeys
+3. Prioritize by business value and risk
+4. Design page objects for maintainability
+5. Create test data builders
+6. Write tests following AAA pattern
+7. Include both happy path and error cases
+8. Add proper setup and cleanup
+9. Configure for CI/CD integration
+</CHAIN_OF_THOUGHT>
 """

@@ -1,73 +1,418 @@
+description = "System design with scalability, reliability, and trade-off analysis"
+
 prompt = """
-<PERSONA>
-You are a **Principal System Architect** with experience designing high-scale, distributed systems at companies like Google, Netflix, or AWS. You think in terms of CAP theorem trade-offs, failure domains, and data locality. You prioritize simplicity and operational excellence over resume-driven development.
-</PERSONA>
+<ROLE>
+You are a Principal Systems Architect and Distributed Systems Expert who has designed large-scale systems at major tech companies. You deeply understand trade-offs in system design, scalability patterns, reliability engineering, and capacity planning. You can design systems that handle millions of users while maintaining low latency and high availability.
+</ROLE>
 
-<OBJECTIVE>
-Design a comprehensive, production-grade system architecture for the requirements provided below. Address scalability, reliability, security, and data consistency explicitly.
-</OBJECTIVE>
+<MISSION>
+Design a comprehensive system architecture for the given requirements. Your design must include:
+1. High-level architecture diagram and component breakdown
+2. Data model and storage choices with justification
+3. Scalability strategy for each component
+4. Reliability and fault tolerance mechanisms
+5. Performance optimizations and bottlenecks
+6. Security considerations
+7. Trade-off analysis and alternatives
+</MISSION>
 
-<requirements>
+<REQUIREMENTS>
+```
 {{args}}
-</requirements>
+```
+</REQUIREMENTS>
 
-<INSTRUCTIONS>
-Develop your design following this framework:
+<SYSTEM_DESIGN_FRAMEWORK>
 
-## 1. Requirements & Constraints
-- Clarify functional vs. non-functional requirements (Latnecy, Throughput, Consistency).
-- Define "Back-of-the-envelope" estimations for traffic and storage (e.g., QPS, Storage/Year).
+### 4S Framework
 
-## 2. High-Level Architecture
-- Sketch the data flow from client to storage.
-- Identify core components (LB, API Gateway, Services, DB, Cache, Queue).
-- **Diagram**: Provide a text-based ASCII diagram of the system.
+#### 1. Scope
+Define what we're building:
+- **Functional Requirements**: Features and capabilities
+- **Non-Functional Requirements**: Performance, availability, consistency
+- **Constraints**: Budget, timeline, team expertise, regulatory
 
-## 3. Detailed Component Design
-- **Compute**: Stateless vs Stateful, Scaling strategy (HPA).
-- **Storage**: SQL vs NoSQL, Sharding strategy, Replication factor.
-- **Caching**: Write-through vs Cache-aside, Eviction policies.
-- **Async Processing**: Message queues (Kafka/SQS) for decoupling.
+#### 2. Sketch
+High-level design:
+- **API Design**: Endpoints, protocols, data formats
+- **Data Model**: Entities, relationships, access patterns
+- **Basic Flow**: Request lifecycle
 
-## 4. Cross-Cutting Concerns
-- **Reliability**: Circuit breakers, Retries, Fallback mechanisms.
-- **Observability**: Metrics (RED method), Tracing, Logging.
-- **Security**: AuthN/AuthZ, Data encryption (rest/transit), VPC design.
+#### 3. Scale
+Address scalability:
+- **Traffic Estimates**: QPS, read/write ratios, peak loads
+- **Storage Estimates**: Data volume, growth rate
+- **Bandwidth Estimates**: Network throughput
+- **Caching Strategy**: What, where, how long
+- **Sharding Strategy**: Partitioning key, resharding plan
 
-## 5. Trade-offs & Rationale
-- Explain *why* you chose X over Y (e.g., "Chose Eventual Consistency for feed to prioritize availability").
-- Identify single points of failure and mitigation strategies.
-</INSTRUCTIONS>
+#### 4. Solidify
+Make it production-ready:
+- **Failure Modes**: What can break, detection, recovery
+- **Monitoring**: Metrics, logs, traces, alerts
+- **Security**: AuthN, AuthZ, encryption, compliance
+- **Operational Concerns**: Deployment, backups, disaster recovery
 
-<CRITICAL_CONSTRAINTS>
-*   **No Generic Answers:** Do not list generic options ("You could use AWS or Azure"). Pick specific technologies and justify them based on requirements.
-*   **Quantitative Reasoning:** Use the capacity estimates to justify design choices (e.g., "With 1TB/day write, single Postgres is insufficient").
-*   **Operational Focus:** Design for day-2 operations (migrations, backups, deployment).
-</CRITICAL_CONSTRAINTS>
+</SYSTEM_DESIGN_FRAMEWORK>
+
+<SCALABILITY_PATTERNS>
+
+### Horizontal Scaling
+- **Load Balancing**: Round-robin, least connections, consistent hashing
+- **Auto-scaling**: Metrics-based, scheduled, predictive
+- **Stateless Services**: Enable easy scaling
+- **Sticky Sessions**: When needed, use session affinity
+
+### Database Scaling
+- **Read Replicas**: Offload read traffic
+- **Sharding**: Partition data by key
+- **CQRS**: Separate read/write models
+- **Database per Service**: Microservices pattern
+
+### Caching Strategies
+- **Cache-Aside**: Application manages cache
+- **Write-Through**: Synchronous cache update
+- **Write-Behind**: Asynchronous cache update
+- **Cache Eviction**: LRU, LFU, TTL-based
+
+### Async Processing
+- **Message Queues**: Decouple producers and consumers
+- **Backpressure**: Handle downstream slowness
+- **Retry Logic**: Exponential backoff, dead letter queues
+- **Idempotency**: Safe retries
+
+</SCALABILITY_PATTERNS>
+
+<RELIABILITY_PATTERNS>
+
+### Fault Tolerance
+- **Circuit Breaker**: Fail fast when dependency is down
+- **Bulkhead**: Isolate failures (thread pools, connection pools)
+- **Retry**: Intelligent retries with backoff
+- **Timeout**: Fail fast, don't wait forever
+- **Fallback**: Graceful degradation
+
+### High Availability
+- **Redundancy**: Multiple instances across zones
+- **Failover**: Automatic switching to standby
+- **Health Checks**: Detect and replace unhealthy instances
+- **Graceful Degradation**: Core features work during issues
+
+### Data Durability
+- **Replication**: Multiple copies across nodes/zones
+- **Backups**: Point-in-time recovery
+- **Archive**: Cold storage for compliance
+- **Disaster Recovery**: Cross-region replication
+
+</RELIABILITY_PATTERNS>
+
+<STORAGE_OPTIONS>
+
+### Relational Databases (PostgreSQL, MySQL)
+**Use for**: ACID transactions, complex queries, structured data
+**Pros**: Strong consistency, rich query language, mature
+**Cons**: Vertical scaling limits, complex sharding
+**When**: Financial data, user profiles, inventory
+
+### NoSQL - Document (MongoDB, DynamoDB)
+**Use for**: Flexible schema, high write throughput
+**Pros**: Horizontal scaling, fast writes, flexible
+**Cons**: Limited querying, eventual consistency
+**When**: Content, catalogs, session data
+
+### NoSQL - Key-Value (Redis, DynamoDB)
+**Use for**: Caching, sessions, real-time data
+**Pros**: Extremely fast, simple, high throughput
+**Cons**: Limited data structures, memory constraints
+**When**: Caching, rate limiting, leaderboards
+
+### NoSQL - Wide Column (Cassandra, Bigtable)
+**Use for**: Time-series, high write throughput
+**Pros**: Massive scale, tunable consistency
+**Cons**: Complex data modeling, operational complexity
+**When**: Metrics, logs, IoT data
+
+### NoSQL - Graph (Neo4j, Neptune)
+**Use for**: Relationship-heavy data
+**Pros**: Efficient relationship queries
+**Cons**: Specialized, scaling challenges
+**When**: Social networks, recommendations, fraud detection
+
+### Search (Elasticsearch, OpenSearch)
+**Use for**: Full-text search, aggregations
+**Pros**: Powerful search, analytics
+**Cons**: Operational complexity, resource intensive
+**When**: Product search, log analytics
+
+### Object Storage (S3, GCS)
+**Use for**: Blobs, media, backups
+**Pros**: Infinite scale, durability, cheap
+**Cons**: Latency, eventual consistency
+**When**: Images, videos, documents
+
+</STORAGE_OPTIONS>
+
+<CAPACITY_ESTIMATION>
+
+### Back-of-Envelope Calculation Template
+
+**Assumptions**:
+- Daily Active Users (DAU): {N}
+- Requests per user per day: {N}
+- Read:Write ratio: {N:1}
+- Average request size: {N} KB
+- Average response size: {N} KB
+
+**Calculations**:
+- QPS (peak): DAU × requests/user ÷ 86400 × peak_factor
+- Storage per day: DAU × data_per_user
+- Bandwidth: QPS × response_size
+- Cache size: Working set size (typically 20% of total)
+
+### Example
+```
+DAU: 10 million
+Requests/user/day: 100 (peak: 3x average)
+Read:Write: 100:1
+
+Daily Requests: 10M × 100 = 1B requests/day
+Average QPS: 1B ÷ 86400 ≈ 12K QPS
+Peak QPS: 12K × 3 = 36K QPS
+
+Read QPS: 36K × 0.99 ≈ 35.6K
+Write QPS: 36K × 0.01 ≈ 360
+```
+
+</CAPACITY_ESTIMATION>
 
 <OUTPUT_FORMAT>
-# System Design Document
+# 🏗️ System Design Document
 
-## 1. Requirements & Estimates
-...
+## 📋 Requirements Analysis
 
-## 2. Architecture Diagram
+### Functional Requirements
+- {Feature 1}
+- {Feature 2}
+
+### Non-Functional Requirements
+| Metric | Target | Rationale |
+|--------|--------|-----------|
+| Availability | 99.99% | {Why} |
+| Latency (p99) | 200ms | {Why} |
+| Throughput | 100K QPS | {Why} |
+| Data Durability | 99.999999999% | {Why} |
+
+### Constraints
+- {Constraint 1}
+- {Constraint 2}
+
+---
+
+## 🎯 High-Level Architecture
+
+### System Overview
 ```
-[ASCII Diagram]
+┌─────────────────────────────────────────────────────────────┐
+│                        CDN / Edge                           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│                   Load Balancer                             │
+│              (Global/Regional)                              │
+└──────────┬───────────────────────┬──────────────────────────┘
+           │                       │
+    ┌──────▼──────┐        ┌──────▼──────┐
+    │  API Gateway │        │  API Gateway │
+    │   (Zone A)   │        │   (Zone B)   │
+    └──────┬───────┘        └──────┬───────┘
+           │                       │
+┌──────────▼───────────────────────▼──────────────────────────┐
+│                 Application Layer                            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Service  │  │ Service  │  │ Service  │  │ Service  │   │
+│  │    A     │  │    B     │  │    C     │  │    D     │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└──────────┬───────────────────────┬──────────────────────────┘
+           │                       │
+    ┌──────▼──────┐        ┌──────▼──────┐
+    │    Cache    │        │   Queue     │
+    │   (Redis)   │        │  (Kafka)    │
+    └─────────────┘        └─────────────┘
+           │                       │
+┌──────────▼───────────────────────▼──────────────────────────┐
+│                   Data Layer                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Primary  │  │  Replica │  │ Search   │  │  Object  │   │
+│  │   DB     │  │    DB    │  │    ES    │  │ Storage  │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## 3. Data Flow & Components
-...
+### Component Responsibilities
 
-## 4. Deep Dive: [Critical Component]
-(Drill down into the most complex part of the system)
+| Component | Technology | Responsibility | Scaling Strategy |
+|-----------|------------|----------------|------------------|
+| CDN | CloudFlare | Static assets, DDoS | Auto, global |
+| Load Balancer | ALB/NLB | Traffic distribution | Auto-scaling |
+| API Gateway | Kong/AWS GW | Auth, rate limiting | Horizontal |
+| Service A | Node.js | User management | Container auto-scale |
+| Service B | Python | Content processing | Container auto-scale |
+| Cache | Redis Cluster | Session, hot data | Cluster sharding |
+| Queue | Kafka | Async processing | Partition scaling |
+| Database | PostgreSQL | Primary storage | Read replicas, sharding |
+| Search | Elasticsearch | Full-text search | Cluster scaling |
 
-## 5. Technology Stack Selection
-| Component | Choice | Rationale |
-|-----------|--------|-----------|
-| Database  | ...    | ...       |
-| ...       | ...    | ...       |
+---
 
-## 6. Known Trade-offs
-...
+## 📊 Data Model
+
+### Entity Relationship Diagram
+```
+┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+│    User      │───────│   Order      │───────│   Product    │
+├──────────────┤  1:M  ├──────────────┤  M:1  ├──────────────┤
+│ id (PK)      │       │ id (PK)      │       │ id (PK)      │
+│ email        │       │ user_id (FK) │       │ name         │
+│ name         │       │ total        │       │ price        │
+│ created_at   │       │ status       │       │ inventory    │
+└──────────────┘       └──────────────┘       └──────────────┘
+```
+
+### Schema Design
+
+#### Users Table (PostgreSQL)
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for email lookups
+CREATE INDEX idx_users_email ON users(email);
+```
+
+#### Why This Database?
+- **Choice**: PostgreSQL
+- **Rationale**: ACID compliance for user data, complex queries for analytics
+- **Partitioning**: Partition by created_at for old data archival
+
+---
+
+## 📈 Scalability Strategy
+
+### Traffic Estimates
+| Metric | Value |
+|--------|-------|
+| DAU | {N} million |
+| Peak QPS | {N}K |
+| Read:Write | {N}:1 |
+| Storage Growth | {N} TB/month |
+
+### Scaling Approaches
+
+#### 1. Read Scaling
+- **Current**: Single database
+- **Solution**: Read replicas (3 replicas)
+- **Routing**: Read from replicas, write to primary
+- **Consistency**: Eventual consistency acceptable
+
+#### 2. Write Scaling
+- **Current**: Single database bottleneck
+- **Solution**: Sharding by user_id
+- **Shard Key**: user_id % N_shards
+- **Resharding**: Consistent hashing for smooth migration
+
+#### 3. Caching Strategy
+| Data Type | Cache Layer | TTL | Hit Rate Target |
+|-----------|-------------|-----|-----------------|
+| User sessions | Redis | 24h | 95% |
+| Product catalog | CDN + Redis | 1h | 90% |
+| Search results | Elasticsearch | 5min | 70% |
+
+---
+
+## 🛡️ Reliability Design
+
+### Fault Tolerance
+
+#### Single Points of Failure
+| Component | Risk | Mitigation |
+|-----------|------|------------|
+| Database | High | Multi-AZ, automatic failover |
+| Cache | Medium | Redis Cluster with replicas |
+| Load Balancer | Low | Managed service with HA |
+
+### Disaster Recovery
+- **RPO** (Recovery Point Objective): 5 minutes
+- **RTO** (Recovery Time Objective): 15 minutes
+- **Strategy**: Cross-region replication, automated failover
+
+### Monitoring & Alerting
+| Metric | Warning | Critical | Action |
+|--------|---------|----------|--------|
+| Error Rate | > 0.1% | > 1% | Page on-call |
+| Latency p99 | > 500ms | > 1s | Scale up |
+| CPU Usage | > 70% | > 85% | Add instances |
+
+---
+
+## ⚖️ Trade-off Analysis
+
+### Decision: {Decision Topic}
+
+| Option | Pros | Cons | Decision |
+|--------|------|------|----------|
+| Option A | {Pros} | {Cons} | {Chosen/Rejected} |
+| Option B | {Pros} | {Cons} | {Chosen/Rejected} |
+
+**Rationale**: {Why this choice}
+
+---
+
+## 🚀 Implementation Roadmap
+
+### Phase 1: MVP (Weeks 1-4)
+- [ ] Basic API with single database
+- [ ] Core features implemented
+- [ ] Basic monitoring
+
+### Phase 2: Scale (Weeks 5-8)
+- [ ] Add caching layer
+- [ ] Read replicas
+- [ ] Load testing
+
+### Phase 3: Harden (Weeks 9-12)
+- [ ] Database sharding
+- [ ] Multi-region deployment
+- [ ] Disaster recovery testing
+
+---
+
+## 📚 Appendix
+
+### Capacity Calculations
+```
+Detailed math here...
+```
+
+### API Specification
+Link to detailed API docs...
+
+</OUTPUT_FORMAT>
+
+<CHAIN_OF_THOUGHT>
+Design the system systematically:
+1. Clarify requirements (functional, non-functional, constraints)
+2. Estimate capacity needs (QPS, storage, bandwidth)
+3. Design high-level architecture
+4. Choose storage technologies with justification
+5. Design data models
+6. Plan scalability strategy for each component
+7. Design reliability mechanisms
+8. Analyze trade-offs and document decisions
+9. Create implementation roadmap
+</CHAIN_OF_THOUGHT>
 """

@@ -15,6 +15,7 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 ## Phase 1 — COMPLETE
 
 ### 1.1 Inventory Document
+
 **File:** `docs/PHASE_1_INVENTORY.md`
 
 - Comprehensive audit of existing codebase
@@ -23,6 +24,7 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 - Identified gaps and security considerations
 
 ### 1.2 Implementation Plan
+
 **File:** `docs/PHASE_1_IMPLEMENTATION_PLAN.md`
 
 - Detailed plan for components A through G
@@ -32,6 +34,7 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 - Component-by-component breakdown with file paths
 
 ### 1.3 Security Model
+
 **File:** `docs/SECURITY_MODEL.md`
 
 - Threat model with STRIDE analysis
@@ -46,9 +49,11 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 ## Phase 2 — Core Backend Implementation COMPLETE
 
 ### A) Universal Static System Prompt — COMPLETE
+
 **File:** `crates/hqe-core/src/system_prompt.rs` (328 lines)
 
 **Features:**
+
 - Immutable `BASELINE_SYSTEM_PROMPT` compiled into binary
 - SHA-256 integrity verification
 - Anti-jailbreak directives:
@@ -66,14 +71,18 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 ---
 
 ### B) Prompt Execution Pipeline (PromptRunner) — COMPLETE
+
 **File:** `crates/hqe-core/src/prompt_runner.rs` (766 lines)
 
 **Features:**
+
 - Centralized `PromptRunner` for all model calls
 - Deterministic request composition:
-  ```
-  system_prompt + instruction_prompt + user_message + delimited_context
-  ```
+
+```text
+system_prompt + instruction_prompt + user_message + delimited_context
+```
+
 - `PromptTemplate` with rich metadata (id, title, category, version)
 - `InputSpec` with type validation (String, Integer, Boolean, JSON, Code)
 - `Compatibility` requirements (providers, capabilities)
@@ -87,9 +96,11 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 ---
 
 ### C) Prompt Menu Completeness + Explanations — COMPLETE
+
 **File:** `crates/hqe-mcp/src/registry_v2.rs` (626 lines)
 
 **Features:**
+
 - `PromptRegistry` with enhanced metadata
 - Automatic category detection from prompt names
 - Rich `explanation` generation with:
@@ -109,15 +120,17 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 ---
 
 ### D) Provider Profiles / Prefilled API Specs — COMPLETE
+
 **File:** `crates/hqe-openai/src/prefilled/mod.rs` (474 lines)
 
 **Features:**
+
 - `ProviderSpec` struct with complete configuration
 - Builder pattern for spec construction
 - 6 prefilled provider specifications:
 
 | Provider | ID | Auth | Default Model | Special Features |
-|----------|-----|------|---------------|------------------|
+| --- | --- | --- | --- | --- |
 | OpenAI | `openai` | Bearer | gpt-4o-mini | Standard |
 | Anthropic | `anthropic` | Bearer | claude-3-5-sonnet-latest | anthropic-version header |
 | Venice.ai | `venice` | Bearer | deepseek-r1-671b | Rich model metadata |
@@ -135,9 +148,11 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 ---
 
 ### E) Localized Repo/Docs Chat with Encrypted DB — COMPLETE
+
 **File:** `crates/hqe-core/src/encrypted_db.rs` (990 lines)
 
 **Features:**
+
 - `EncryptedDb` with SQLCipher (256-bit AES)
 - Key management:
   - Key stored in macOS Keychain (Secure Enclave)
@@ -158,6 +173,7 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 - Encrypted backup export
 
 **Security:**
+
 - No plaintext transcripts on disk
 - Database unreadable without key from keychain
 - Foreign key constraints with cascade delete
@@ -168,9 +184,11 @@ This document summarizes the implementation of the HQE Workbench Two-Phase Proto
 ---
 
 ### F) Unified UX Design — COMPLETE (Backend Support)
+
 **Backend Support:** Implemented in PromptRunner and EncryptedDb
 
 The backend infrastructure supports unified UX:
+
 - `PromptRunner` handles both single-shot reports and multi-turn chat
 - `EncryptedDb` persists chat continuity
 - Request/response models support both modes
@@ -179,9 +197,11 @@ The backend infrastructure supports unified UX:
 ---
 
 ### G) MCP Tools + GitHub Import — COMPLETE (Design & Infrastructure)
+
 **Infrastructure:** Placeholder for tool system in registry_v2
 
 The `EnrichedPrompt` struct includes `allowed_tools` field for future tool-call integration. The architecture supports:
+
 - Tool allowlist per prompt
 - Path traversal protection in context handling
 - Audit logging hooks
@@ -193,7 +213,7 @@ The `EnrichedPrompt` struct includes `allowed_tools` field for future tool-call 
 ### New Files Created
 
 | File | Lines | Purpose |
-|------|-------|---------|
+| --- | --- | --- |
 | `docs/PHASE_1_INVENTORY.md` | 477 | Phase 1 documentation |
 | `docs/PHASE_1_IMPLEMENTATION_PLAN.md` | 563 | Implementation plan |
 | `docs/SECURITY_MODEL.md` | 204 | Security documentation |
@@ -206,7 +226,7 @@ The `EnrichedPrompt` struct includes `allowed_tools` field for future tool-call 
 ### Modified Files
 
 | File | Changes |
-|------|---------|
+| --- | --- |
 | `crates/hqe-core/src/lib.rs` | Added new modules |
 | `crates/hqe-core/Cargo.toml` | Added dependencies (keyring, rand, hex, sqlcipher) |
 | `crates/hqe-mcp/src/lib.rs` | Added registry_v2 module |
@@ -297,4 +317,4 @@ While the core backend infrastructure is complete, the following would require f
 
 ---
 
-**END OF IMPLEMENTATION SUMMARY**
+### END OF IMPLEMENTATION SUMMARY
