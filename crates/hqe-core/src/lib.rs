@@ -13,6 +13,7 @@
 #![warn(clippy::unwrap_used)]
 #![warn(clippy::expect_used)]
 
+pub mod encrypted_db;
 pub mod models;
 pub mod persistence;
 pub mod prompt_runner;
