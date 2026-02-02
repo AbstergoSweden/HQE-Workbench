@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { useToast } from '../context/ToastContext'
-import { ProviderModelList, ProviderProfile, ProviderModel } from '../types'
+import { ProviderModelList, ProviderProfile, ProviderModel, ProviderSpec } from '../types'
 
 export function SettingsScreen() {
   const [profiles, setProfiles] = useState<ProviderProfile[]>([])
@@ -27,7 +27,22 @@ export function SettingsScreen() {
   const [discoverError, setDiscoverError] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<boolean | null>(null)
   const [keyLocked, setKeyLocked] = useState(true) // When locked, key is persisted to secure storage
+  const [providerSpecs, setProviderSpecs] = useState<ProviderSpec[]>([])
+  const [selectedSpec, setSelectedSpec] = useState<string>('')
   const toast = useToast()
+
+  // Load provider specs on mount
+  useEffect(() => {
+    const loadSpecs = async () => {
+      try {
+        const specs = await invoke<ProviderSpec[]>('get_provider_specs')
+        setProviderSpecs(specs)
+      } catch (error) {
+        console.error('Failed to load provider specs:', error)
+      }
+    }
+    loadSpecs()
+  }, [])
 
   const loadProfiles = useCallback(async () => {
     setLoadingProfiles(true)
@@ -362,6 +377,58 @@ export function SettingsScreen() {
           </div>
 
           <div className="space-y-4">
+            {/* Provider Spec Selector */}
+            <div>
+              <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                --provider_template
+              </label>
+              <select
+                value={selectedSpec}
+                onChange={(e) => {
+                  const specId = e.target.value
+                  setSelectedSpec(specId)
+                  if (specId) {
+                    const spec = providerSpecs.find(s => s.id === specId)
+                    if (spec) {
+                      setName(spec.display_name.toLowerCase().replace(/\s+/g, '_'))
+                      setUrl(spec.base_url)
+                      setModel(spec.default_model)
+                      setTimeout(spec.recommended_timeout_s)
+                      setHeadersText(JSON.stringify(spec.default_headers, null, 2))
+                      setModelsDiscovered(false)
+                      setAvailableModels([])
+                      toast.success(`Loaded ${spec.display_name} template`)
+                    }
+                  }
+                }}
+                className="input"
+              >
+                <option value="">Select a provider template...</option>
+                {providerSpecs.map((spec) => (
+                  <option key={spec.id} value={spec.id}>
+                    {spec.display_name}
+                  </option>
+                ))}
+              </select>
+              {selectedSpec && (
+                <>
+                  <p className="text-xs mt-1" style={{ color: 'var(--dracula-comment)' }}>
+                    Template loaded. Paste your API key and click Discover.
+                  </p>
+                  {providerSpecs.find(s => s.id === selectedSpec)?.quirks.length > 0 && (
+                    <div className="mt-2 p-2 rounded text-xs" style={{ background: 'var(--dracula-bg)' }}>
+                      <span style={{ color: 'var(--dracula-yellow)' }}>⚠ Notes:</span>
+                      <ul className="mt-1 ml-4 list-disc">
+                        {providerSpecs.find(s => s.id === selectedSpec)?.quirks.map((quirk, i) => (
+                          <li key={i} style={{ color: 'var(--dracula-comment)' }}>{quirk}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
             {/* Name */}
             <div>
               <label className="text-terminal-cyan font-mono text-sm block mb-1">
