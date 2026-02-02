@@ -18,9 +18,9 @@ serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 anyhow = "1.0"
-secrecy = { version = "0.8", features = ["serde"] }
+secrecy = { version = "0.10", features = ["serde"] }
 url = { version = "2.5", features = ["serde"] }
-dirs = "5.0"
+dirs = "6.0"
 hqe-git = { path = "../../../crates/hqe-git" }
 
 # HQE Crates
