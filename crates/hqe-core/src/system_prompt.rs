@@ -129,7 +129,7 @@ pub fn compute_hash() -> &'static str {
 ///
 /// Returns `SystemPromptError::IntegrityFailure` if the hash doesn't match.
 pub fn verify_integrity() -> Result<(), SystemPromptError> {
-    let actual = compute_hash();
+    let _actual = compute_hash();
     // For development, we accept any hash since we're building
     // In production, this would check against SYSTEM_PROMPT_HASH
     Ok(())

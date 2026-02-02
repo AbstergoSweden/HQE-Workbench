@@ -9,7 +9,7 @@
 //! → model response → rendered output
 //! ```
 
-use crate::system_prompt::{get_system_prompt, SystemPromptGuard};
+use crate::system_prompt::SystemPromptGuard;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};

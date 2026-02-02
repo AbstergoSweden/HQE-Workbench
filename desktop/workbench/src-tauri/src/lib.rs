@@ -3,8 +3,10 @@
 //! This is the library entry point for the Tauri application.
 //! It exports commands that can be invoked from the frontend.
 
+pub mod chat;
 pub mod commands;
 pub mod prompts;
+use chat::*;
 use commands::*;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -40,9 +42,18 @@ pub fn run() {
             delete_provider_profile,
             detect_provider_kind,
             import_default_profiles,
+            // Prefilled provider specs
+            get_provider_specs,
+            apply_provider_spec,
             // Prompt commands
             prompts::get_available_prompts,
             prompts::execute_prompt,
+            // Chat commands
+            create_chat_session,
+            list_chat_sessions,
+            get_chat_session,
+            add_chat_message,
+            delete_chat_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

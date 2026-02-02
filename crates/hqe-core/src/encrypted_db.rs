@@ -9,11 +9,11 @@
 //! - Key derivation: PBKDF2-HMAC-SHA256
 //! - No plaintext transcripts on disk
 
-use rusqlite::{params, Connection, Result as SqliteResult};
-use sha2::{Digest, Sha256};
+use rusqlite::OptionalExtension;
+use rusqlite::{params, Connection};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 /// Errors that can occur in encrypted database operations
 #[derive(Debug, thiserror::Error)]

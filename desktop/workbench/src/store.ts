@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { HqeReport } from './types'
+import { HqeReport, ChatSession, ChatMessage } from './types'
 
 export interface RepoState {
   path: string | null
@@ -26,6 +26,19 @@ export interface ReportState {
   report: HqeReport | null
   setReport: (report: HqeReport) => void
   clearReport: () => void
+}
+
+export interface ChatState {
+  sessions: ChatSession[]
+  currentSession: ChatSession | null
+  messages: ChatMessage[]
+  isLoading: boolean
+  setSessions: (sessions: ChatSession[]) => void
+  setCurrentSession: (session: ChatSession | null) => void
+  setMessages: (messages: ChatMessage[]) => void
+  addMessage: (message: ChatMessage) => void
+  setIsLoading: (loading: boolean) => void
+  clearChat: () => void
 }
 
 export const useRepoStore = create<RepoState>()(
@@ -64,6 +77,26 @@ export const useReportStore = create<ReportState>()(
     }),
     {
       name: 'hqe-report-storage',
+    }
+  )
+)
+
+export const useChatStore = create<ChatState>()(
+  persist(
+    (set) => ({
+      sessions: [],
+      currentSession: null,
+      messages: [],
+      isLoading: false,
+      setSessions: (sessions) => set({ sessions }),
+      setCurrentSession: (session) => set({ currentSession: session }),
+      setMessages: (messages) => set({ messages }),
+      addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+      setIsLoading: (loading) => set({ isLoading: loading }),
+      clearChat: () => set({ currentSession: null, messages: [] }),
+    }),
+    {
+      name: 'hqe-chat-storage',
     }
   )
 )

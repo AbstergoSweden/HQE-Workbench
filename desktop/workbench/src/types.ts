@@ -99,3 +99,61 @@ export interface ProviderModelList {
   fetched_at_unix_s?: number
   models: ProviderModel[]
 }
+
+// Chat Types
+export interface ChatSession {
+  id: string
+  repo_path?: string
+  prompt_id?: string
+  provider: string
+  model: string
+  created_at: string
+  updated_at: string
+  message_count: number
+}
+
+export interface ChatMessage {
+  id: string
+  session_id: string
+  parent_id?: string
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content: string
+  timestamp: string
+}
+
+// Enhanced Prompt Types
+export interface PromptInput {
+  name: string
+  description: string
+  type: 'string' | 'integer' | 'boolean' | 'json' | 'code' | 'textarea'
+  required: boolean
+  default?: string
+  example?: string
+}
+
+export interface PromptMetadata {
+  id: string
+  title: string
+  category: string
+  description: string
+  explanation: string
+  version: string
+  inputs: PromptInput[]
+  allowed_tools: string[]
+}
+
+// Provider Spec Types
+export interface ProviderSpec {
+  id: string
+  display_name: string
+  base_url: string
+  auth_scheme: string
+  default_model: string
+  default_headers: Record<string, string>
+  recommended_timeout_s: number
+  quirks: string[]
+  website_url: string
+  docs_url: string
+  supports_streaming: boolean
+  supports_tools: boolean
+}
