@@ -25,6 +25,8 @@ use url::Url;
 pub mod analysis;
 /// Provider profile loading, saving, and keychain integration.
 pub mod profile;
+/// Prefilled provider API specifications.
+pub mod prefilled;
 /// Prompt templates and helpers for LLM requests.
 pub mod prompts;
 /// Provider and model discovery utilities for OpenAI-compatible APIs.
@@ -34,6 +36,7 @@ pub mod rate_limiter;
 
 pub use analysis::*;
 pub use profile::*;
+pub use prefilled::*;
 pub use prompts::*;
 pub use provider_discovery::*;
 
