@@ -15,9 +15,11 @@
 
 pub mod models;
 pub mod persistence;
+pub mod prompt_runner;
 pub mod redaction;
 pub mod repo;
 pub mod scan;
+pub mod system_prompt;
 
 pub use models::*;
 pub use persistence::*;
