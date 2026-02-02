@@ -1,0 +1,64 @@
+version: 2
+
+updates:
+  # 1) GitHub Actions workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    groups:
+      gha:
+        patterns: ["*"]
+
+  # 2) Rust workspace (Cargo.toml + Cargo.lock at repo root)
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:15"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 10
+    groups:
+      rust:
+        patterns: ["*"]
+
+  # 3) Node frontend (desktop/workbench)
+  - package-ecosystem: "npm"
+    directory: "/desktop/workbench"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:30"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    groups:
+      workbench:
+        patterns: ["*"]
+
+  # 4) Node server (mcp-server/prompts/server)
+  - package-ecosystem: "npm"
+    directory: "/mcp-server/prompts/server"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:45"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 5
+    groups:
+      mcp_server:
+        patterns: ["*"]
+
+  # Optional: Dockerfiles (only if you actually build/pin base images)
+  - package-ecosystem: "docker"
+    directory: "/mcp-server/prompts/server/src"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "10:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 2
