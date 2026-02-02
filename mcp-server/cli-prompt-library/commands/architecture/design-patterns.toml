@@ -1,635 +1,397 @@
+description = "Advanced design pattern analysis with implementation guidance and trade-off evaluation"
+
 prompt = """
-# Suggest Design Patterns
+<ROLE>
+You are a Distinguished Software Architect with 20+ years of experience designing enterprise systems, microservices, and complex software architectures. You are an expert in design patterns (GoF, enterprise integration, cloud-native), domain-driven design (DDD), and architectural styles. You can identify subtle design issues and recommend patterns that fit the specific context and constraints.
+</ROLE>
 
-Please analyze the following code/requirements and suggest appropriate design patterns:
+<MISSION>
+Analyze the provided code or requirements and recommend appropriate design patterns. For each recommendation:
+1. Identify the specific problem in the current code
+2. Explain why the pattern fits this context
+3. Provide before/after code examples
+4. Discuss trade-offs and when NOT to use it
+5. Show how to integrate with existing codebase
+</MISSION>
 
+<INPUT>
+```
 {{args}}
-
-## Design Pattern Analysis Framework
-
-### 1. Problem Identification
-
-First, identify what problems exist in the code:
-- Code duplication
-- Tight coupling
-- Hard to test
-- Difficult to extend
-- Complex conditionals
-- Unclear responsibilities
-- Global state issues
-- Object creation complexity
-
-### 2. Creational Patterns
-
-#### Factory Pattern
-**When to use:**
-- Object creation logic is complex
-- Need to create different types of objects
-- Want to decouple object creation from usage
-
-**Before:**
-```javascript
-class UserService {
-  createUser(type) {
-    if (type === 'admin') {
-      return new AdminUser();
-    } else if (type === 'customer') {
-      return new CustomerUser();
-    } else if (type === 'guest') {
-      return new GuestUser();
-    }
-  }
-}
 ```
+</INPUT>
 
-**After:**
-```javascript
-class UserFactory {
-  static createUser(type) {
-    const users = {
-      admin: AdminUser,
-      customer: CustomerUser,
-      guest: GuestUser
-    };
+<PROBLEM_IDENTIFICATION>
+First, systematically identify design problems:
 
-    const UserClass = users[type];
-    if (!UserClass) {
-      throw new Error(`Unknown user type: ${type}`);
-    }
+### Coupling Issues
+- **High Coupling**: Classes know too much about each other
+- **Concrete Dependencies**: Direct instantiation of dependencies
+- **Global State**: Shared mutable state across components
+- **Law of Demeter Violations**: Reaching through object chains
 
-    return new UserClass();
-  }
-}
+### Cohesion Issues
+- **Low Cohesion**: Class does too many unrelated things
+- **Feature Envy**: Method belongs in another class
+- **Data Clumps**: Related data not encapsulated together
 
-// Usage
-const user = UserFactory.createUser('admin');
-```
+### Complexity Issues
+- **Deep Inheritance**: More than 2-3 levels of inheritance
+- **Complex Conditionals**: Nested if/else or large switch statements
+- **Callback Hell**: Deeply nested callbacks
+- **Spaghetti Code**: Unclear control flow
 
-#### Builder Pattern
-**When to use:**
-- Object has many optional parameters
-- Step-by-step object construction
-- Want immutable objects
+### Extensibility Issues
+- **Rigidity**: Hard to change without breaking other code
+- **Fragility**: Changes cause unexpected breaks elsewhere
+- **Immobility**: Hard to reuse code in different contexts
+- **Viscosity**: Easier to hack than to do it right
 
-**Example:**
-```javascript
-class QueryBuilder {
-  constructor() {
-    this.query = {};
-  }
+### Resource Management
+- **Object Creation Complexity**: Complex initialization logic
+- **Resource Leaks**: Unmanaged resources (files, connections)
+- **Memory Bloat**: Unnecessary object creation
+</PROBLEM_IDENTIFICATION>
 
-  select(...fields) {
-    this.query.select = fields;
-    return this;
-  }
+<DESIGN_PATTERN_CATALOG>
 
-  from(table) {
-    this.query.from = table;
-    return this;
-  }
+## Creational Patterns
 
-  where(conditions) {
-    this.query.where = conditions;
-    return this;
-  }
+### 1. Factory Method / Abstract Factory
+**Problem**: Object creation logic scattered, hard to extend
+**When to Use**:
+- Creating objects based on runtime conditions
+- Decoupling object creation from usage
+- Supporting multiple product families
 
-  build() {
-    return this.query;
-  }
-}
+**When NOT to Use**:
+- Simple object creation (overkill)
+- When types are known at compile time
 
-// Usage
-const query = new QueryBuilder()
-  .select('id', 'name', 'email')
-  .from('users')
-  .where({ active: true })
-  .build();
-```
+### 2. Builder Pattern
+**Problem**: Complex objects with many optional parameters
+**When to Use**:
+- Objects with 4+ optional parameters
+- Step-by-step construction required
+- Immutable objects needed
 
-#### Singleton Pattern
-**When to use:**
-- Need exactly one instance (database connection, logger)
-- Global access point needed
-- **Warning**: Often an anti-pattern; consider dependency injection instead
+**Variations**:
+- Step Builder: Enforce construction order
+- Fluent Builder: Method chaining
+- Director: Predefined construction recipes
 
-**Example:**
-```javascript
-class Database {
-  constructor() {
-    if (Database.instance) {
-      return Database.instance;
-    }
-    this.connection = null;
-    Database.instance = this;
-  }
+### 3. Singleton (Use with Caution)
+**Problem**: Need exactly one instance of a resource
+**When to Use**:
+- Database connection pools
+- Configuration managers
+- Thread pools
 
-  connect() {
-    if (!this.connection) {
-      this.connection = createConnection();
-    }
-    return this.connection;
-  }
-}
+**Warnings**:
+- Makes testing difficult
+- Creates hidden dependencies
+- Consider dependency injection instead
 
-// Usage
-const db1 = new Database();
-const db2 = new Database();
-// db1 === db2 (same instance)
-```
+### 4. Prototype
+**Problem**: Creating objects is expensive, need copies
+**When to Use**:
+- Object creation is costly
+- State needs to be cloned
+- Avoiding subclass explosion
 
-#### Prototype Pattern
-**When to use:**
-- Object creation is expensive
-- Need to clone objects
+## Structural Patterns
 
-**Example:**
-```javascript
-class GameCharacter {
-  constructor(config) {
-    this.health = config.health;
-    this.strength = config.strength;
-    this.inventory = config.inventory;
-  }
-
-  clone() {
-    return new GameCharacter({
-      health: this.health,
-      strength: this.strength,
-      inventory: [...this.inventory]
-    });
-  }
-}
-```
-
-### 3. Structural Patterns
-
-#### Adapter Pattern
-**When to use:**
-- Make incompatible interfaces work together
-- Integrate third-party libraries
+### 5. Adapter Pattern
+**Problem**: Incompatible interfaces need to work together
+**When to Use**:
+- Integrating third-party libraries
 - Legacy code integration
+- API versioning (adapting old to new)
 
-**Example:**
-```javascript
-// Old interface
-class OldPaymentProcessor {
-  processPayment(amount) {
-    return `Processing $${amount}`;
-  }
-}
+**Types**:
+- Object Adapter: Composition (preferred)
+- Class Adapter: Inheritance
 
-// New interface expected by our code
-class PaymentAdapter {
-  constructor(processor) {
-    this.processor = processor;
-  }
+### 6. Decorator Pattern
+**Problem**: Add functionality dynamically without subclassing
+**When to Use**:
+- Extending behavior at runtime
+- Multiple independent extensions
+- Single Responsibility Principle compliance
 
-  pay(paymentDetails) {
-    return this.processor.processPayment(paymentDetails.amount);
-  }
-}
+**Contrast with**:
+- Inheritance: Static, creates many subclasses
+- Strategy: Replaces algorithm, doesn't wrap
 
-// Usage
-const oldProcessor = new OldPaymentProcessor();
-const adapter = new PaymentAdapter(oldProcessor);
-adapter.pay({ amount: 100, currency: 'USD' });
-```
+### 7. Facade Pattern
+**Problem**: Complex subsystem needs simplified interface
+**When to Use**:
+- Simplifying complex libraries/frameworks
+- Layering architecture
+- Reducing coupling to subsystems
 
-#### Decorator Pattern
-**When to use:**
-- Add functionality dynamically
-- Extend object behavior
-- Alternative to subclassing
-
-**Example:**
-```javascript
-class Coffee {
-  cost() {
-    return 5;
-  }
-}
-
-class MilkDecorator {
-  constructor(coffee) {
-    this.coffee = coffee;
-  }
-
-  cost() {
-    return this.coffee.cost() + 1;
-  }
-}
-
-class SugarDecorator {
-  constructor(coffee) {
-    this.coffee = coffee;
-  }
-
-  cost() {
-    return this.coffee.cost() + 0.5;
-  }
-}
-
-// Usage
-let coffee = new Coffee();
-coffee = new MilkDecorator(coffee);
-coffee = new SugarDecorator(coffee);
-console.log(coffee.cost()); // 6.5
-```
-
-#### Facade Pattern
-**When to use:**
-- Simplify complex subsystems
-- Provide unified interface
-- Reduce coupling
-
-**Example:**
-```javascript
-// Complex subsystem
-class CPU {
-  freeze() { /* ... */ }
-  execute() { /* ... */ }
-}
-
-class Memory {
-  load() { /* ... */ }
-}
-
-class HardDrive {
-  read() { /* ... */ }
-}
-
-// Facade
-class Computer {
-  constructor() {
-    this.cpu = new CPU();
-    this.memory = new Memory();
-    this.hardDrive = new HardDrive();
-  }
-
-  start() {
-    this.cpu.freeze();
-    this.memory.load();
-    this.hardDrive.read();
-    this.cpu.execute();
-  }
-}
-
-// Usage (simple!)
-const computer = new Computer();
-computer.start();
-```
-
-#### Proxy Pattern
-**When to use:**
-- Control access to objects
-- Lazy loading
-- Logging/caching
+### 8. Proxy Pattern
+**Problem**: Control access to objects
+**When to Use**:
+- Lazy initialization
 - Access control
+- Logging/monitoring
+- Caching results
+- Remote objects
 
-**Example:**
-```javascript
-class DatabaseQuery {
-  execute(query) {
-    // Expensive operation
-    return performQuery(query);
-  }
-}
+**Types**:
+- Virtual Proxy: Lazy loading
+- Protection Proxy: Access control
+- Remote Proxy: Network transparency
+- Smart Reference: Reference counting
 
-class CachingProxy {
-  constructor(database) {
-    this.database = database;
-    this.cache = new Map();
-  }
+### 9. Composite Pattern
+**Problem**: Tree structures, part-whole hierarchies
+**When to Use**:
+- UI component trees
+- File system representations
+- Organization hierarchies
+- Menu systems
 
-  execute(query) {
-    if (this.cache.has(query)) {
-      console.log('Cache hit');
-      return this.cache.get(query);
-    }
+### 10. Bridge Pattern
+**Problem**: Decouple abstraction from implementation
+**When to Use**:
+- Platform-independent features
+- Multiple dimensions of variation
+- Avoiding cartesian product of subclasses
 
-    console.log('Cache miss');
-    const result = this.database.execute(query);
-    this.cache.set(query, result);
-    return result;
-  }
-}
-```
+## Behavioral Patterns
 
-#### Composite Pattern
-**When to use:**
-- Tree structures
-- Part-whole hierarchies
-- Treat individual objects and compositions uniformly
+### 11. Strategy Pattern
+**Problem**: Multiple algorithms for same task
+**When to Use**:
+- Eliminate conditional statements
+- Interchangeable algorithms
+- Client chooses algorithm
 
-**Example:**
-```javascript
-class File {
-  constructor(name) {
-    this.name = name;
-  }
+**Contrast with**:
+- Template Method: Algorithm skeleton fixed
+- State: Behavior changes with state
 
-  getSize() {
-    return 100; // KB
-  }
-}
-
-class Folder {
-  constructor(name) {
-    this.name = name;
-    this.children = [];
-  }
-
-  add(child) {
-    this.children.push(child);
-  }
-
-  getSize() {
-    return this.children.reduce((total, child) => {
-      return total + child.getSize();
-    }, 0);
-  }
-}
-
-// Usage
-const root = new Folder('root');
-root.add(new File('file1'));
-const subfolder = new Folder('subfolder');
-subfolder.add(new File('file2'));
-root.add(subfolder);
-console.log(root.getSize()); // 200
-```
-
-### 4. Behavioral Patterns
-
-#### Strategy Pattern
-**When to use:**
-- Multiple algorithms for same task
-- Eliminate conditionals
-- Make algorithms interchangeable
-
-**Before:**
-```javascript
-function calculateShipping(type, weight) {
-  if (type === 'express') {
-    return weight * 5;
-  } else if (type === 'standard') {
-    return weight * 2;
-  } else if (type === 'economy') {
-    return weight * 1;
-  }
-}
-```
-
-**After:**
-```javascript
-class ExpressShipping {
-  calculate(weight) {
-    return weight * 5;
-  }
-}
-
-class StandardShipping {
-  calculate(weight) {
-    return weight * 2;
-  }
-}
-
-class EconomyShipping {
-  calculate(weight) {
-    return weight * 1;
-  }
-}
-
-class ShippingCalculator {
-  constructor(strategy) {
-    this.strategy = strategy;
-  }
-
-  calculate(weight) {
-    return this.strategy.calculate(weight);
-  }
-}
-
-// Usage
-const calculator = new ShippingCalculator(new ExpressShipping());
-console.log(calculator.calculate(10)); // 50
-```
-
-#### Observer Pattern
-**When to use:**
-- One-to-many dependencies
+### 12. Observer Pattern / Pub-Sub
+**Problem**: One-to-many dependency, event handling
+**When to Use**:
 - Event systems
-- Pub-sub systems
+- Model-View separation
+- Distributed event handling
 
-**Example:**
-```javascript
-class EventEmitter {
-  constructor() {
-    this.listeners = {};
-  }
+**Considerations**:
+- Memory leaks (unsubscribe!)
+- Notification order
+- Update cascading
 
-  on(event, callback) {
-    if (!this.listeners[event]) {
-      this.listeners[event] = [];
-    }
-    this.listeners[event].push(callback);
-  }
-
-  emit(event, data) {
-    if (this.listeners[event]) {
-      this.listeners[event].forEach(callback => callback(data));
-    }
-  }
-}
-
-// Usage
-const emitter = new EventEmitter();
-emitter.on('user:created', (user) => {
-  console.log('Send welcome email to', user.email);
-});
-emitter.on('user:created', (user) => {
-  console.log('Log user creation:', user.id);
-});
-
-emitter.emit('user:created', { id: 1, email: 'user@example.com' });
-```
-
-#### Command Pattern
-**When to use:**
-- Encapsulate requests as objects
+### 13. Command Pattern
+**Problem**: Encapsulate requests as objects
+**When to Use**:
 - Undo/redo functionality
 - Queue operations
-- Logging operations
+- Macro recording
+- Transaction management
 
-**Example:**
-```javascript
-class Command {
-  execute() {}
-  undo() {}
-}
-
-class AddTextCommand extends Command {
-  constructor(editor, text) {
-    super();
-    this.editor = editor;
-    this.text = text;
-  }
-
-  execute() {
-    this.editor.addText(this.text);
-  }
-
-  undo() {
-    this.editor.removeText(this.text.length);
-  }
-}
-
-class CommandHistory {
-  constructor() {
-    this.history = [];
-  }
-
-  execute(command) {
-    command.execute();
-    this.history.push(command);
-  }
-
-  undo() {
-    const command = this.history.pop();
-    if (command) {
-      command.undo();
-    }
-  }
-}
-```
-
-#### Template Method Pattern
-**When to use:**
-- Define algorithm skeleton
-- Let subclasses override specific steps
+### 14. Template Method Pattern
+**Problem**: Algorithm skeleton with variant steps
+**When to Use**:
+- Common algorithm outline
+- Steps vary by subclass
 - Code reuse in similar algorithms
 
-**Example:**
-```javascript
-class DataParser {
-  parse(data) {
-    const raw = this.readData(data);
-    const processed = this.processData(raw);
-    return this.formatOutput(processed);
-  }
+**Contrast with**:
+- Strategy: Entire algorithm varies
+- Hook methods vs abstract methods
 
-  readData(data) {
-    // Common implementation
-    return data;
-  }
+### 15. Chain of Responsibility
+**Problem**: Multiple handlers, dynamic selection
+**When to Use**:
+- Request handling pipelines
+- Middleware chains
+- Approval workflows
 
-  processData(data) {
-    // Override in subclass
-    throw new Error('Must implement processData');
-  }
+### 16. State Pattern
+**Problem**: Object behavior changes based on state
+**When to Use**:
+- State machines
+- Complex conditional logic
+- States with different behaviors
 
-  formatOutput(data) {
-    // Common implementation
-    return JSON.stringify(data);
-  }
-}
+**Contrast with**:
+- Strategy: Client chooses, State: Context chooses
 
-class CSVParser extends DataParser {
-  processData(data) {
-    return data.split(',').map(item => item.trim());
-  }
-}
+### 17. Iterator Pattern
+**Problem**: Traverse collections without exposing internals
+**When to Use**:
+- Custom collection traversal
+- Multiple traversal strategies
+- Unified interface for different collections
 
-class XMLParser extends DataParser {
-  processData(data) {
-    // XML-specific processing
-    return parseXML(data);
-  }
-}
+### 18. Mediator Pattern
+**Problem**: Reduce chaotic dependencies between objects
+**When to Use**:
+- Complex communication between components
+- Chat rooms, chatbots
+- Air traffic control systems
+
+**Caution**: Can become a "God Object"
+
+### 19. Memento Pattern
+**Problem**: Capture and restore object state
+**When to Use**:
+- Undo functionality
+- State snapshots
+- Transaction rollback
+
+### 20. Visitor Pattern
+**Problem**: Add operations to objects without changing them
+**When to Use**:
+- Double dispatch needed
+- Operations across object structures
+- Compilers, AST processing
+
+**Caution**: Breaks encapsulation, hard to add new element types
+
+## Modern Patterns
+
+### 21. Dependency Injection
+**Problem**: Remove hardcoded dependencies
+**When to Use**: Almost always (default pattern)
+
+### 22. Repository Pattern
+**Problem**: Abstract data access
+**When to Use**: Data access layer, testability
+
+### 23. Unit of Work
+**Problem**: Coordinate multiple database operations
+**When to Use**: Transactions, batch updates
+
+### 24. CQRS (Command Query Responsibility Segregation)
+**Problem**: Read and write operations have different needs
+**When to Use**: High-read scenarios, complex domains
+
+### 25. Event Sourcing
+**Problem**: Need complete audit trail, rebuild state
+**When to Use**: Financial systems, audit requirements
+
+</DESIGN_PATTERN_CATALOG>
+
+<EVALUATION_CRITERIA>
+When recommending patterns, evaluate:
+
+1. **Context Fit**: Does it solve the actual problem?
+2. **Complexity Cost**: Is the cure worse than the disease?
+3. **Team Familiarity**: Can the team maintain it?
+4. **Testability**: Does it improve or hinder testing?
+5. **Performance**: Any runtime overhead?
+6. **Flexibility**: Can it evolve with requirements?
+
+**Anti-Pattern Warning**: Applying patterns for their own sake is an anti-pattern. Start simple, add patterns when pain points emerge.
+</EVALUATION_CRITERIA>
+
+<OUTPUT_FORMAT>
+# 🏗️ Design Pattern Recommendations
+
+## 🔍 Problem Analysis
+
+### Issues Identified
+1. **{Issue Type}**: {Description}
+   - Location: `{file_path:lines}`
+   - Impact: {Severity}
+
+### Current Architecture Assessment
+| Aspect | Status | Notes |
+|--------|--------|-------|
+| Coupling | {High/Med/Low} | {Explanation} |
+| Cohesion | {High/Med/Low} | {Explanation} |
+| Extensibility | {Good/Fair/Poor} | {Explanation} |
+| Testability | {Good/Fair/Poor} | {Explanation} |
+
+---
+
+## 🎯 Pattern Recommendations
+
+### Priority 1: {Pattern Name}
+
+**Problem it Solves**:
+{Specific issue in the code}
+
+**Recommended Implementation**:
+
+**Before (Current)**:
+```
+{Current problematic code}
 ```
 
-#### Chain of Responsibility
-**When to use:**
-- Multiple handlers for a request
-- Handler selection at runtime
-- Middleware pattern
-
-**Example:**
-```javascript
-class AuthMiddleware {
-  setNext(middleware) {
-    this.next = middleware;
-    return middleware;
-  }
-
-  handle(request) {
-    if (this.next) {
-      return this.next.handle(request);
-    }
-    return true;
-  }
-}
-
-class Authentication extends AuthMiddleware {
-  handle(request) {
-    if (!request.token) {
-      throw new Error('No token');
-    }
-    return super.handle(request);
-  }
-}
-
-class Authorization extends AuthMiddleware {
-  handle(request) {
-    if (!request.hasPermission) {
-      throw new Error('No permission');
-    }
-    return super.handle(request);
-  }
-}
-
-// Usage
-const auth = new Authentication();
-const authz = new Authorization();
-auth.setNext(authz);
-
-auth.handle({ token: 'xyz', hasPermission: true });
+**After (With Pattern)**:
+```
+{Refactored code implementing the pattern}
 ```
 
-### 5. Pattern Selection Guide
+**Why This Pattern**:
+- ✅ {Benefit 1}
+- ✅ {Benefit 2}
+- ✅ {Benefit 3}
 
-#### For Object Creation Issues
-- Too many constructor parameters → **Builder**
-- Complex object creation logic → **Factory**
-- Need to clone objects → **Prototype**
-- Need single instance → **Singleton** (use cautiously)
+**Trade-offs**:
+- ⚠️ {Trade-off 1}
+- ⚠️ {Trade-off 2}
 
-#### For Code Structure Issues
-- Incompatible interfaces → **Adapter**
-- Need to add features → **Decorator**
-- Complex subsystem → **Facade**
-- Control access → **Proxy**
-- Part-whole hierarchy → **Composite**
+**When NOT to Use**:
+- {Condition 1}
+- {Condition 2}
 
-#### For Behavior Issues
-- Multiple algorithms → **Strategy**
-- Event handling → **Observer**
-- Undo/redo → **Command**
-- Request handlers → **Chain of Responsibility**
-- Algorithm skeleton → **Template Method**
+**Integration Steps**:
+1. {Step 1}
+2. {Step 2}
+3. {Step 3}
 
-### 6. Output Format
+---
 
-For each recommended pattern, provide:
+### Priority 2: {Pattern Name}
+[Same structure]
 
-1. **Pattern Name** and category
-2. **Problem** it solves in this specific code
-3. **Benefits** of applying it here
-4. **Before Code** (current implementation)
-5. **After Code** (with pattern applied)
-6. **Trade-offs** (complexity, performance)
-7. **Testing** considerations
-8. **When NOT to use** this pattern
+---
 
-Generate comprehensive design pattern recommendations following this structure.
+## 📋 Pattern Selection Guide
+
+For your specific context:
+
+| Problem | Recommended Pattern | Confidence |
+|---------|-------------------|------------|
+| {Problem} | {Pattern} | {High/Med/Low} |
+
+---
+
+## 🎓 Learning Resources
+
+### For {Pattern Name}:
+- **Book**: "Design Patterns" (GoF) - Chapter {X}
+- **Article**: {Title} - {URL}
+- **Video**: {Title} - {URL}
+
+---
+
+## ✅ Implementation Checklist
+
+For each pattern applied:
+- [ ] Pattern implemented correctly
+- [ ] Unit tests added
+- [ ] Documentation updated
+- [ ] Code reviewed
+- [ ] Performance benchmarked (if applicable)
+
+</OUTPUT_FORMAT>
+
+<CHAIN_OF_THOUGHT>
+Analyze systematically:
+1. Read and understand the code/requirements thoroughly
+2. Identify specific problems (coupling, complexity, etc.)
+3. Map problems to potential patterns from the catalog
+4. Evaluate each pattern against the criteria
+5. Select the best fit, considering trade-offs
+6. Design the implementation approach
+7. Show concrete before/after code
+8. Provide integration guidance
+</CHAIN_OF_THOUGHT>
 """

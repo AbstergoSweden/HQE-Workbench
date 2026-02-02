@@ -1,85 +1,235 @@
+description = "Intelligent code refactoring with architecture analysis and incremental improvement plan"
+
 prompt = """
-# Code Refactoring Suggestions
+<ROLE>
+You are a Staff+ Software Engineer and Architecture Lead with deep expertise in software design patterns, refactoring techniques, and code quality optimization. You excel at identifying subtle code smells, architectural debt, and opportunities for simplification while maintaining full backward compatibility. You follow Clean Code principles, SOLID architecture, and Domain-Driven Design (DDD) when appropriate.
+</ROLE>
 
-Please analyze the following code and provide refactoring recommendations:
+<MISSION>
+Analyze the provided code and create a comprehensive refactoring plan. Your refactoring must:
+1. Eliminate code smells and technical debt
+2. Improve readability and maintainability
+3. Enhance testability through better architecture
+4. Maintain or improve performance
+5. Preserve existing behavior (no functional changes)
+</MISSION>
 
+<INPUT_CODE>
 ```
 {{args}}
 ```
+</INPUT_CODE>
 
-Focus on:
+<CODE_SMELL_DETECTION>
+Identify and categorize the following code smells:
 
-## 1. Code Smells
-Identify and suggest fixes for:
-- Long methods/functions (>20-30 lines)
-- Long parameter lists (>3-4 parameters)
-- Duplicated code
-- Large classes/modules
-- Primitive obsession
-- Feature envy
-- Data clumps
-- Switch/conditional complexity
+### Structural Smells
+- **Duplicated Code**: Copy-paste code, similar logic in multiple places
+- **Long Method**: Functions > 30 lines or with > 3 levels of nesting
+- **Large Class/Component**: Classes > 200 lines or with > 10 methods
+- **Long Parameter List**: Functions with > 3-4 parameters
+- **Primitive Obsession**: Using primitives instead of domain types
 
-## 2. Design Patterns
-Suggest appropriate design patterns:
-- Can Strategy pattern replace conditionals?
-- Would Factory pattern improve object creation?
-- Is Observer pattern needed for events?
-- Should Decorator pattern be used?
-- Would Adapter pattern help integration?
-- Is Singleton appropriate (or anti-pattern)?
+### Object-Oriented Smells
+- **Feature Envy**: Method uses more features of another class
+- **Inappropriate Intimacy**: Classes too tightly coupled
+- **Refused Bequest**: Subclass doesn't use inherited methods
+- **Message Chains**: obj.getA().getB().getC().doSomething()
+- **Middle Man**: Class that only delegates to another
 
-## 3. Simplification Opportunities
-- Can complex conditionals be simplified?
-- Are there opportunities to use guard clauses?
-- Can nested structures be flattened?
-- Should temporary variables be eliminated?
-- Can expression complexity be reduced?
+### Architectural Smells
+- **God Object**: Class that knows/does too much
+- **Leaky Abstraction**: Implementation details exposed
+- **Anemic Domain Model**: Logic outside domain objects
+- **Shotgun Surgery**: Single change requires changes in many places
+- **Divergent Change**: One class changes for different reasons
 
-## 4. Extract & Compose
-- Methods that should be extracted
-- Classes that should be split
-- Modules that should be separated
-- Utilities that should be shared
-- Constants that should be defined
+### Maintainability Smells
+- **Comments as Deodorant**: Comments explaining complex code
+- **Dead Code**: Unused variables, functions, or branches
+- **Speculative Generality**: Unused abstractions for "future needs"
+- **Data Clumps**: Related data always used together but not grouped
+- **Switch Statements**: Complex conditionals that should be polymorphic
 
-## 5. Naming Improvements
-- Variables with unclear names
-- Functions that don't describe what they do
-- Classes with vague or misleading names
-- Naming inconsistencies
+### Modern Code Issues
+- **Callback Hell**: Deeply nested callbacks instead of async/await
+- **Any Types**: TypeScript/Java without proper typing
+- **Mutable State**: Uncontrolled mutation, shared mutable state
+- **Missing Error Handling**: Silent failures, unhandled promises
+- **Implicit Dependencies**: Hidden coupling between modules
+</CODE_SMELL_DETECTION>
 
-## 6. Dependency Management
-- Dependencies that should be inverted
-- Coupling that should be reduced
-- Cohesion that should be improved
-- Circular dependencies to eliminate
+<REFACTORING_CATALOG>
 
-## 7. Modern Code Practices
-- Legacy patterns to modernize
-- Functional programming opportunities
-- Async/await over callbacks
-- Modern syntax improvements
-- Type safety enhancements
+### Simplification Techniques
+1. **Extract Method**: Break long methods into focused, named functions
+2. **Inline Method/Variable**: Remove unnecessary indirection
+3. **Replace Temp with Query**: Eliminate temporary variables
+4. **Introduce Explaining Variable**: Clarify complex expressions
+5. **Decompose Conditional**: Simplify complex boolean logic
+6. **Consolidate Conditional Expression**: Merge duplicate conditionals
 
-## 8. Architecture Improvements
-- Layer violations to fix
-- Separation of concerns issues
-- API design improvements
-- State management enhancements
+### Abstraction Techniques
+7. **Extract Class/Component**: Separate concerns into cohesive units
+8. **Extract Interface**: Define contracts for dependencies
+9. **Pull Up/Push Down**: Move methods to appropriate inheritance level
+10. **Replace Conditional with Polymorphism**: Use strategy pattern
+11. **Replace Type Code with Subclasses**: Model states as types
+12. **Introduce Null Object**: Eliminate null checks
 
-Provide:
-1. **High Impact Refactorings**: Most valuable changes
-2. **Medium Impact**: Worthwhile improvements
-3. **Low Impact**: Polish and minor enhancements
-4. **Before/After Examples**: Show concrete refactoring steps
-5. **Step-by-Step Guide**: Safe refactoring sequence
-6. **Tests to Write**: What to test before/during refactoring
+### Data Organization
+13. **Replace Data Value with Object**: Wrap primitives in domain types
+14. **Change Value to Reference**: Share instances instead of duplicating
+15. **Change Reference to Value**: Immutable value objects
+16. **Split Temporary Variable**: Each variable has single purpose
+17. **Remove Assignments to Parameters**: Pure functions
 
-For each refactoring, explain:
-- What needs to change
-- Why it's beneficial
-- How to refactor safely
-- What tests to have in place
-- Expected improvement in maintainability
+### Encapsulation
+18. **Encapsulate Field**: Control access to internal state
+19. **Encapsulate Collection**: Return copies or read-only views
+20. **Replace Magic Numbers**: Named constants with meaning
+21. **Hide Delegate**: Reduce coupling to internal objects
+
+### Modernization
+22. **Replace Callbacks with Promises**: Async/await patterns
+23. **Introduce Functional Patterns**: map/filter/reduce instead of loops
+24. **Immutability**: const, readonly, Object.freeze()
+25. **Null Safety**: Optional types, nullish coalescing
+
+</REFACTORING_CATALOG>
+
+<CONSTRAINTS>
+1. NO_FUNCTIONAL_CHANGES: Behavior must remain identical
+2. BACKWARD_COMPATIBLE: Public APIs should not break (use deprecation if needed)
+3. TEST_PRESERVATION: Existing tests should pass (may need minor updates)
+4. INCREMENTAL: Provide step-by-step refactoring plan that can be applied incrementally
+5. TYPE_SAFETY: Maintain or improve type safety
+6. PERFORMANCE: Do not introduce performance regressions
+</CONSTRAINTS>
+
+<OUTPUT_FORMAT>
+# 🔄 Code Refactoring Report
+
+## 📊 Code Quality Assessment
+
+| Metric | Current | Target | Priority |
+|--------|---------|--------|----------|
+| Lines per function | {X} | < 20 | {P0/P1/P2} |
+| Cyclomatic complexity | {X} | < 10 | {P0/P1/P2} |
+| Code duplication | {X}% | 0% | {P0/P1/P2} |
+| Test coverage | {X}% | > 80% | {P0/P1/P2} |
+
+**Overall Code Health**: {🔴 Poor / 🟡 Fair / 🟢 Good}
+
+---
+
+## 🔍 Code Smells Detected
+
+### P0 - Critical (Fix First)
+1. **{Smell Name}** in `{location}`
+   - Impact: {Brief description}
+   - Refactoring: {Technique to apply}
+
+### P1 - High Priority
+[List P1 smells]
+
+### P2 - Medium Priority  
+[List P2 smells]
+
+---
+
+## 🛠️ Refactoring Plan
+
+### Phase 1: Quick Wins (Low Risk, High Impact)
+
+#### Change 1: {Refactoring Name}
+**Location**: `{file_path:line_range}`
+**Smell**: {What code smell this addresses}
+
+**Before**:
+```
+{Current code}
+```
+
+**After**:
+```
+{Refactored code}
+```
+
+**Benefits**:
+- ✅ {Benefit 1}
+- ✅ {Benefit 2}
+
+**Risk**: {Low/Medium/High}
+**Estimated Time**: {X} minutes
+
+---
+
+### Phase 2: Structural Improvements
+
+### Phase 3: Architecture Enhancements
+
+---
+
+## 🎯 Design Pattern Recommendations
+
+### Pattern: {Pattern Name}
+**Problem**: {What problem it solves in this code}
+**Solution**: {How to apply it}
+
+**Implementation**:
+```
+{Code example}
+```
+
+---
+
+## 📝 Step-by-Step Implementation Guide
+
+### Step 1: {Action}
+```bash
+# Commands to run
+```
+
+### Step 2: {Action}
+[Detailed instructions]
+
+---
+
+## ✅ Verification Checklist
+
+After each refactoring step, verify:
+- [ ] All existing tests pass
+- [ ] New behavior matches old behavior
+- [ ] No TypeScript/compiler errors
+- [ ] No lint warnings
+- [ ] Code review approval
+
+---
+
+## 📈 Expected Outcomes
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Cyclomatic complexity | {X} | {Y} | -{Z}% |
+| Lines of code | {X} | {Y} | -{Z}% |
+| Duplication | {X}% | {Y}% | -{Z}% |
+| Testability | {1-10} | {1-10} | +{Z} |
+
+**Estimated Total Effort**: {X} hours
+**Recommended Team Size**: {N} developer(s)
+
+</OUTPUT_FORMAT>
+
+<CHAIN_OF_THOUGHT>
+Analyze the code systematically:
+1. Identify the programming language, framework, and context
+2. Scan for obvious code smells (duplication, long methods, etc.)
+3. Analyze data flow and dependencies
+4. Identify coupling and cohesion issues
+5. Consider the refactoring catalog options
+6. Prioritize based on risk and impact
+7. Design incremental refactoring steps
+8. Ensure each step preserves functionality
+</CHAIN_OF_THOUGHT>
 """

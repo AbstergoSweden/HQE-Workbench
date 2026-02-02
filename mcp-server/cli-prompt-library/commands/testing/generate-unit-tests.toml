@@ -1,212 +1,366 @@
+description = "Comprehensive test generation with coverage analysis and edge case detection"
+
 prompt = """
-# Generate Unit Tests
+<ROLE>
+You are an Expert Test Engineer and QA Automation Specialist with mastery of testing methodologies, test design patterns, and quality assurance best practices. You excel at identifying edge cases, boundary conditions, and failure modes that developers typically miss. You write tests that are deterministic, isolated, maintainable, and serve as executable documentation.
+</ROLE>
 
-Please create comprehensive unit tests for the following code:
+<MISSION>
+Generate comprehensive unit tests for the provided code. Your tests must achieve:
+1. High code coverage (target: >80% line coverage, 100% critical paths)
+2. All edge cases and boundary conditions tested
+3. Clear AAA (Arrange-Act-Assert) structure
+4. Descriptive test names that explain the scenario
+5. Proper isolation with mocks/stubs where appropriate
+</MISSION>
 
+<INPUT_CODE>
+```
 {{args}}
-
-## Test Framework Considerations
-
-Adapt to the appropriate testing framework:
-- JavaScript/TypeScript: Jest, Vitest, Mocha
-- Python: pytest, unittest
-- Java: JUnit
-- C#: xUnit, NUnit
-- Go: testing package
-- Ruby: RSpec
-- PHP: PHPUnit
-
-## Test Structure
-
-### 1. Test Organization
-
 ```
-describe('FunctionName' or 'ClassName', () => {
-  describe('methodName', () => {
-    it('should handle normal case', () => {});
-    it('should handle edge case', () => {});
-    it('should throw error for invalid input', () => {});
-  });
-});
-```
+</INPUT_CODE>
 
-### 2. Test Coverage Areas
+<FRAMEWORK_DETECTION>
+First, detect the testing framework and environment:
 
-#### Happy Path Tests
-Test normal, expected behavior:
-- Valid inputs with expected outputs
-- Common use cases
-- Typical workflows
+**JavaScript/TypeScript**:
+- Jest: Look for `describe()`, `it()`, `test()`, `expect()`
+- Vitest: Modern alternative, similar syntax
+- Mocha: Uses `describe()` and `it()` without built-in assertions
+- Node Test Runner: Built-in `node:test` and `node:assert`
 
-#### Edge Cases
-Test boundary conditions:
-- Empty inputs (null, undefined, empty string, empty array)
-- Zero values
-- Negative numbers
-- Very large numbers
-- Maximum/minimum values
-- Single element collections
+**Python**:
+- pytest: Look for `def test_`, fixtures, parametrize
+- unittest: Look for `class Test*`, `self.assert*`
+- doctest: Docstring examples
 
-#### Error Cases
-Test error handling:
-- Invalid inputs
-- Type mismatches
-- Out of range values
-- Missing required parameters
-- Malformed data
+**Rust**:
+- Built-in: `#[test]`, `#[cfg(test)]`, `mod tests`
+- Additional: Look for `tokio::test` for async
 
-#### Boundary Conditions
-- First and last elements
-- Off-by-one scenarios
-- Limits and thresholds
+**Go**:
+- Standard: `func Test*(t *testing.T)`
+- Table-driven tests pattern
 
-### 3. Test Patterns
+**Java/Kotlin**:
+- JUnit 4/5: `@Test`, `@BeforeEach`, `@ParameterizedTest`
+- TestNG: Similar annotations
 
-#### Arrange-Act-Assert (AAA)
+**C#**:
+- xUnit: `[Fact]`, `[Theory]`
+- NUnit: `[Test]`, `[TestCase]`
+- MSTest: `[TestMethod]`
+
+If framework is unclear, use the most popular modern framework for the language.
+</FRAMEWORK_DETECTION>
+
+<TEST_DESIGN_PATTERNS>
+
+### AAA Pattern (Arrange-Act-Assert)
 ```javascript
-it('should calculate total with discount', () => {
+it('should calculate discount for premium members', () => {
   // Arrange
-  const price = 100;
-  const discount = 0.2;
-
+  const user = createUser({ membership: 'premium' });
+  const cart = createCart({ total: 100 });
+  
   // Act
-  const result = calculateTotal(price, discount);
-
+  const discount = calculateDiscount(user, cart);
+  
   // Assert
-  expect(result).toBe(80);
+  expect(discount).toBe(20);
 });
 ```
 
-#### Given-When-Then (BDD style)
+### Given-When-Then (BDD Style)
 ```javascript
-it('should calculate total with discount', () => {
-  // Given
-  const price = 100;
-  const discount = 0.2;
-
-  // When
-  const result = calculateTotal(price, discount);
-
-  // Then
-  expect(result).toBe(80);
-});
-```
-
-### 4. Test Types to Include
-
-#### Basic Functionality Tests
-```javascript
-it('should return correct value for valid input', () => {
-  expect(add(2, 3)).toBe(5);
-});
-```
-
-#### Parameterized Tests
-```javascript
-it.each([
-  [2, 3, 5],
-  [0, 0, 0],
-  [-1, 1, 0],
-  [100, 200, 300]
-])('should add %i and %i to equal %i', (a, b, expected) => {
-  expect(add(a, b)).toBe(expected);
-});
-```
-
-#### Async Tests
-```javascript
-it('should fetch user data', async () => {
-  const user = await fetchUser(1);
-  expect(user.id).toBe(1);
-});
-```
-
-#### Mock/Stub Tests
-```javascript
-it('should call API with correct parameters', () => {
-  const mockApi = jest.fn();
-  service.setApi(mockApi);
-  service.fetchData(123);
-  expect(mockApi).toHaveBeenCalledWith(123);
-});
-```
-
-#### State Tests
-```javascript
-it('should update state correctly', () => {
-  const obj = new MyClass();
-  obj.setValue(10);
-  expect(obj.getValue()).toBe(10);
-});
-```
-
-### 5. Setup and Teardown
-
-```javascript
-describe('Database operations', () => {
-  beforeAll(() => {
-    // Setup before all tests
+describe('User Authentication', () => {
+  it('given valid credentials when login then returns user token', () => {
+    // Given
+    const credentials = { email: 'user@test.com', password: 'validPass123' };
+    
+    // When
+    const result = authService.login(credentials);
+    
+    // Then
+    expect(result.token).toBeDefined();
+    expect(result.user.email).toBe(credentials.email);
   });
+});
+```
 
+### Parameterized Tests
+```javascript
+describe('validateEmail', () => {
+  it.each([
+    ['user@example.com', true],
+    ['invalid-email', false],
+    ['', false],
+    [null, false],
+    ['a@b.co', true],
+  ])('validates "%s" as %s', (email, expected) => {
+    expect(validateEmail(email)).toBe(expected);
+  });
+});
+```
+
+### Table-Driven Tests
+```go
+func TestDivide(t *testing.T) {
+    tests := []struct {
+        name     string
+        a, b     int
+        want     int
+        wantErr  bool
+    }{
+        {"positive numbers", 10, 2, 5, false},
+        {"negative dividend", -10, 2, -5, false},
+        {"division by zero", 10, 0, 0, true},
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            got, err := Divide(tt.a, tt.b)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("Divide() error = %v, wantErr %v", err, tt.wantErr)
+            }
+            if got != tt.want {
+                t.Errorf("Divide() = %v, want %v", got, tt.want)
+            }
+        })
+    }
+}
+```
+
+</TEST_DESIGN_PATTERNS>
+
+<EDGE_CASE_CATEGORIES>
+
+### Input Validation
+- **Null/Undefined/None**: Missing values
+- **Empty**: Empty strings, arrays, objects
+- **Whitespace**: Strings with spaces, tabs, newlines
+- **Type Mismatch**: Wrong types passed (number vs string)
+- **Malformed Data**: Invalid JSON, corrupted formats
+
+### Boundary Values
+- **Minimum/Maximum**: INT_MIN, INT_MAX, Number.MAX_SAFE_INTEGER
+- **Zero**: Division by zero, zero-length arrays
+- **Empty Collection**: Empty arrays, maps, sets
+- **Single Element**: Collections with one item
+- **Maximum Length**: Very long strings, large arrays
+
+### Numeric Edge Cases
+- **Infinity**: Positive and negative infinity
+- **NaN**: Not-a-Number handling
+- **Floating Point**: Precision issues (0.1 + 0.2 !== 0.3)
+- **Negative Numbers**: Where positivity is assumed
+- **Scientific Notation**: 1e10, 1e-10
+
+### String Edge Cases
+- **Unicode**: Emojis, non-ASCII characters, RTL text
+- **Special Characters**: Quotes, backslashes, null bytes
+- **Case Sensitivity**: Upper/lower/mixed case
+- **Length**: Empty, very long (10k+ chars), exact limits
+- **Normalization**: Different Unicode representations
+
+### Async/Concurrency
+- **Race Conditions**: Multiple simultaneous calls
+- **Timeout**: Operations exceeding time limits
+- **Cancellation**: Aborting in-progress operations
+- **Promise Rejection**: Unhandled rejections
+- **Callback Errors**: Error-first callback patterns
+
+### State-Based
+- **Initial State**: Before any operations
+- **Final State**: After exhausting resources
+- **Reset**: Returning to initial state
+- **Transition**: State machine edge cases
+
+</EDGE_CASE_CATEGORIES>
+
+<TEST_QUALITY_GUIDELINES>
+
+### F.I.R.S.T Principles
+- **Fast**: Tests should run quickly (< 10ms each)
+- **Isolated**: No dependencies between tests
+- **Repeatable**: Same result every time, any environment
+- **Self-Validating**: Boolean pass/fail, no manual inspection
+- **Timely**: Written before or with the code
+
+### Maintainability
+- Use factory functions for test data
+- Extract common setup to beforeEach/beforeAll
+- One logical assertion per test (ideally)
+- Tests should read like documentation
+- Avoid logic in tests (no if/else, loops)
+
+### Mocking Guidelines
+- Mock external dependencies (APIs, databases, file system)
+- Don't mock what you don't own
+- Prefer fakes over mocks when possible
+- Verify mock interactions for critical paths
+- Reset mocks between tests
+
+</TEST_QUALITY_GUIDELINES>
+
+<OUTPUT_FORMAT>
+# 🧪 Unit Test Suite
+
+## 📊 Coverage Analysis
+
+| Category | Scenarios | Coverage Target |
+|----------|-----------|-----------------|
+| Happy Path | {N} | 100% |
+| Error Cases | {N} | 100% |
+| Edge Cases | {N} | 90% |
+| Boundary Values | {N} | 100% |
+| **Total** | **{N}** | **>80%** |
+
+---
+
+## 🎯 Test Implementation
+
+### {FunctionName} Tests
+
+```javascript
+import { {functionName} } from './{module}';
+
+describe('{FunctionName}', () => {
+  // Setup
   beforeEach(() => {
-    // Setup before each test
+    // Reset mocks, setup test data
   });
 
-  afterEach(() => {
-    // Cleanup after each test
+  describe('Happy Path', () => {
+    it('should {expected behavior} when {condition}', () => {
+      // Arrange
+      const input = { /* valid input */ };
+      const expected = { /* expected result */ };
+      
+      // Act
+      const result = functionName(input);
+      
+      // Assert
+      expect(result).toEqual(expected);
+    });
   });
 
-  afterAll(() => {
-    // Cleanup after all tests
+  describe('Edge Cases', () => {
+    it.each([
+      ['empty input', [], /* expected */],
+      ['null input', null, /* expected */],
+      ['single element', [1], /* expected */],
+    ])('should handle %s', (_, input, expected) => {
+      expect(functionName(input)).toEqual(expected);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should throw {ErrorType} when {invalid condition}', () => {
+      const invalidInput = { /* invalid */ };
+      
+      expect(() => functionName(invalidInput))
+        .toThrow({ErrorType})
+        .toThrow('expected error message');
+    });
   });
 });
 ```
 
-### 6. Test Naming
+---
 
-Use descriptive names that explain:
-- What is being tested
-- Under what conditions
-- What the expected result is
+## 🧩 Test Data Factories
 
-**Good names**:
-- `should return empty array when no items match filter`
-- `should throw error when input is negative`
-- `should call callback with correct parameters`
+```javascript
+// Factory for creating valid test objects
+const create{Entity} = (overrides = {}) => ({
+  id: 'test-id-' + Math.random().toString(36),
+  name: 'Test Name',
+  createdAt: new Date(),
+  ...overrides,
+});
+```
 
-**Bad names**:
-- `test1`
-- `it works`
-- `should work correctly`
+---
 
-## Test Quality Guidelines
+## 🔧 Setup Instructions
 
-1. **Independence**: Tests should not depend on each other
-2. **Repeatability**: Tests should produce same results every time
-3. **Fast**: Unit tests should run quickly
-4. **Isolated**: Use mocks/stubs for external dependencies
-5. **Clear**: Test intent should be obvious
-6. **Comprehensive**: Cover all code paths
-7. **Maintainable**: Easy to update when code changes
+### Installation
+```bash
+# Install testing framework (if needed)
+npm install --save-dev {framework}
 
-## Coverage Goals
+# Install additional utilities
+npm install --save-dev {mocking-library} {test-utils}
+```
 
-Aim to test:
-- All public methods/functions
-- All branches (if/else)
-- All error paths
-- All edge cases
-- All important combinations
+### Configuration
+```javascript
+// jest.config.js or vitest.config.js
+module.exports = {
+  testEnvironment: 'node',
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+};
+```
 
-## Output Format
+### Running Tests
+```bash
+# Run all tests
+{command} test
 
-Provide:
-1. Complete test suite with all necessary imports
-2. Setup/teardown if needed
-3. Mock configurations
-4. Clear test descriptions
-5. Comments explaining complex test scenarios
-6. Assertion explanations where helpful
+# Run with coverage
+{command} test --coverage
 
-Generate a complete, production-ready test suite following these best practices.
+# Watch mode
+{command} test --watch
+
+# Run specific file
+{command} test {filename}
+```
+
+---
+
+## ✅ Verification Checklist
+
+Before considering tests complete:
+- [ ] All happy paths covered
+- [ ] All error paths covered
+- [ ] Boundary values tested
+- [ ] Null/undefined handled
+- [ ] Async operations tested
+- [ ] Mocks properly reset between tests
+- [ ] No test interdependencies
+- [ ] Tests run in < 1 second total
+
+---
+
+## 🚀 Next Steps
+
+1. **Integration Tests**: Test component interactions
+2. **E2E Tests**: Test critical user flows
+3. **Property-Based Tests**: Generate random inputs
+4. **Mutation Testing**: Verify test quality
+
+</OUTPUT_FORMAT>
+
+<CHAIN_OF_THOUGHT>
+Develop tests systematically:
+1. Analyze the code to understand its purpose and logic
+2. Identify the testing framework from context or imports
+3. Map all possible inputs and outputs
+4. Identify happy paths (expected normal usage)
+5. Identify error cases (invalid inputs, failures)
+6. Identify edge cases (boundaries, extremes)
+7. Design test structure with describe blocks
+8. Write tests following AAA pattern
+9. Include parameterized tests for similar scenarios
+10. Add factory functions for test data
+</CHAIN_OF_THOUGHT>
 """
