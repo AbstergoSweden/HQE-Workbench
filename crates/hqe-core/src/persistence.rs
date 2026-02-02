@@ -62,7 +62,9 @@ impl LocalDb {
         })
     }
 
-    /// Calculate hash for a request
+    /// Calculate a stable hash for a request to be used as a cache key.
+    ///
+    /// The hash is based on the model name, messages, and parameters.
     pub fn calculate_hash(model: &str, messages_json: &str, params_json: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(model.as_bytes());
@@ -73,7 +75,9 @@ impl LocalDb {
         format!("{:x}", hasher.finalize())
     }
 
-    /// Get cached response
+    /// Retrieve a cached response from the database.
+    ///
+    /// Returns `Ok(Some(response))` if found, `Ok(None)` if not, or an error if the query fails.
     pub fn get_cached_response(&self, hash: &str) -> Result<Option<String>> {
         let conn = self
             .conn
@@ -95,7 +99,9 @@ impl LocalDb {
         }
     }
 
-    /// Store response in cache
+    /// Store an LLM response in the cache.
+    ///
+    /// This allows subsequent identical requests to be served from the local database.
     pub fn cache_response(
         &self,
         hash: &str,
@@ -116,7 +122,9 @@ impl LocalDb {
         Ok(())
     }
 
-    /// Log a session interaction
+    /// Log a message or interaction into the session audit log.
+    ///
+    /// This provides a durable history of all prompts and responses.
     pub fn log_interaction(
         &self,
         session_id: &str,

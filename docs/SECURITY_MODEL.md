@@ -11,7 +11,7 @@
 ### 1.1 Threat Actors
 
 | Actor | Capability | Motivation |
-|-------|------------|------------|
+| --- | --- | --- |
 | Malicious User | Local app access | Bypass restrictions, extract keys |
 | Malicious Repository | Code containing injection | Jailbreak LLM, extract data |
 | Network Attacker | Man-in-the-middle | Intercept API calls |
@@ -20,7 +20,7 @@
 ### 1.2 Attack Surface
 
 | Surface | Risk | Controls |
-|---------|------|----------|
+| --- | --- | --- |
 | LLM API calls | High | HTTPS only, certificate pinning |
 | Local DB | High | SQLCipher encryption |
 | Keychain | Medium | OS-level protection |
@@ -31,7 +31,7 @@
 ### 1.3 STRIDE Analysis
 
 | Threat | Category | Mitigation |
-|--------|----------|------------|
+| --- | --- | --- |
 | Spoofing (fake provider) | Authentication | URL validation, HTTPS-only |
 | Tampering (prompts) | Integrity | Hash verification, immutability |
 | Repudiation | Non-repudiation | Audit logging |
@@ -59,7 +59,7 @@ pub fn verify_integrity() -> bool {
 
 ### 2.2 Layer 2: Delimited Context
 
-```
+```text
 [SYSTEM PROMPT — Immutable]
 
 [INSTRUCTION PROMPT — User Selected]
@@ -76,6 +76,7 @@ fn main() { ... }
 ```
 
 --- END UNTRUSTED CONTEXT ---
+
 ```
 
 ### 2.3 Layer 3: Tool Sandbox
@@ -128,17 +129,17 @@ pub fn execute_tool(tool: &Tool, args: &Args) -> Result<Output> {
 ### 3.1 API Keys
 
 | Aspect | Implementation |
-|--------|---------------|
+| --- | --- |
 | Storage | macOS Keychain (Secure Enclave) |
 | In-memory | `secrecy::SecretString` |
-| Logging | Redacted (***)
+| Logging | Redacted (***) |
 | Transmission | HTTPS headers only |
 | Rotation | UI-triggered, old key deleted |
 
 ### 3.2 DB Encryption Key
 
 | Aspect | Implementation |
-|--------|---------------|
+| --- | --- |
 | Generation | Random 256-bit on first launch |
 | Storage | Keychain, separate from API keys |
 | Wrapping | PBKDF2 with device-specific salt |
@@ -185,7 +186,7 @@ fn escape_untrusted(content: &str) -> String {
 ### 4.3 Input Validation
 
 | Check | Action |
-|-------|--------|
+| --- | --- |
 | Contains "ignore previous" | Flag for review |
 | Contains "system prompt" | Block and log |
 | Unbalanced delimiters | Reject request |
@@ -198,7 +199,7 @@ fn escape_untrusted(content: &str) -> String {
 ### 5.1 Events Logged
 
 | Event | Data | Retention |
-|-------|------|-----------|
+| --- | --- | --- |
 | Prompt execution | Prompt ID, model, timestamp | 90 days |
 | Chat message | Session ID, role (not content) | 90 days |
 | Tool call | Tool name, success/failure | 1 year |
@@ -228,7 +229,7 @@ fn escape_untrusted(content: &str) -> String {
 ### 6.1 Detection
 
 | Indicator | Response |
-|-----------|----------|
+| --- | --- |
 | System prompt hash mismatch | Halt, alert, investigate |
 | Multiple path traversal attempts | Rate limit, alert |
 | Unusual API key access | Alert, rotate keys |

@@ -644,16 +644,16 @@ pub struct ScanConfig {
     /// Limits applied during the scan
     #[serde(default)]
     pub limits: ScanLimits,
-    /// Whether to run in local-only mode without LLM
+    /// Whether to run in local-only mode without LLM operations.
     #[serde(default)]
     pub local_only: bool,
-    /// Timeout in seconds for LLM operations (0 means no timeout)
+    /// Timeout in seconds for LLM operations (0 means no timeout).
     #[serde(default = "default_scan_timeout_seconds")]
     pub timeout_seconds: u64,
-    /// Venice-specific parameters (forwarded to chat request)
+    /// Venice-specific parameters (forwarded to chat request).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub venice_parameters: Option<serde_json::Value>,
-    /// Whether to enable parallel tool calls (provider-specific)
+    /// Whether to enable parallel tool calls (provider-specific).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parallel_tool_calls: Option<bool>,
 }

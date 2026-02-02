@@ -542,6 +542,36 @@ pub trait ChatOperations {
     fn get_feedback(&self, message_id: &str) -> Result<Vec<FeedbackRecord>>;
 }
 
+/// Core trait for secure data persistence.
+///
+/// This trait defines the operations for managing sessions, messages,
+/// attachments, and feedback in a secure, encrypted database.
+pub trait Persistence: Send + Sync {
+    /// Save a new session or update an existing one.
+    fn save_session(&self, session: &ChatSession) -> Result<()>;
+    /// Retrieve a session by its unique ID.
+    fn get_session(&self, id: &str) -> Result<Option<ChatSession>>;
+    /// List all available sessions.
+    fn list_sessions(&self) -> Result<Vec<ChatSession>>;
+    /// Delete a session and all its associated data.
+    fn delete_session(&self, id: &str) -> Result<()>;
+
+    /// Add a message to a session interaction history.
+    fn add_message(&self, message: &ChatMessage) -> Result<()>;
+    /// Retrieve all messages for a specific session.
+    fn get_messages(&self, session_id: &str) -> Result<Vec<ChatMessage>>;
+
+    /// Add an attachment (e.g., file content, context) to a session.
+    fn add_attachment(&self, attachment: &Attachment) -> Result<()>;
+    /// Retrieve all attachments for a specific session.
+    fn get_attachments(&self, session_id: &str) -> Result<Vec<Attachment>>;
+
+    /// Add feedback record for a specific message.
+    fn add_feedback(&self, feedback: &FeedbackRecord) -> Result<()>;
+    /// Retrieve all feedback associated with a specific message.
+    fn get_feedback(&self, message_id: &str) -> Result<Vec<FeedbackRecord>>;
+}
+
 impl ChatOperations for EncryptedDb {
     fn create_session(&self, session: &ChatSession) -> Result<()> {
         let conn = self.connection()?;

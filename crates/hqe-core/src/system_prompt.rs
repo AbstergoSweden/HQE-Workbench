@@ -67,9 +67,11 @@ static COMPUTED_HASH: OnceLock<String> = OnceLock::new();
 /// Errors that can occur during system prompt operations
 #[derive(Debug, Clone, PartialEq)]
 pub enum SystemPromptError {
-    /// Hash mismatch detected
+    /// Hash mismatch detected.
     IntegrityFailure {
+        /// The expected hash.
         expected: String,
+        /// The actual hash computed.
         actual: String,
     },
     /// System prompt has been tampered with (impossible in normal operation)

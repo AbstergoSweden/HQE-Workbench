@@ -10,36 +10,52 @@
 ```bash
 $ git show --stat 0bfb46c
 # docs/PHASE_1_*.md + SECURITY_MODEL.md (1188 lines)
+```
 
+```bash
 $ git show --stat 70a12f6
 # crates/hqe-core/src/system_prompt.rs (328 lines)
 # crates/hqe-core/src/prompt_runner.rs (766 lines)
+```
 
+```bash
 $ git show --stat cfd5d45
 # crates/hqe-mcp/src/registry_v2.rs (626 lines)
+```
 
+```bash
 $ git show --stat ec1aaaa
 # crates/hqe-openai/src/prefilled/mod.rs (471 lines)
+```
 
+```bash
 $ git show --stat d58d52e
 # crates/hqe-core/src/encrypted_db.rs (985 lines)
+```
 
+```bash
 $ git show --stat 4e9d597
 # docs/IMPLEMENTATION_SUMMARY.md (300 lines)
+```
 
+```bash
 $ git show --stat 11d4d09
 # desktop/workbench/src-tauri/src/chat.rs (new)
 # Chat commands + types + store
+```
 
+```bash
 $ git show --stat fa8ae29
 # SettingsScreen provider spec selector
+```
+
 ```
 
 ---
 
 ## 2) Test Results
 
-```
+```text
 crates/hqe-core tests:
 - 52 passed
 - 8 failed (SQLCipher environment issue + minor string case bug)
@@ -55,7 +71,7 @@ crates/hqe-core tests:
 ### Phase 2F Requirements — PARTIAL
 
 | Requirement | Status | Notes |
-|------------|--------|-------|
+| --- | --- | --- |
 | **Unified Output Panel** | ❌ NOT DONE | No `ConversationPanel.tsx` component created |
 | **Report → Chat transition** | ❌ NOT DONE | ReportScreen not integrated with chat |
 | **Thinktank prompt explanations** | ⚠️ PARTIAL | Backend supports it, UI doesn't show explanations yet |
@@ -78,6 +94,7 @@ crates/hqe-core tests:
 ## 4) What IS Implemented
 
 ### Backend (100%)
+
 - ✅ Universal static system prompt (`system_prompt.rs`)
 - ✅ PromptRunner execution pipeline (`prompt_runner.rs`)
 - ✅ Enhanced prompt registry with explanations (`registry_v2.rs`)
@@ -86,11 +103,13 @@ crates/hqe-core tests:
 - ✅ Chat Tauri commands (`chat.rs`)
 
 ### Frontend Types & State (100%)
+
 - ✅ TypeScript types for ChatSession, ChatMessage, PromptMetadata
 - ✅ Zustand store for chat state (`useChatStore`)
 - ✅ ProviderSpec type definition
 
 ### SettingsScreen (80%)
+
 - ✅ Provider spec selector dropdown
 - ✅ Auto-populate from spec
 - ✅ Key lock/unlock toggle
@@ -160,7 +179,7 @@ Frontend (Partial):
 ## 7) Remaining Work Estimate
 
 | Task | Effort |
-|------|--------|
+| --- | --- |
 | ConversationPanel component | 4-6 hours |
 | ReportScreen chat integration | 2-3 hours |
 | ThinktankScreen explanations | 2 hours |
@@ -172,6 +191,7 @@ Frontend (Partial):
 ## 8) Honest Assessment
 
 **Claims that were correct:**
+
 - All backend infrastructure exists and is functional
 - Provider specs for 6 providers exist
 - System prompt is immutable and integrity-checked
@@ -179,6 +199,7 @@ Frontend (Partial):
 - Chat commands are registered and functional
 
 **Claims that were premature:**
+
 - "Implementation Complete" — Frontend UI wiring is incomplete
 - Did not deliver unified output panel
 - Did not deliver prompt explanations in UI
