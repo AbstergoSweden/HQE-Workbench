@@ -13,7 +13,7 @@ use hqe_openai::provider_discovery::{
 };
 use hqe_openai::OpenAIAnalyzer;
 use hqe_openai::ProviderKindExt;
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::SecretString;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -358,28 +358,29 @@ pub async fn list_provider_profiles() -> Result<Vec<ProviderProfile>, String> {
 
 /// Import default profiles (only adds new ones, doesn't overwrite existing)
 #[command]
-pub async fn import_default_profiles(
-    profiles: Vec<ProviderProfile>,
-) -> Result<usize, String> {
+pub async fn import_default_profiles(profiles: Vec<ProviderProfile>) -> Result<usize, String> {
     let manager = ProfileManager::default();
-    let existing = manager.load_profiles().map_err(|e: hqe_openai::profile::ProfileError| e.to_string())?;
-    let existing_names: std::collections::HashSet<&str> = existing.iter().map(|p| p.name.as_str()).collect();
-    
+    let existing = manager
+        .load_profiles()
+        .map_err(|e: hqe_openai::profile::ProfileError| e.to_string())?;
+    let existing_names: std::collections::HashSet<&str> =
+        existing.iter().map(|p| p.name.as_str()).collect();
+
     let mut imported = 0;
     for profile in profiles {
         if !existing_names.contains(profile.name.as_str()) {
-            manager.save_profile(profile, None).map_err(|e| e.to_string())?;
+            manager
+                .save_profile(profile, None)
+                .map_err(|e| e.to_string())?;
             imported += 1;
         }
     }
     Ok(imported)
 }
 
-/// Get a single provider profile with its API key
+/// Get a single provider profile with key presence indicator (not the key itself)
 #[command]
-pub async fn get_provider_profile(
-    name: String,
-) -> Result<Option<(ProviderProfile, Option<String>)>, String> {
+pub async fn get_provider_profile(name: String) -> Result<Option<(ProviderProfile, bool)>, String> {
     let store = DefaultProfilesStore;
     let key_store = KeychainStore::default();
 
@@ -387,11 +388,11 @@ pub async fn get_provider_profile(
 
     match profile {
         Some(p) => {
-            let key = key_store
+            let has_key = key_store
                 .get_api_key(&name)
                 .map_err(|e| e.to_string())?
-                .map(|s| s.expose_secret().to_string());
-            Ok(Some((p, key)))
+                .is_some();
+            Ok(Some((p, has_key)))
         }
         None => Ok(None),
     }

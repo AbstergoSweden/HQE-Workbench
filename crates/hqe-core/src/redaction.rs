@@ -161,11 +161,7 @@ impl RedactionEngine {
                 *counter += 1;
                 let redacted = format!("REDACTED_{}_{}", secret_type, counter);
                 result = result.replace(&matched, &redacted);
-                debug!(
-                    "Redacted {}: {}",
-                    secret_type,
-                    matched.chars().take(10).collect::<String>() + "..."
-                );
+                debug!("Redacted {} (#{})", secret_type, counter);
             }
         }
 

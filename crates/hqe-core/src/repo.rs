@@ -6,6 +6,16 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, warn};
 use walkdir::WalkDir;
 
+/// Mask secret values in a line, keeping only the key name.
+/// Example: "API_KEY=sk-abc123" -> "API_KEY=***REDACTED***"
+fn mask_secret_line(line: &str) -> String {
+    if let Some((k, _)) = line.split_once('=') {
+        format!("{}=***REDACTED***", k.trim())
+    } else {
+        "***REDACTED***".to_string()
+    }
+}
+
 /// Repository scanner
 #[derive(Debug, Clone)]
 pub struct RepoScanner {
@@ -316,11 +326,12 @@ impl RepoScanner {
                 }
 
                 if !gitignored {
-                    // Read first few lines to show content
+                    // Read first few lines to show content (masked for security)
                     let snippet = if let Ok(content) = tokio::fs::read_to_string(&path).await {
-                        let preview: Vec<&str> = content.lines().take(3).collect();
+                        let preview: Vec<String> =
+                            content.lines().take(3).map(mask_secret_line).collect();
                         if preview.iter().any(|l| l.contains('=')) {
-                            Some(preview.join("\n").to_string())
+                            Some(preview.join("\n"))
                         } else {
                             None
                         }
@@ -466,7 +477,7 @@ impl RepoScanner {
                                 file_path: file.clone(),
                                 severity: Severity::Critical,
                                 line_number: Some(idx + 1),
-                                snippet: Some(line.trim().to_string()),
+                                snippet: Some(mask_secret_line(line)),
                                 recommendation: Some(
                                     "Use environment variables or a secrets manager".to_string(),
                                 ),
