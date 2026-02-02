@@ -285,6 +285,13 @@ pub fn build_patch_prompt(
     evidence: &str,
     file_context: &str,
 ) -> String {
+    // Sanitize all inputs to prevent prompt injection
+    let todo_id = sanitize_for_prompt(todo_id);
+    let title = sanitize_for_prompt(title);
+    let root_cause = sanitize_for_prompt(root_cause);
+    let evidence = sanitize_for_prompt(evidence);
+    let file_context = sanitize_for_prompt(file_context);
+
     format!(
         r#"Generate a safe, minimal patch for the following TODO item.
 
@@ -332,6 +339,12 @@ pub fn build_test_prompt(
     function_code: &str,
     test_framework: &str,
 ) -> String {
+    // Sanitize all inputs to prevent prompt injection
+    let function_name = sanitize_for_prompt(function_name);
+    let file_path = sanitize_for_prompt(file_path);
+    let function_code = sanitize_for_prompt(function_code);
+    let test_framework = sanitize_for_prompt(test_framework);
+
     format!(
         r#"Generate comprehensive tests for the following function.
 

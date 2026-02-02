@@ -107,6 +107,19 @@ export class ShellVerifyExecutor {
       });
     }
 
+    // Security: Ban dangerous shell operators to prevent command injection
+    const DANGEROUS_OPERATORS = /[;&|`$()<>\n\r]/;
+    if (DANGEROUS_OPERATORS.test(command)) {
+      return this.createResult({
+        startTime,
+        command,
+        passed: false,
+        exitCode: -1,
+        stdout: '',
+        stderr: 'Command contains forbidden shell operators (security restriction)',
+      });
+    }
+
     const resolvedTimeout = this.resolveTimeout(timeout);
     const resolvedWorkingDir = workingDir ?? this.defaultWorkingDir;
     const resolvedEnv = this.buildEnvironment(env);

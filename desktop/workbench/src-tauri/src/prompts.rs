@@ -205,12 +205,48 @@ fn get_prompts_dir(app: &AppHandle) -> Option<PathBuf> {
 
 fn find_prompts_dir(start: &Path) -> Option<PathBuf> {
     for ancestor in start.ancestors() {
+        // Prefer TOML prompt templates in cli-prompt-library (compatible with PromptLoader)
+        let cli_library = ancestor.join("mcp-server").join("cli-prompt-library");
+        if cli_library.exists() && contains_loadable_prompts(&cli_library) {
+            return Some(cli_library);
+        }
+
+        // Fallback: repo-root prompts/ only if it contains loadable templates
         let candidate = ancestor.join("prompts");
-        if candidate.exists() {
+        if candidate.exists() && contains_loadable_prompts(&candidate) {
             return Some(candidate);
         }
     }
     None
+}
+
+/// Check if a directory contains loadable TOML prompt templates.
+/// A loadable template must have `prompt = """` (multi-line prompt field).
+fn contains_loadable_prompts(dir: &Path) -> bool {
+    fn check_dir(dir: &Path, depth: usize) -> bool {
+        if depth > 3 {
+            return false;
+        }
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return false;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                if check_dir(&path, depth + 1) {
+                    return true;
+                }
+            } else if path.extension().is_some_and(|e| e == "toml") {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if content.contains("prompt = \"\"\"") {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+    check_dir(dir, 0)
 }
 
 fn substitute_template(template: &str, args: &serde_json::Value) -> String {
