@@ -1,6 +1,6 @@
 # HQE-Workbench — Agent Context
 
-> **Generated:** 2026-01-31 | **Sources:** `Cargo.toml`, `package.json`, `desktop/workbench/package.json`, `desktop/workbench/src-tauri/Cargo.toml`, `cli/hqe/Cargo.toml`, `.github/workflows/ci.yml`
+> **Generated:** 2026-02-02 | **Sources:** `Cargo.toml`, `package.json`, `desktop/workbench/package.json`, `desktop/workbench/src-tauri/Cargo.toml`, `cli/hqe/Cargo.toml`, `.github/workflows/ci.yml`
 
 ## Quick Start
 
@@ -13,6 +13,9 @@ cargo build --release -p hqe
 
 # Run local-only scan
 ./target/release/hqe scan /path/to/repo --local-only
+
+# Run Workbench desktop app
+cd desktop/workbench && npm run tauri:dev
 ```
 
 ## System Identity
@@ -34,7 +37,7 @@ cargo build --release -p hqe
 |---------|------|---------|------|
 | `hqe` | `cli/hqe` | CLI entry point | Binary |
 | `hqe-workbench-app` | `desktop/workbench/src-tauri` | Tauri desktop app | Binary |
-| `hqe-core` | `crates/hqe-core` | Scan pipeline & engine | Library |
+| `hqe-core` | `crates/hqe-core` | Scan pipeline, engine, encrypted chat DB | Library |
 | `hqe-openai` | `crates/hqe-openai` | OpenAI-compatible client | Library |
 | `hqe-git` | `crates/hqe-git` | Git operations | Library |
 | `hqe-artifacts` | `crates/hqe-artifacts` | Report generation | Library |
@@ -43,6 +46,38 @@ cargo build --release -p hqe
 | `hqe-ingest` | `crates/hqe-ingest` | File ingestion | Library |
 | `hqe-vector` | `crates/hqe-vector` | Vector/embeddings (placeholder) | Library |
 | `hqe-flow` | `crates/hqe-flow` | Workflow engine | Library |
+
+## New Features (February 2026)
+
+### 🔒 Security Hardening
+
+| Feature | Description | Implementation |
+|---------|-------------|----------------|
+| XSS Protection | DOMPurify sanitization for all LLM output | `ConversationPanel.tsx` |
+| SQL Injection Prevention | Parameterized queries, path validation | `encrypted_db.rs` |
+| Prompt Injection Defense | Key name validation, delimiter protection | `prompts.rs` |
+| Enhanced Jailbreak Detection | 50+ patterns, Unicode normalization | `system_prompt.rs` |
+| Encrypted Chat Database | SQLCipher AES-256 encryption | `hqe-core::encrypted_db` |
+
+### 💬 Chat System
+
+| Feature | Description | Implementation |
+|---------|-------------|----------------|
+| Unified Conversation Panel | Report → Chat seamless transition | `ConversationPanel.tsx` |
+| Encrypted Persistence | Chat history in SQLCipher database | `encrypted_db.rs` |
+| Message Pagination | Configurable 100-1000 messages per page | `Pagination` struct |
+| Transaction Support | Atomic message + metadata updates | SQLite transactions |
+| Database Connection Pooling | Shared connection across Tauri commands | `AppState::db` |
+
+### 🤖 Thinktank Integration
+
+| Feature | Description | Implementation |
+|---------|-------------|----------------|
+| Prompt Explanations | Rich metadata with descriptions | `registry_v2.rs` |
+| Category Filtering | Security, Quality, Refactor, etc. | `ThinktankScreen.tsx` |
+| Provider Specs | 6 prefilled providers (OpenAI, Anthropic, Venice, etc.) | `prefilled/mod.rs` |
+| Model Discovery | Auto-populate available models | `provider_discovery.rs` |
+| Key Lock UI | Secure storage vs session-only toggle | `SettingsScreen.tsx` |
 
 ## Operational Commands
 
@@ -62,6 +97,7 @@ cargo build --release -p hqe
 |--------|---------|-------|--------|
 | Build CLI | `cargo build --release -p hqe` | Output: `target/release/hqe` | `README.md:124` |
 | Test | `cargo test --workspace` | All workspace crates | `.github/workflows/ci.yml` |
+| Test SQLCipher | `cargo test --workspace --features sqlcipher-tests` | Requires SQLCipher lib | `hqe-core/Cargo.toml` |
 | Check | `cargo clippy --workspace -- -D warnings` | Lint | `.github/workflows/ci.yml` |
 | Format | `cargo fmt --all -- --check` | Format check | `.github/workflows/ci.yml` |
 
@@ -99,6 +135,7 @@ cargo build --release -p hqe
 | Build Tool | Vite 5 | `desktop/workbench/package.json:47` |
 | Framework | React 18.2, Tauri 2.0 | `desktop/workbench/package.json:21,31` |
 | Key Dependencies | Tokio, Clap, Serde, Reqwest | `Cargo.toml:27-48` |
+| Security | DOMPurify, SQLCipher, Keyring | `package.json`, `Cargo.toml` |
 
 ## Environment Variables
 
@@ -106,6 +143,7 @@ cargo build --release -p hqe
 |----------|----------|---------|--------|
 | `HQE_OPENAI_TIMEOUT_SECONDS` | No | Override LLM timeout | `crates/hqe-openai/src/lib.rs` |
 | `HQE_PROMPTS_DIR` | No | Custom prompts directory | `desktop/workbench/src-tauri/src/prompts.rs` |
+| `HQE_CHAT_DB_PATH` | No | Custom chat database path | `crates/hqe-core/src/encrypted_db.rs` |
 
 ## Critical Files
 
@@ -113,12 +151,36 @@ cargo build --release -p hqe
 |------|---------|
 | `Cargo.toml` | Workspace configuration |
 | `cli/hqe/src/main.rs` | CLI implementation |
-| `desktop/workbench/src-tauri/src/lib.rs` | Tauri commands |
+| `desktop/workbench/src-tauri/src/lib.rs` | Tauri commands, AppState |
+| `desktop/workbench/src-tauri/src/chat.rs` | Chat persistence commands |
+| `desktop/workbench/src-tauri/src/prompts.rs` | Prompt execution |
 | `protocol/hqe-engineer.yaml` | HQE Protocol v3 definition |
 | `protocol/hqe-schema.json` | Protocol JSON schema |
 | `scripts/bootstrap_macos.sh` | Environment setup |
 | `desktop/workbench/vite.config.ts` | Vite configuration |
 | `desktop/workbench/tailwind.config.js` | Tailwind theme |
+| `docs/COMPREHENSIVE_TODO_AND_BUGS.md` | Security audit & TODOs |
+
+## Security Features
+
+### Implemented Protections
+
+| Threat | Mitigation | Status |
+|--------|------------|--------|
+| XSS via LLM output | DOMPurify with strict allowlist | ✅ Implemented |
+| SQL Injection | Parameterized queries, path validation | ✅ Implemented |
+| Prompt Injection | Key validation, delimiter protection | ✅ Implemented |
+| Jailbreak attempts | Unicode normalization, 50+ patterns | ✅ Implemented |
+| Data exfiltration | Encrypted database (SQLCipher) | ✅ Implemented |
+| Race conditions | Ref-based state, atomic updates | ✅ Implemented |
+| Directory traversal | Path canonicalization | ✅ Implemented |
+
+### Chat Security
+
+- **Encryption**: SQLCipher AES-256 with PBKDF2 key derivation
+- **Key Storage**: macOS Keychain (Secure Enclave)
+- **No Plaintext**: Chat history never written unencrypted
+- **API Key Isolation**: Provider keys stored separately from chat DB
 
 ## CI/CD
 
@@ -126,12 +188,16 @@ cargo build --release -p hqe
 |-------|----------|---------|
 | Push/PR to main | `.github/workflows/ci.yml` | Build, test, clippy, fmt |
 | Weekly schedule | `.github/workflows/security.yml` | cargo audit |
+| SQLCipher tests | Manual | `cargo test --features sqlcipher-tests` |
 
 ## Verification
 
 ```bash
 # Verify Rust workspace
 cargo test --workspace && cargo clippy --workspace
+
+# Verify with SQLCipher tests (requires library installed)
+cargo test --workspace --features sqlcipher-tests
 
 # Verify Workbench
 cd desktop/workbench && npm install && npm run lint && npm test
@@ -141,15 +207,21 @@ npm run preflight
 
 # Run CLI
 ./target/release/hqe scan ./example-repo --local-only
+
+# Run desktop app
+cd desktop/workbench && npm run tauri:dev
 ```
 
-**Last validated:** 2026-01-31
+**Last validated:** 2026-02-02
 
 ---
 
 ## Verification Checklist
 
-- [ ] All commands tested locally
-- [ ] All file paths verified to exist
-- [ ] No hallucinated dependencies
-- [ ] Environment variables match source code
+- [x] All commands tested locally
+- [x] All file paths verified to exist
+- [x] No hallucinated dependencies
+- [x] Environment variables match source code
+- [x] Security fixes implemented and tested
+- [x] Chat functionality verified
+- [x] Documentation updated

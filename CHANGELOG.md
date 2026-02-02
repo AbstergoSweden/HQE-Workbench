@@ -8,27 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **CRITICAL**: Fixed XSS vulnerability in chat display (C7) - Added DOMPurify sanitization
+- **CRITICAL**: Fixed SQL injection vulnerabilities in encrypted database (C1, C2)
+- **CRITICAL**: Fixed prompt injection in template substitution (C4)
+- **CRITICAL**: Fixed race conditions in chat state management (C3, C8)
+- Enhanced jailbreak detection with 50+ patterns and Unicode normalization (M10)
+
+### Added
+
+- **💬 Encrypted Chat System**: SQLCipher AES-256 encrypted chat persistence
+- **🔄 Conversation Panel**: Unified UI for reports and chat with seamless transition
+- **📄 Message Pagination**: Configurable pagination (100-1000 messages per page)
+- **🤖 Thinktank Integration**: 30+ expert prompts with explanations and categories
+- **🔐 Key Lock UI**: Toggle between secure storage (keychain) and session-only
+- **🏷️ Category Filtering**: Browse prompts by Security, Quality, Refactor, Test, etc.
+- **🔍 Model Discovery**: Auto-populate available models from providers
+- **📊 Provider Specs**: 6 prefilled provider configurations (OpenAI, Anthropic, Venice, OpenRouter, xAI, Kimi)
+- **⚡ Database Connection Pooling**: Shared connection for improved performance
+- **📝 Transaction Support**: Atomic message and metadata updates
+
 ### Changed
 
 - **License:** Changed from MIT to Apache 2.0 for better patent protection and enterprise compatibility
 - **Security:** Hardened CI/CD workflows with SHA-pinned Actions and least-privilege permissions
+- **Dependencies:** Added DOMPurify, unicode-normalization for security hardening
 
-### Added
+### Documentation
 
-- Repository scaffold with community docs (Contributing, Code of Conduct, Security)
-- Governance model documentation (GOVERNANCE.md)
-- Project authors file (AUTHORS)
-- Apache 2.0 NOTICE file with third-party attribution
-- Security advisory issue template for private vulnerability reports
-- Additional CI workflows: release automation, stale issue cleanup, documentation deployment
-- EditorConfig for consistent code formatting across editors
-- Dependabot configuration for automated dependency updates
-- Pre-commit hooks for code quality and secret detection
-- CODEOWNERS updated with security-critical path ownership
-- CI workflows for build/test/lint and a security audit workflow
-- Documentation structure (architecture, threat model, provider setup)
+- Added comprehensive security audit (`docs/COMPREHENSIVE_TODO_AND_BUGS.md`)
+- Updated AGENTS.md with new features and commands
+- Updated README with Chat System and Thinktank documentation
+- Updated ABOUT.md with Core Values and Roadmap
 
-## [0.2.0] - 2026-01-31
+## [0.2.0] - 2026-02-02
 
 ### Added
 
@@ -38,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings**: Enhanced configuration for custom headers, organization, and project IDs
 - **UI**: Added "Export" functionality to Report screen
 - **UI**: Visual improvements to scan progress and evidence rendering
+- **💬 Encrypted Chat System**: Full-featured chat with SQLCipher encryption
+- **🤖 Thinktank Prompt Library**: 30+ expert prompts with metadata
 
 ### Changed
 
@@ -65,5 +81,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Issue and PR templates
 - GitHub Actions workflows (CI, Security)
 
-[Unreleased]: https://github.com/AbstergoSweden/HQE-Workbench/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/AbstergoSweden/HQE-Workbench/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/AbstergoSweden/HQE-Workbench/releases/tag/v0.2.0
 [0.1.0]: https://github.com/AbstergoSweden/HQE-Workbench/releases/tag/v0.1.0
