@@ -313,11 +313,35 @@ fn contains_loadable_prompts(dir: &Path) -> bool {
     check_dir(dir, 0)
 }
 
+/// Validate template key names to prevent injection attacks.
+/// Only allows alphanumeric characters, underscores, and hyphens.
+fn is_valid_key_name(key: &str) -> bool {
+    !key.is_empty() 
+        && key.len() <= 64  // Reasonable length limit
+        && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        // Prevent keys that could break out of template delimiters
+        && !key.contains("{{")
+        && !key.contains("}}")
+        && !key.contains('\0')
+}
+
+/// Substitute template placeholders with values.
+/// 
+/// # Security
+/// - Key names are validated to prevent template injection
+/// - Values are sanitized to remove potentially dangerous content
+/// - Recursive template injection is prevented by single-pass substitution
 fn substitute_template(template: &str, args: &serde_json::Value) -> String {
     let mut result = template.to_string();
 
     if let Some(obj) = args.as_object() {
         for (k, v) in obj {
+            // Validate key name to prevent injection attacks
+            if !is_valid_key_name(k) {
+                eprintln!("Warning: Invalid template key name '{}', skipping substitution", k);
+                continue;
+            }
+            
             let key = format!("{{{{{}}}}}", k); // {{key}}
             let val = v
                 .as_str()

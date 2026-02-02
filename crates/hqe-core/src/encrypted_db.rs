@@ -41,6 +41,10 @@ pub enum EncryptedDbError {
     /// Database migration error
     #[error("Migration error: {0}")]
     Migration(String),
+    
+    /// Validation error
+    #[error("Validation error: {0}")]
+    Validation(String),
 }
 
 /// Result type for encrypted DB operations
@@ -125,10 +129,20 @@ impl EncryptedDb {
     }
 
     /// Open database with SQLCipher encryption
+    /// 
+    /// # Security
+    /// The key is validated to be a 64-character hex string before use,
+    /// preventing SQL injection attacks.
     fn open_encrypted(config: &EncryptedDbConfig, key: &str) -> Result<Connection> {
+        // Validate key format before use
+        if !is_valid_hex_key(key) {
+            return Err(EncryptedDbError::InvalidKey);
+        }
+        
         let conn = Connection::open(&config.db_path)?;
 
-        // Configure SQLCipher encryption using pragma_update to avoid ExecuteReturnedResults error
+        // Configure SQLCipher encryption using pragma_update to avoid SQL injection
+        // Key has been validated to contain only hex characters
         conn.pragma_update(None, "key", key)?;
         conn.pragma_update(None, "cipher_page_size", config.page_size)?;
         conn.pragma_update(None, "kdf_iter", config.kdf_iterations)?;
@@ -268,16 +282,19 @@ impl EncryptedDb {
         info!("Rotating encryption key");
 
         let new_key = Self::generate_key();
+        
+        // Validate key format (should be 64 hex characters)
+        if !is_valid_hex_key(&new_key) {
+            return Err(EncryptedDbError::InvalidKey);
+        }
 
         let conn = self.conn.lock().map_err(|_| {
             EncryptedDbError::Encryption("Mutex poisoned".to_string())
         })?;
 
-        // Re-key the database
-        conn.execute(
-            &format!("PRAGMA rekey = '{}'", escape_sql_string(&new_key)),
-            [],
-        )?;
+        // Re-key the database using pragma_update to avoid SQL injection
+        // The key is validated to be hex-only, making SQL injection impossible
+        conn.pragma_update(None, "rekey", &new_key)?;
 
         // Update keychain
         let entry = keyring::Entry::new(
@@ -295,18 +312,53 @@ impl EncryptedDb {
     }
 
     /// Export encrypted backup
+    /// 
+    /// # Security
+    /// The backup_path is validated to prevent directory traversal attacks.
+    /// Only safe path characters are allowed.
     pub fn export_backup(&self, backup_path: &PathBuf) -> Result<()> {
         info!("Exporting encrypted backup to {:?}", backup_path);
+
+        // Validate backup path to prevent SQL injection and directory traversal
+        let canonical_path = backup_path.canonicalize().or_else(|_| {
+            // If canonicalize fails (path doesn't exist), try to canonicalize the parent
+            if let Some(parent) = backup_path.parent() {
+                let canonical_parent = parent.canonicalize()
+                    .map_err(|e| EncryptedDbError::Io(e))?;
+                Ok(canonical_parent.join(backup_path.file_name().unwrap_or_default()))
+            } else {
+                Err(EncryptedDbError::Validation("Invalid backup path".to_string()))
+            }
+        })?;
+        
+        // Ensure path doesn't contain null bytes or other dangerous characters
+        let path_str = canonical_path.to_string_lossy();
+        if path_str.contains('\0') || path_str.contains('\'') || path_str.contains('"') {
+            return Err(EncryptedDbError::Validation(
+                "Backup path contains invalid characters".to_string()
+            ));
+        }
+        
+        // Validate extension is .db or .db.encrypted
+        let ext = canonical_path.extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+        if !matches!(ext, "db" | "encrypted" | "sql" | "sqlite" | "backup") {
+            return Err(EncryptedDbError::Validation(
+                "Backup must have .db, .encrypted, .sql, .sqlite, or .backup extension".to_string()
+            ));
+        }
 
         let conn = self.conn.lock().map_err(|_| {
             EncryptedDbError::Encryption("Mutex poisoned".to_string())
         })?;
 
-        // SQLCipher backup using vacuum into
+        // SQLCipher backup using vacuum into with validated path
+        // Path has been canonicalized and validated, making SQL injection impossible
         conn.execute(
             &format!(
                 "VACUUM INTO '{}'",
-                escape_sql_string(&backup_path.to_string_lossy())
+                escape_sql_string(&canonical_path.to_string_lossy())
             ),
             [],
         )?;
@@ -772,6 +824,13 @@ fn parse_datetime(s: String) -> Option<chrono::DateTime<chrono::Utc>> {
     chrono::DateTime::parse_from_rfc3339(&s)
         .ok()
         .map(|dt| dt.with_timezone(&chrono::Utc))
+}
+
+/// Validate that a key is a valid hex string (64 characters, 0-9, a-f, A-F)
+/// 
+/// This prevents SQL injection by ensuring only safe characters are present.
+fn is_valid_hex_key(key: &str) -> bool {
+    key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 #[cfg(test)]

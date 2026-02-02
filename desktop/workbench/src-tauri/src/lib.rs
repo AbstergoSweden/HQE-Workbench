@@ -8,23 +8,30 @@ pub mod commands;
 pub mod prompts;
 use chat::*;
 use commands::*;
+use hqe_core::encrypted_db::{ChatOperations, EncryptedDb};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Application state shared across commands
 pub struct AppState {
     pub current_repo: Arc<Mutex<Option<String>>>,
+    /// Shared database instance for all chat operations
+    pub db: Arc<Mutex<EncryptedDb>>,
 }
 
 /// Run the Tauri application
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize the encrypted database once at startup
+    let db = EncryptedDb::init().expect("Failed to initialize encrypted database");
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .manage(AppState {
             current_repo: Arc::new(Mutex::new(None)),
+            db: Arc::new(Mutex::new(db)),
         })
         .invoke_handler(tauri::generate_handler![
             select_folder,

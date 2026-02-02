@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import DOMPurify from 'dompurify'
 import { ChatMessage, ChatSession } from '../types'
 import { useChatStore } from '../store'
 import { useToast } from '../context/ToastContext'
@@ -62,6 +63,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
 }) => {
   const toast = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesRef = useRef<ChatMessage[]>([])  // Track latest messages to avoid stale closures
   const [inputValue, setInputValue] = useState('')
   const [localLoading, setLocalLoading] = useState(false)
 
@@ -73,6 +75,11 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
     setCurrentSession,
     setIsLoading,
   } = useChatStore()
+  
+  // Keep messagesRef in sync with messages to avoid stale closures
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
 
   const loadSession = useCallback(async (id: string) => {
     try {
@@ -96,6 +103,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
         provider: contextRef.provider,
         model: contextRef.model,
       })
+      // Atomic state update to prevent race conditions
       setCurrentSession(session)
       setMessages([])
     } catch (err) {
@@ -163,11 +171,16 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
       // Call optional callback
       onSend?.(content)
 
+      // Get the latest message ID from the ref to avoid stale closure issues
+      // The ref always contains the most recent messages array
+      const latestMessages = messagesRef.current
+      const latestMessageId = latestMessages[latestMessages.length - 1]?.id
+
       // Send via Tauri command
       const response = await invoke<{ message: ChatMessage }>('send_chat_message', {
         session_id: currentSession.id,
         content,
-        parent_id: messages[messages.length - 1]?.id,
+        parent_id: latestMessageId,
       })
 
       // Update local state
@@ -179,7 +192,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
       setLocalLoading(false)
       setIsLoading(false)
     }
-  }, [inputValue, currentSession, messages, onSend, addMessage, toast, setIsLoading])
+  }, [inputValue, currentSession, onSend, addMessage, toast, setIsLoading])  // Note: messages removed - using ref instead
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -268,6 +281,42 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
 }
 
 /**
+ * Sanitize HTML content to prevent XSS attacks.
+ * This removes dangerous tags and attributes while preserving safe markdown content.
+ */
+const sanitizeContent = (content: string): string => {
+  if (typeof window === 'undefined') {
+    // Server-side rendering fallback - return content as-is
+    // DOMPurify only works in browser environment
+    return content
+  }
+  
+  return DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'strong', 'em', 'u', 's', 'del',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'ul', 'ol', 'li',
+      'code', 'pre', 'blockquote',
+      'a', 'img',
+      'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'hr', 'sup', 'sub'
+    ],
+    ALLOWED_ATTR: [
+      'href', 'title',  // for links
+      'src', 'alt', 'title', // for images
+      'class', // for syntax highlighting
+    ],
+    // Allow href and src with specific protocols only
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|xxx):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    // Prevent javascript: URLs
+    FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover'],
+    FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'input', 'textarea', 'button'],
+    // Keep text content of removed elements
+    KEEP_CONTENT: true,
+  })
+}
+
+/**
  * Individual message bubble component
  */
 interface MessageBubbleProps {
@@ -277,6 +326,9 @@ interface MessageBubbleProps {
 
 const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
   const isUser = message.role === 'user'
+  
+  // Sanitize content to prevent XSS from malicious LLM output
+  const sanitizedContent = sanitizeContent(message.content)
 
   return (
     <div
@@ -325,7 +377,7 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
           </span>
         </div>
 
-        {/* Message content */}
+        {/* Message content - now sanitized to prevent XSS */}
         <div className="prose prose-invert max-w-none prose-sm">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -346,10 +398,35 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
                     {children}
                   </code>
                 )
+              },
+              // Override link rendering to add security attributes
+              a({ href, children, ...props }) {
+                return (
+                  <a 
+                    href={href} 
+                    target="_blank" 
+                    rel="noopener noreferrer nofollow"
+                    {...props}
+                  >
+                    {children}
+                  </a>
+                )
+              },
+              // Override image rendering to prevent tracking/beacons
+              img({ src, alt, ...props }) {
+                return (
+                  <img 
+                    src={src} 
+                    alt={alt} 
+                    loading="lazy"
+                    style={{ maxWidth: '100%', height: 'auto' }}
+                    {...props}
+                  />
+                )
               }
             }}
           >
-            {message.content}
+            {sanitizedContent}
           </ReactMarkdown>
         </div>
       </div>

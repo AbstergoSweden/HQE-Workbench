@@ -38,6 +38,7 @@ pub struct ChatMessageDto {
 /// Create a new chat session
 #[command]
 pub async fn create_chat_session(
+    state: tauri::State<'_, crate::AppState>,
     repo_path: Option<String>,
     prompt_id: Option<String>,
     provider: String,
@@ -45,7 +46,7 @@ pub async fn create_chat_session(
 ) -> Result<ChatSessionDto, String> {
     info!(repo_path = ?repo_path, provider = %provider, "Creating chat session");
 
-    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let db = state.db.lock().await;
 
     let session = ChatSession {
         id: Uuid::new_v4().to_string(),
@@ -74,10 +75,13 @@ pub async fn create_chat_session(
 
 /// List chat sessions
 #[command]
-pub async fn list_chat_sessions(repo_path: Option<String>) -> Result<Vec<ChatSessionDto>, String> {
+pub async fn list_chat_sessions(
+    state: tauri::State<'_, crate::AppState>,
+    repo_path: Option<String>,
+) -> Result<Vec<ChatSessionDto>, String> {
     debug!(repo_path = ?repo_path, "Listing chat sessions");
 
-    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let db = state.db.lock().await;
 
     let sessions = db
         .list_sessions(repo_path.as_deref())
@@ -102,10 +106,13 @@ pub async fn list_chat_sessions(repo_path: Option<String>) -> Result<Vec<ChatSes
 
 /// Get a single chat session with messages
 #[command]
-pub async fn get_chat_session(session_id: String) -> Result<(ChatSessionDto, Vec<ChatMessageDto>), String> {
+pub async fn get_chat_session(
+    state: tauri::State<'_, crate::AppState>,
+    session_id: String,
+) -> Result<(ChatSessionDto, Vec<ChatMessageDto>), String> {
     debug!(session_id = %session_id, "Getting chat session");
 
-    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let db = state.db.lock().await;
 
     let session = db
         .get_session(&session_id)
@@ -148,6 +155,7 @@ pub async fn get_chat_session(session_id: String) -> Result<(ChatSessionDto, Vec
 /// Add a message to a chat session
 #[command]
 pub async fn add_chat_message(
+    state: tauri::State<'_, crate::AppState>,
     session_id: String,
     role: String,
     content: String,
@@ -155,7 +163,7 @@ pub async fn add_chat_message(
 ) -> Result<ChatMessageDto, String> {
     debug!(session_id = %session_id, role = %role, "Adding chat message");
 
-    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let db = state.db.lock().await;
 
     let role_enum = match role.as_str() {
         "system" => MessageRole::System,
@@ -190,10 +198,13 @@ pub async fn add_chat_message(
 
 /// Get messages for a session
 #[command]
-pub async fn get_chat_messages(session_id: String) -> Result<Vec<ChatMessageDto>, String> {
+pub async fn get_chat_messages(
+    state: tauri::State<'_, crate::AppState>,
+    session_id: String,
+) -> Result<Vec<ChatMessageDto>, String> {
     debug!(session_id = %session_id, "Getting chat messages");
 
-    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let db = state.db.lock().await;
     let messages = db.get_messages(&session_id).map_err(|e| e.to_string())?;
 
     let dtos: Vec<ChatMessageDto> = messages
@@ -219,13 +230,14 @@ pub async fn get_chat_messages(session_id: String) -> Result<Vec<ChatMessageDto>
 /// Send a chat message and get response (simplified - stores message, returns placeholder)
 #[command]
 pub async fn send_chat_message(
+    state: tauri::State<'_, crate::AppState>,
     session_id: String,
     content: String,
     parent_id: Option<String>,
 ) -> Result<ChatMessageDto, String> {
     info!(session_id = %session_id, "Sending chat message");
 
-    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let db = state.db.lock().await;
 
     // Add user message
     let user_message = ChatMessage {
@@ -268,10 +280,13 @@ pub async fn send_chat_message(
 
 /// Delete a chat session
 #[command]
-pub async fn delete_chat_session(session_id: String) -> Result<(), String> {
+pub async fn delete_chat_session(
+    state: tauri::State<'_, crate::AppState>,
+    session_id: String,
+) -> Result<(), String> {
     info!(session_id = %session_id, "Deleting chat session");
 
-    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let db = state.db.lock().await;
     db.delete_session(&session_id).map_err(|e| e.to_string())?;
 
     Ok(())
