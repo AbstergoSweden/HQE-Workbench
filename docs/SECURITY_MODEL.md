@@ -1,7 +1,7 @@
 # Security Model — HQE Workbench
 
 **Version:** 1.0.0  
-**Date:** 2025-02-01  
+**Date:** 2026-02-02  
 **Classification:** Internal
 
 ---
@@ -209,7 +209,7 @@ fn escape_untrusted(content: &str) -> String {
 
 ```json
 {
-  "timestamp": "2025-02-01T12:00:00Z",
+  "timestamp": "2026-02-02T12:00:00Z",
   "event": "prompt_execution",
   "level": "info",
   "context": {

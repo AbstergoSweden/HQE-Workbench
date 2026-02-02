@@ -81,6 +81,7 @@ pub struct LoadedPromptTool {
 }
 
 /// Loader for file-based prompt templates
+#[derive(Debug, Clone)]
 pub struct PromptLoader {
     root_path: PathBuf,
 }

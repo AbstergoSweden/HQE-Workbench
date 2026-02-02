@@ -1,17 +1,20 @@
 import { FC, useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useToast } from '../context/ToastContext'
+import { ConversationPanel } from '../components/ConversationPanel'
+import { ChatMessage, PromptMetadata } from '../types'
 
+// Extended Prompt interface with metadata
 interface PromptTool {
   name: string
   description: string
+  explanation?: string
+  category?: string
+  version?: string
   input_schema?: { properties?: Record<string, JSONSchemaProperty> }
   template: string
+  metadata?: PromptMetadata
 }
 
 interface JSONSchemaProperty {
@@ -99,27 +102,87 @@ const buildTypedArgs = (
   return typed
 }
 
+// Category colors for the UI
+const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
+  security: { bg: 'var(--dracula-red)10', border: 'var(--dracula-red)40', text: 'var(--dracula-red)' },
+  quality: { bg: 'var(--dracula-green)10', border: 'var(--dracula-green)40', text: 'var(--dracula-green)' },
+  refactor: { bg: 'var(--dracula-orange)10', border: 'var(--dracula-orange)40', text: 'var(--dracula-orange)' },
+  explain: { bg: 'var(--dracula-cyan)10', border: 'var(--dracula-cyan)40', text: 'var(--dracula-cyan)' },
+  test: { bg: 'var(--dracula-purple)10', border: 'var(--dracula-purple)40', text: 'var(--dracula-purple)' },
+  document: { bg: 'var(--dracula-yellow)10', border: 'var(--dracula-yellow)40', text: 'var(--dracula-yellow)' },
+  architecture: { bg: 'var(--dracula-pink)10', border: 'var(--dracula-pink)40', text: 'var(--dracula-pink)' },
+  performance: { bg: 'var(--dracula-comment)10', border: 'var(--dracula-comment)40', text: 'var(--dracula-comment)' },
+  dependencies: { bg: 'var(--dracula-cyan)10', border: 'var(--dracula-cyan)40', text: 'var(--dracula-cyan)' },
+  custom: { bg: 'var(--dracula-green)10', border: 'var(--dracula-green)40', text: 'var(--dracula-green)' },
+  agent: { bg: 'var(--dracula-orange)10', border: 'var(--dracula-orange)40', text: 'var(--dracula-orange)' },
+}
+
+const getCategoryStyle = (category?: string) => {
+  const key = category?.toLowerCase() || 'custom'
+  return categoryColors[key] || categoryColors.custom
+}
+
 export const ThinktankScreen: FC = () => {
   const location = useLocation()
   const [prompts, setPrompts] = useState<PromptTool[]>([])
+  const [filteredPrompts, setFilteredPrompts] = useState<PromptTool[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showAgentPrompts, setShowAgentPrompts] = useState(false)
+  const [showIncompatible, setShowIncompatible] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTool | null>(null)
   const [args, setArgs] = useState<Record<string, unknown>>({})
   const [result, setResult] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [executing, setExecuting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [chatMode, setChatMode] = useState(false)
+  const [initialMessages, setInitialMessages] = useState<ChatMessage[]>([])
   const toast = useToast()
 
   const isAgentPrompt = useCallback((name: string) => {
     return name.startsWith('conductor_') || name.startsWith('cli_security_')
   }, [])
 
+  // Get unique categories from prompts
+  const categories = Array.from(new Set(prompts.map(p => p.category || 'custom'))).sort()
+
+  // Filter prompts based on search, category, and agent visibility
+  useEffect(() => {
+    let filtered = prompts
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query) ||
+        p.explanation?.toLowerCase().includes(query) ||
+        p.category?.toLowerCase().includes(query)
+      )
+    }
+
+    // Category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(p => 
+        (p.category || 'custom').toLowerCase() === selectedCategory.toLowerCase()
+      )
+    }
+
+    // Agent prompt filter
+    if (!showAgentPrompts) {
+      filtered = filtered.filter(p => !isAgentPrompt(p.name))
+    }
+
+    setFilteredPrompts(filtered)
+  }, [prompts, searchQuery, selectedCategory, showAgentPrompts, isAgentPrompt])
+
   const handleSelectPrompt = useCallback((prompt: PromptTool, initialArgs?: Record<string, unknown>) => {
     setSelectedPrompt(prompt)
     setResult('')
     setError(null)
+    setChatMode(false)
+    setInitialMessages([])
 
     // Initialize args from schema
     const newArgs: Record<string, unknown> = {}
@@ -148,7 +211,14 @@ export const ThinktankScreen: FC = () => {
     setLoading(true)
     setError(null)
     try {
-      const loaded = await invoke<PromptTool[]>('get_available_prompts')
+      // Try to load enhanced prompts with metadata first
+      let loaded: PromptTool[] = []
+      try {
+        loaded = await invoke<PromptTool[]>('get_available_prompts_with_metadata')
+      } catch {
+        // Fallback to basic prompts
+        loaded = await invoke<PromptTool[]>('get_available_prompts')
+      }
       setPrompts(loaded)
 
       // Check if we have incoming state
@@ -192,6 +262,16 @@ export const ThinktankScreen: FC = () => {
         }
       })
       setResult(response.result)
+      
+      // Create initial message for potential chat transition
+      const assistantMessage: ChatMessage = {
+        id: `report-${Date.now()}`,
+        session_id: '',
+        role: 'assistant',
+        content: response.result,
+        timestamp: new Date().toISOString(),
+      }
+      setInitialMessages([assistantMessage])
     } catch (err) {
       console.error('Execution failed:', err)
       setError(`Execution failed: ${err}`)
@@ -201,13 +281,73 @@ export const ThinktankScreen: FC = () => {
     }
   }
 
-  const searchFilteredPrompts = prompts.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-  const visiblePrompts = searchFilteredPrompts.filter((p) => showAgentPrompts || !isAgentPrompt(p.name))
-  const hiddenAgentCount =
-    showAgentPrompts ? 0 : searchFilteredPrompts.filter((p) => isAgentPrompt(p.name)).length
+  const handleStartChat = () => {
+    if (result) {
+      setChatMode(true)
+    }
+  }
+
+  const hiddenAgentCount = prompts.filter(p => isAgentPrompt(p.name)).length
+  const incompatibleCount = prompts.length - filteredPrompts.length
+
+  if (chatMode && result) {
+    return (
+      <div className="flex h-full gap-4">
+        {/* Left sidebar with prompt info */}
+        <div className="w-64 flex flex-col card p-4" style={{ borderColor: 'var(--dracula-comment)' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setChatMode(false)}
+              className="text-xs hover:text-terminal-cyan"
+              style={{ color: 'var(--dracula-comment)' }}
+            >
+              ← Back to prompt
+            </button>
+          </div>
+          
+          <h3 className="font-mono text-sm mb-2" style={{ color: 'var(--dracula-fg)' }}>
+            {selectedPrompt?.name.replace(/_/g, ' ')}
+          </h3>
+          
+          {selectedPrompt?.category && (
+            <span
+              className="text-xs px-2 py-0.5 rounded w-fit mb-3"
+              style={{
+                backgroundColor: getCategoryStyle(selectedPrompt.category).bg,
+                color: getCategoryStyle(selectedPrompt.category).text,
+                border: `1px solid ${getCategoryStyle(selectedPrompt.category).border}`,
+              }}
+            >
+              {selectedPrompt.category}
+            </span>
+          )}
+          
+          <p className="text-xs mb-4" style={{ color: 'var(--dracula-comment)' }}>
+            {selectedPrompt?.description}
+          </p>
+
+          <div className="mt-auto pt-4 border-t" style={{ borderColor: 'var(--dracula-comment)' }}>
+            <p className="text-xs" style={{ color: 'var(--dracula-comment)' }}>
+              Ask follow-up questions about the analysis results.
+            </p>
+          </div>
+        </div>
+
+        {/* Main chat area */}
+        <div className="flex-1 card overflow-hidden" style={{ borderColor: 'var(--dracula-comment)' }}>
+          <ConversationPanel
+            initialMessages={initialMessages}
+            contextRef={{
+              prompt_id: selectedPrompt?.name,
+              provider: 'default',
+              model: 'default',
+            }}
+            showInput={true}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full gap-4">
@@ -235,15 +375,21 @@ export const ThinktankScreen: FC = () => {
             </button>
           </div>
 
-          <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
-            <input
-              type="checkbox"
-              checked={showAgentPrompts}
-              onChange={(e) => setShowAgentPrompts(e.target.checked)}
-            />
-            Show agent prompts
-          </label>
+          {/* Category filter */}
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="input text-sm"
+          >
+            <option value="all">All Categories ({prompts.length})</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>
+                {cat.charAt(0).toUpperCase() + cat.slice(1)} ({prompts.filter(p => (p.category || 'custom') === cat).length})
+              </option>
+            ))}
+          </select>
 
+          {/* Search */}
           <input
             type="text"
             placeholder="Search prompts..."
@@ -251,6 +397,29 @@ export const ThinktankScreen: FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input text-sm"
           />
+
+          {/* Toggles */}
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
+              <input
+                type="checkbox"
+                checked={showAgentPrompts}
+                onChange={(e) => setShowAgentPrompts(e.target.checked)}
+              />
+              Show agent prompts {hiddenAgentCount > 0 && `(${hiddenAgentCount} hidden)`}
+            </label>
+            
+            {incompatibleCount > 0 && (
+              <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--dracula-comment)' }}>
+                <input
+                  type="checkbox"
+                  checked={showIncompatible}
+                  onChange={(e) => setShowIncompatible(e.target.checked)}
+                />
+                Show incompatible prompts ({incompatibleCount} filtered)
+              </label>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto">
@@ -281,22 +450,22 @@ export const ThinktankScreen: FC = () => {
                 ↻ refresh
               </button>
             </div>
-          ) : visiblePrompts.length === 0 ? (
+          ) : filteredPrompts.length === 0 ? (
             <div className="p-6 text-center flex flex-col items-center gap-3">
               <div className="text-3xl opacity-50">🔍</div>
               <p className="text-sm" style={{ color: 'var(--dracula-comment)' }}>
                 No prompts match &quot;{searchQuery}&quot;
               </p>
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => { setSearchQuery(''); setSelectedCategory('all') }}
                 className="text-xs text-terminal-cyan hover:underline"
               >
-                Clear search
+                Clear filters
               </button>
             </div>
           ) : (
             <div className="flex flex-col">
-              {visiblePrompts.map(p => (
+              {filteredPrompts.map(p => (
                 <button
                   key={p.name}
                   onClick={() => handleSelectPrompt(p)}
@@ -338,6 +507,18 @@ export const ThinktankScreen: FC = () => {
                         AGENT
                       </span>
                     )}
+                    {p.category && !isAgentPrompt(p.name) && (
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        style={{
+                          background: getCategoryStyle(p.category).bg,
+                          color: getCategoryStyle(p.category).text,
+                          border: `1px solid ${getCategoryStyle(p.category).border}`,
+                        }}
+                      >
+                        {p.category}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs truncate mt-1" style={{ color: 'var(--dracula-comment)' }}>
                     {p.description}
@@ -352,7 +533,8 @@ export const ThinktankScreen: FC = () => {
           className="p-2 border-t text-center text-xs"
           style={{ borderColor: 'var(--dracula-comment)', color: 'var(--dracula-comment)' }}
         >
-          {visiblePrompts.length} prompts{hiddenAgentCount > 0 ? ` (${hiddenAgentCount} hidden)` : ''}
+          {filteredPrompts.length} of {prompts.length} prompts
+          {hiddenAgentCount > 0 && !showAgentPrompts && ` • ${hiddenAgentCount} agent prompts hidden`}
         </div>
       </div>
 
@@ -366,6 +548,9 @@ export const ThinktankScreen: FC = () => {
             <div className="text-center" style={{ color: 'var(--dracula-comment)' }}>
               <div className="text-4xl mb-4">🧠</div>
               <p>Select a prompt from the library to begin</p>
+              <p className="text-sm mt-2 opacity-70">
+                {prompts.length} prompts available
+              </p>
             </div>
           </div>
         ) : (
@@ -383,6 +568,11 @@ export const ThinktankScreen: FC = () => {
                 <span className="font-mono text-xs" style={{ color: 'var(--dracula-comment)' }}>
                   ({selectedPrompt.name})
                 </span>
+                {selectedPrompt.version && (
+                  <span className="font-mono text-xs" style={{ color: 'var(--dracula-comment)' }}>
+                    v{selectedPrompt.version}
+                  </span>
+                )}
               </div>
 
               {isAgentPrompt(selectedPrompt.name) && (
@@ -399,9 +589,28 @@ export const ThinktankScreen: FC = () => {
                 </div>
               )}
 
-              <p className="text-sm mb-4" style={{ color: 'var(--dracula-comment)' }}>
+              {/* Description */}
+              <p className="text-sm mb-2" style={{ color: 'var(--dracula-comment)' }}>
                 {selectedPrompt.description}
               </p>
+
+              {/* Explanation (if available) */}
+              {selectedPrompt.explanation && (
+                <div
+                  className="mb-4 p-3 rounded text-sm"
+                  style={{
+                    background: 'var(--dracula-current-line)',
+                    border: '1px solid var(--dracula-comment)30',
+                  }}
+                >
+                  <div className="text-xs uppercase tracking-wider mb-2" style={{ color: 'var(--dracula-cyan)' }}>
+                    About this prompt
+                  </div>
+                  <div style={{ color: 'var(--dracula-fg)' }}>
+                    {selectedPrompt.explanation}
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col gap-3">
                 {Object.entries(selectedPrompt.input_schema?.properties || {}).map(([key, schema]) => {
@@ -417,6 +626,11 @@ export const ThinktankScreen: FC = () => {
                         style={{ color: 'var(--dracula-cyan)' }}
                       >
                         --{key}
+                        {schema.description && (
+                          <span className="ml-2 font-normal" style={{ color: 'var(--dracula-comment)' }}>
+                            ({schema.description})
+                          </span>
+                        )}
                       </label>
                       {enumValues ? (
                         <select
@@ -508,9 +722,24 @@ export const ThinktankScreen: FC = () => {
                   className="p-3 border-b flex justify-between items-center"
                   style={{ borderColor: 'var(--dracula-comment)' }}
                 >
-                  <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
-                    Output
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
+                      Output
+                    </span>
+                    {result && (
+                      <button
+                        onClick={handleStartChat}
+                        className="text-xs px-2 py-1 rounded flex items-center gap-1"
+                        style={{
+                          background: 'var(--dracula-green)20',
+                          color: 'var(--dracula-green)',
+                          border: '1px solid var(--dracula-green)50',
+                        }}
+                      >
+                        💬 Start Chat
+                      </button>
+                    )}
+                  </div>
                   {result && (
                     <button
                       onClick={() => navigator.clipboard.writeText(result)}
@@ -522,59 +751,24 @@ export const ThinktankScreen: FC = () => {
                   )}
                 </div>
 
-                <div className="flex-1 p-4 overflow-auto" style={{ background: 'var(--dracula-bg)' }}>
-                  {error ? (
-                    <div
-                      className="p-4 rounded text-sm"
-                      style={{
-                        background: 'var(--dracula-red)10',
-                        border: '1px solid var(--dracula-red)30',
-                        color: 'var(--dracula-red)'
-                      }}
-                    >
-                      ✗ {error}
-                    </div>
-                  ) : executing ? (
-                    <div className="flex flex-col gap-2">
-                      {[...Array(4)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-4 animate-pulse"
-                          style={{
-                            background: 'var(--dracula-current-line)',
-                            width: `${60 + Math.random() * 40}%`
-                          }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="prose prose-invert max-w-none prose-sm">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
-                            const match = /language-(\w+)/.exec(className || '')
-                            return !inline && match ? (
-                              <SyntaxHighlighter
-                                {...props}
-                                style={vscDarkPlus}
-                                language={match[1]}
-                                PreTag="div"
-                              >
-                                {String(children).replace(/\n$/, '')}
-                              </SyntaxHighlighter>
-                            ) : (
-                              <code {...props} className={className}>
-                                {children}
-                              </code>
-                            )
-                          }
-                        }}
-                      >
-                        {result}
-                      </ReactMarkdown>
-                    </div>
-                  )}
+                <div className="flex-1 overflow-hidden" style={{ background: 'var(--dracula-bg)' }}>
+                  <ConversationPanel
+                    initialMessages={result ? [{
+                      id: `report-${Date.now()}`,
+                      session_id: '',
+                      role: 'assistant',
+                      content: result,
+                      timestamp: new Date().toISOString(),
+                    }] : []}
+                    contextRef={{
+                      prompt_id: selectedPrompt.name,
+                      provider: 'default',
+                      model: 'default',
+                    }}
+                    showInput={false}
+                    isLoading={executing}
+                    className="h-full"
+                  />
                 </div>
               </div>
             )}
@@ -584,3 +778,5 @@ export const ThinktankScreen: FC = () => {
     </div>
   )
 }
+
+export default ThinktankScreen

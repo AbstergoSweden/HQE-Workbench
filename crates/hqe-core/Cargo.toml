@@ -49,3 +49,8 @@ hqe-protocol = { path = "../hqe-protocol" }
 tokio-test = "0.4"
 pretty_assertions = { workspace = true }
 tempfile = { workspace = true }
+
+[features]
+default = []
+# Enable SQLCipher tests - requires SQLCipher library to be installed
+sqlcipher-tests = []

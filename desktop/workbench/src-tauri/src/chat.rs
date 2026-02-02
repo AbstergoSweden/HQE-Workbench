@@ -188,6 +188,84 @@ pub async fn add_chat_message(
     })
 }
 
+/// Get messages for a session
+#[command]
+pub async fn get_chat_messages(session_id: String) -> Result<Vec<ChatMessageDto>, String> {
+    debug!(session_id = %session_id, "Getting chat messages");
+
+    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+    let messages = db.get_messages(&session_id).map_err(|e| e.to_string())?;
+
+    let dtos: Vec<ChatMessageDto> = messages
+        .into_iter()
+        .map(|m| ChatMessageDto {
+            id: m.id,
+            session_id: m.session_id,
+            parent_id: m.parent_id,
+            role: match m.role {
+                MessageRole::System => "system".to_string(),
+                MessageRole::User => "user".to_string(),
+                MessageRole::Assistant => "assistant".to_string(),
+                MessageRole::Tool => "tool".to_string(),
+            },
+            content: m.content,
+            timestamp: m.timestamp.to_rfc3339(),
+        })
+        .collect();
+
+    Ok(dtos)
+}
+
+/// Send a chat message and get response (simplified - stores message, returns placeholder)
+#[command]
+pub async fn send_chat_message(
+    session_id: String,
+    content: String,
+    parent_id: Option<String>,
+) -> Result<ChatMessageDto, String> {
+    info!(session_id = %session_id, "Sending chat message");
+
+    let db = EncryptedDb::init().map_err(|e| e.to_string())?;
+
+    // Add user message
+    let user_message = ChatMessage {
+        id: Uuid::new_v4().to_string(),
+        session_id: session_id.clone(),
+        parent_id: parent_id.clone(),
+        role: MessageRole::User,
+        content: content.clone(),
+        context_refs: None,
+        timestamp: chrono::Utc::now(),
+        metadata: None,
+    };
+
+    db.add_message(&user_message).map_err(|e| e.to_string())?;
+
+    // TODO: Integrate with PromptRunner to get actual LLM response
+    // For now, return a placeholder response
+    let assistant_message = ChatMessage {
+        id: Uuid::new_v4().to_string(),
+        session_id: session_id.clone(),
+        parent_id: Some(user_message.id.clone()),
+        role: MessageRole::Assistant,
+        content: "This is a placeholder response. Full LLM integration coming in Phase 3.".to_string(),
+        context_refs: None,
+        timestamp: chrono::Utc::now(),
+        metadata: None,
+    };
+
+    db.add_message(&assistant_message).map_err(|e| e.to_string())?;
+
+    Ok(ChatMessageDto {
+        id: assistant_message.id,
+        session_id: assistant_message.session_id,
+        parent_id: assistant_message.parent_id,
+        role: "assistant".to_string(),
+        content: assistant_message.content,
+        timestamp: assistant_message.timestamp.to_rfc3339(),
+    })
+}
+
 /// Delete a chat session
 #[command]
 pub async fn delete_chat_session(session_id: String) -> Result<(), String> {

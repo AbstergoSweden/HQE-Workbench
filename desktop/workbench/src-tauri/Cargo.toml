@@ -31,3 +31,5 @@ hqe-protocol = { path = "../../../crates/hqe-protocol" }
 hqe-ingest = { path = "../../../crates/hqe-ingest" }
 hqe-mcp = { path = "../../../crates/hqe-mcp" }
 hqe-flow = { path = "../../../crates/hqe-flow" }
+uuid = { version = "1.10", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }

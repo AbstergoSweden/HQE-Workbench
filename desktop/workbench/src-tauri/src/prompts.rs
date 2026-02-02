@@ -16,6 +16,17 @@ pub struct PromptToolInfo {
     pub template: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PromptToolInfoWithMetadata {
+    pub name: String,
+    pub description: String,
+    pub explanation: String,
+    pub category: String,
+    pub version: String,
+    pub input_schema: serde_json::Value,
+    pub template: String,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ExecutePromptRequest {
     pub tool_name: String,
@@ -45,6 +56,59 @@ pub async fn get_available_prompts(app: AppHandle) -> Result<Vec<PromptToolInfo>
             template: t.template,
         })
         .collect())
+}
+
+/// List all available prompt tools with rich metadata
+#[command]
+pub async fn get_available_prompts_with_metadata(app: AppHandle) -> Result<Vec<PromptToolInfoWithMetadata>, String> {
+    let prompts_dir = get_prompts_dir(&app).ok_or("Could not locate prompts directory")?;
+
+    // Try to use the enhanced registry if available
+    let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
+    let mut registry = hqe_mcp::registry_v2::PromptRegistry::new(loader);
+    
+    match registry.load_all() {
+        Ok(()) => {
+            let prompts = registry.all();
+            Ok(prompts
+                .into_iter()
+                .map(|p| PromptToolInfoWithMetadata {
+                    name: p.metadata.id.clone(),
+                    description: p.metadata.description.clone(),
+                    explanation: p.metadata.explanation.clone(),
+                    category: format!("{:?}", p.metadata.category).to_lowercase(),
+                    version: p.metadata.version.clone(),
+                    input_schema: serde_json::json!({
+                        "properties": p.metadata.inputs.iter().map(|i| {
+                            (i.name.clone(), serde_json::json!({
+                                "type": format!("{:?}", i.input_type).to_lowercase(),
+                                "description": i.description.clone(),
+                            }))
+                        }).collect::<serde_json::Map<String, serde_json::Value>>()
+                    }),
+                    template: p.template.clone(),
+                })
+                .collect())
+        }
+        Err(_) => {
+            // Fallback to basic loader
+            let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
+            let loaded_tools = loader.load().map_err(|e| e.to_string())?;
+
+            Ok(loaded_tools
+                .into_iter()
+                .map(|t| PromptToolInfoWithMetadata {
+                    name: t.definition.name.clone(),
+                    description: t.definition.description.clone(),
+                    explanation: t.definition.description.clone(),
+                    category: "custom".to_string(),
+                    version: "1.0.0".to_string(),
+                    input_schema: t.definition.input_schema.clone(),
+                    template: t.template,
+                })
+                .collect())
+        }
+    }
 }
 
 /// Execute a prompt tool

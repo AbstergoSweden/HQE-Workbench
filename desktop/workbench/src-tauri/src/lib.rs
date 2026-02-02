@@ -47,12 +47,15 @@ pub fn run() {
             apply_provider_spec,
             // Prompt commands
             prompts::get_available_prompts,
+            prompts::get_available_prompts_with_metadata,
             prompts::execute_prompt,
             // Chat commands
             create_chat_session,
             list_chat_sessions,
             get_chat_session,
+            get_chat_messages,
             add_chat_message,
+            send_chat_message,
             delete_chat_session,
         ])
         .run(tauri::generate_context!())

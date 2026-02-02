@@ -2095,6 +2095,7 @@ name = "hqe-workbench-app"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "dirs 5.0.1",
  "hqe-artifacts",
  "hqe-core",
@@ -2115,6 +2116,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]

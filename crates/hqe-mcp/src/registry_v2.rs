@@ -29,9 +29,12 @@ pub enum RegistryError {
 }
 
 /// Categories for prompt classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum PromptCategory {
+    /// Uncategorized/default
+    #[default]
+    Uncategorized,
     /// Security analysis prompts
     Security,
     /// Code quality analysis
@@ -59,6 +62,7 @@ pub enum PromptCategory {
 impl std::fmt::Display for PromptCategory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            PromptCategory::Uncategorized => write!(f, "Uncategorized"),
             PromptCategory::Security => write!(f, "Security"),
             PromptCategory::Quality => write!(f, "Quality"),
             PromptCategory::Refactor => write!(f, "Refactor"),
@@ -78,6 +82,7 @@ impl PromptCategory {
     /// Get the emoji/icon for this category
     pub fn icon(&self) -> &'static str {
         match self {
+            PromptCategory::Uncategorized => "❓",
             PromptCategory::Security => "🔒",
             PromptCategory::Quality => "✨",
             PromptCategory::Refactor => "🔧",
@@ -95,6 +100,7 @@ impl PromptCategory {
     /// Get the default sort order
     pub fn sort_order(&self) -> u8 {
         match self {
+            PromptCategory::Uncategorized => 255, // Always last
             PromptCategory::Security => 0,
             PromptCategory::Quality => 1,
             PromptCategory::Performance => 2,

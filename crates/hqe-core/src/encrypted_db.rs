@@ -128,17 +128,13 @@ impl EncryptedDb {
     fn open_encrypted(config: &EncryptedDbConfig, key: &str) -> Result<Connection> {
         let conn = Connection::open(&config.db_path)?;
 
-        // Configure SQLCipher encryption
-        conn.execute(
-            &format!("PRAGMA key = '{}'", escape_sql_string(key)),
-            [],
-        )?;
-
-        conn.execute(&format!("PRAGMA cipher_page_size = {}", config.page_size), [])?;
-        conn.execute(&format!("PRAGMA kdf_iter = {}", config.kdf_iterations), [])?;
+        // Configure SQLCipher encryption using pragma_update to avoid ExecuteReturnedResults error
+        conn.pragma_update(None, "key", key)?;
+        conn.pragma_update(None, "cipher_page_size", config.page_size)?;
+        conn.pragma_update(None, "kdf_iter", config.kdf_iterations)?;
 
         // Verify encryption is working
-        conn.execute("SELECT count(*) FROM sqlite_master", [])?;
+        conn.query_row("SELECT count(*) FROM sqlite_master", [], |_| Ok(()))?;
 
         Ok(conn)
     }
@@ -783,6 +779,9 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
+    // SQLCipher tests require the sqlcipher-tests feature
+    // Run with: cargo test --features sqlcipher-tests
+
     fn create_test_db() -> (EncryptedDb, tempfile::TempDir) {
         let dir = tempdir().unwrap();
         let db_path = dir.path().join("test.db");
@@ -800,6 +799,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "sqlcipher-tests")]
     fn test_init_creates_database() {
         let (db, _dir) = create_test_db();
         assert!(db.path().exists());
@@ -807,6 +807,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "sqlcipher-tests")]
     fn test_create_and_get_session() {
         let (db, _dir) = create_test_db();
 
@@ -829,6 +830,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "sqlcipher-tests")]
     fn test_add_and_get_messages() {
         let (db, _dir) = create_test_db();
 
@@ -878,6 +880,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "sqlcipher-tests")]
     fn test_list_sessions() {
         let (db, _dir) = create_test_db();
 
@@ -914,6 +917,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "sqlcipher-tests")]
     fn test_delete_session_cascades() {
         let (db, _dir) = create_test_db();
 
@@ -951,6 +955,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "sqlcipher-tests")]
     fn test_feedback_operations() {
         let (db, _dir) = create_test_db();
 
