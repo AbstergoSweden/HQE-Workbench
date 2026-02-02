@@ -64,7 +64,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [inputValue, setInputValue] = useState('')
   const [localLoading, setLocalLoading] = useState(false)
-  
+
   const {
     messages,
     currentSession,
@@ -74,25 +74,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
     setIsLoading,
   } = useChatStore()
 
-  // Initialize session on mount
-  useEffect(() => {
-    if (sessionId) {
-      loadSession(sessionId)
-    } else if (initialMessages.length > 0) {
-      // Create new session with initial messages (report → chat transition)
-      createSessionWithMessages(initialMessages)
-    } else {
-      // Start fresh session
-      createNewSession()
-    }
-  }, [sessionId])
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  const loadSession = async (id: string) => {
+  const loadSession = useCallback(async (id: string) => {
     try {
       const session = await invoke<ChatSession | null>('get_chat_session', { session_id: id })
       if (session) {
@@ -104,9 +86,9 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
       console.error('Failed to load session:', err)
       toast.error('Failed to load chat session')
     }
-  }
+  }, [setCurrentSession, setMessages, toast])
 
-  const createNewSession = async () => {
+  const createNewSession = useCallback(async () => {
     try {
       const session = await invoke<ChatSession>('create_chat_session', {
         repo_path: contextRef.repo_path,
@@ -120,9 +102,9 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
       console.error('Failed to create session:', err)
       toast.error('Failed to create chat session')
     }
-  }
+  }, [contextRef, setCurrentSession, setMessages, toast])
 
-  const createSessionWithMessages = async (initialMsgs: ChatMessage[]) => {
+  const createSessionWithMessages = useCallback(async (initialMsgs: ChatMessage[]) => {
     try {
       const session = await invoke<ChatSession>('create_chat_session', {
         repo_path: contextRef.repo_path,
@@ -131,7 +113,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
         model: contextRef.model,
       })
       setCurrentSession(session)
-      
+
       // Add initial messages to the session
       for (const msg of initialMsgs) {
         await invoke('add_chat_message', {
@@ -141,7 +123,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
           content: msg.content,
         })
       }
-      
+
       // Reload messages from DB to get IDs
       const msgs = await invoke<ChatMessage[]>('get_chat_messages', { session_id: session.id })
       setMessages(msgs)
@@ -149,27 +131,45 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
       console.error('Failed to create session with messages:', err)
       toast.error('Failed to initialize chat')
     }
-  }
+  }, [contextRef, setCurrentSession, setMessages, toast])
+
+  // Initialize session on mount
+  useEffect(() => {
+    if (sessionId) {
+      loadSession(sessionId)
+    } else if (initialMessages.length > 0) {
+      // Create new session with initial messages (report → chat transition)
+      createSessionWithMessages(initialMessages)
+    } else {
+      // Start fresh session
+      createNewSession()
+    }
+  }, [sessionId, initialMessages, loadSession, createSessionWithMessages, createNewSession])
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || !currentSession) return
-    
+
     const content = inputValue.trim()
     setInputValue('')
     setLocalLoading(true)
     setIsLoading(true)
-    
+
     try {
       // Call optional callback
       onSend?.(content)
-      
+
       // Send via Tauri command
       const response = await invoke<{ message: ChatMessage }>('send_chat_message', {
         session_id: currentSession.id,
         content,
         parent_id: messages[messages.length - 1]?.id,
       })
-      
+
       // Update local state
       addMessage(response.message)
     } catch (err) {
@@ -179,7 +179,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
       setLocalLoading(false)
       setIsLoading(false)
     }
-  }, [inputValue, currentSession, messages, onSend, addMessage, toast])
+  }, [inputValue, currentSession, messages, onSend, addMessage, toast, setIsLoading])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -277,31 +277,28 @@ interface MessageBubbleProps {
 
 const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
   const isUser = message.role === 'user'
-  const isAssistant = message.role === 'assistant'
-  
+
   return (
     <div
       className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`max-w-[85%] rounded-lg p-4 ${
-          isUser
+        className={`max-w-[85%] rounded-lg p-4 ${isUser
             ? 'rounded-br-none'
             : 'rounded-bl-none'
-        }`}
+          }`}
         style={{
           backgroundColor: isUser
             ? 'var(--dracula-comment)30'
             : isFirst
-            ? 'var(--dracula-bg)'
-            : 'var(--dracula-current-line)',
-          border: `1px solid ${
-            isUser
+              ? 'var(--dracula-bg)'
+              : 'var(--dracula-current-line)',
+          border: `1px solid ${isUser
               ? 'var(--dracula-comment)50'
               : isFirst
-              ? 'var(--dracula-green)50'
-              : 'var(--dracula-comment)30'
-          }`,
+                ? 'var(--dracula-green)50'
+                : 'var(--dracula-comment)30'
+            }`,
         }}
       >
         {/* Role indicator */}
@@ -312,13 +309,13 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
               backgroundColor: isUser
                 ? 'var(--dracula-comment)30'
                 : isFirst
-                ? 'var(--dracula-green)20'
-                : 'var(--dracula-purple)20',
+                  ? 'var(--dracula-green)20'
+                  : 'var(--dracula-purple)20',
               color: isUser
                 ? 'var(--dracula-comment)'
                 : isFirst
-                ? 'var(--dracula-green)'
-                : 'var(--dracula-purple)',
+                  ? 'var(--dracula-green)'
+                  : 'var(--dracula-purple)',
             }}
           >
             {isUser ? 'user' : isFirst ? 'report' : 'assistant'}
