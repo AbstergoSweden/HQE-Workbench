@@ -75,7 +75,7 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
     setCurrentSession,
     setIsLoading,
   } = useChatStore()
-  
+
   // Keep messagesRef in sync with messages to avoid stale closures
   useEffect(() => {
     messagesRef.current = messages
@@ -290,7 +290,7 @@ const sanitizeContent = (content: string): string => {
     // DOMPurify only works in browser environment
     return content
   }
-  
+
   return DOMPurify.sanitize(content, {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'em', 'u', 's', 'del',
@@ -307,7 +307,7 @@ const sanitizeContent = (content: string): string => {
       'class', // for syntax highlighting
     ],
     // Allow href and src with specific protocols only
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|xxx):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|xxx):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
     // Prevent javascript: URLs
     FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover'],
     FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'input', 'textarea', 'button'],
@@ -326,7 +326,7 @@ interface MessageBubbleProps {
 
 const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
   const isUser = message.role === 'user'
-  
+
   // Sanitize content to prevent XSS from malicious LLM output
   const sanitizedContent = sanitizeContent(message.content)
 
@@ -336,8 +336,8 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
     >
       <div
         className={`max-w-[85%] rounded-lg p-4 ${isUser
-            ? 'rounded-br-none'
-            : 'rounded-bl-none'
+          ? 'rounded-br-none'
+          : 'rounded-bl-none'
           }`}
         style={{
           backgroundColor: isUser
@@ -346,10 +346,10 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
               ? 'var(--dracula-bg)'
               : 'var(--dracula-current-line)',
           border: `1px solid ${isUser
-              ? 'var(--dracula-comment)50'
-              : isFirst
-                ? 'var(--dracula-green)50'
-                : 'var(--dracula-comment)30'
+            ? 'var(--dracula-comment)50'
+            : isFirst
+              ? 'var(--dracula-green)50'
+              : 'var(--dracula-comment)30'
             }`,
         }}
       >
@@ -402,9 +402,9 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
               // Override link rendering to add security attributes
               a({ href, children, ...props }) {
                 return (
-                  <a 
-                    href={href} 
-                    target="_blank" 
+                  <a
+                    href={href}
+                    target="_blank"
                     rel="noopener noreferrer nofollow"
                     {...props}
                   >
@@ -415,9 +415,9 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
               // Override image rendering to prevent tracking/beacons
               img({ src, alt, ...props }) {
                 return (
-                  <img 
-                    src={src} 
-                    alt={alt} 
+                  <img
+                    src={src}
+                    alt={alt}
                     loading="lazy"
                     style={{ maxWidth: '100%', height: 'auto' }}
                     {...props}
