@@ -478,6 +478,40 @@ pub enum FeedbackType {
     Report,
 }
 
+/// Pagination parameters for list operations
+#[derive(Debug, Clone, Copy)]
+pub struct Pagination {
+    pub limit: usize,
+    pub offset: usize,
+}
+
+impl Default for Pagination {
+    fn default() -> Self {
+        Self {
+            limit: 100,  // Default 100 messages per page
+            offset: 0,
+        }
+    }
+}
+
+impl Pagination {
+    /// Create a new pagination with the given limit and offset
+    pub fn new(limit: usize, offset: usize) -> Self {
+        Self {
+            limit: limit.min(1000),  // Cap at 1000 to prevent abuse
+            offset,
+        }
+    }
+    
+    /// Get the next page
+    pub fn next_page(&self) -> Self {
+        Self {
+            limit: self.limit,
+            offset: self.offset + self.limit,
+        }
+    }
+}
+
 /// Chat operations trait
 pub trait ChatOperations {
     fn create_session(&self, session: &ChatSession) -> Result<()>;
@@ -485,8 +519,20 @@ pub trait ChatOperations {
     fn list_sessions(&self, repo_path: Option<&str>) -> Result<Vec<ChatSession>>;
     fn delete_session(&self, session_id: &str) -> Result<()>;
 
+    /// Add a message within a transaction for data integrity
     fn add_message(&self, message: &ChatMessage) -> Result<()>;
-    fn get_messages(&self, session_id: &str) -> Result<Vec<ChatMessage>>;
+    
+    /// Get messages with optional pagination
+    fn get_messages(&self, session_id: &str) -> Result<Vec<ChatMessage>> {
+        self.get_messages_paginated(session_id, Pagination::default())
+    }
+    
+    /// Get messages with pagination support
+    fn get_messages_paginated(&self, session_id: &str, pagination: Pagination) -> Result<Vec<ChatMessage>>;
+    
+    /// Get total message count for a session (useful for pagination UI)
+    fn get_message_count(&self, session_id: &str) -> Result<usize>;
+    
     fn get_message(&self, message_id: &str) -> Result<Option<ChatMessage>>;
 
     fn add_attachment(&self, attachment: &Attachment) -> Result<()>;
@@ -612,8 +658,13 @@ impl ChatOperations for EncryptedDb {
     }
 
     fn add_message(&self, message: &ChatMessage) -> Result<()> {
-        let conn = self.connection()?;
-        conn.execute(
+        let mut conn = self.connection()?;
+        
+        // Use a transaction to ensure both operations succeed or fail together
+        let tx = conn.transaction()?;
+        
+        // Insert/update the message
+        tx.execute(
             "INSERT INTO chat_messages (id, session_id, parent_id, role, content, context_refs_json, timestamp, metadata_json)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
              ON CONFLICT(id) DO UPDATE SET
@@ -633,23 +684,33 @@ impl ChatOperations for EncryptedDb {
         )?;
 
         // Update session timestamp
-        conn.execute(
+        tx.execute(
             "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
             params![chrono::Utc::now().to_rfc3339(), message.session_id],
         )?;
+        
+        // Commit the transaction
+        tx.commit()?;
 
         Ok(())
     }
 
-    fn get_messages(&self, session_id: &str) -> Result<Vec<ChatMessage>> {
+    fn get_messages_paginated(&self, session_id: &str, pagination: Pagination) -> Result<Vec<ChatMessage>> {
         let conn = self.connection()?;
         let mut stmt = conn.prepare(
             "SELECT id, session_id, parent_id, role, content, context_refs_json, timestamp, metadata_json
-             FROM chat_messages WHERE session_id = ?1 ORDER BY timestamp ASC"
+             FROM chat_messages 
+             WHERE session_id = ?1 
+             ORDER BY timestamp ASC
+             LIMIT ?2 OFFSET ?3"
         )?;
 
         let rows: Vec<ChatMessage> = stmt
-            .query_map([session_id], |row| {
+            .query_map([
+                session_id,
+                &pagination.limit.to_string(),
+                &pagination.offset.to_string()
+            ], |row| {
                 let role_str: String = row.get(3)?;
                 let role = match role_str.as_str() {
                     "system" => MessageRole::System,
@@ -678,6 +739,16 @@ impl ChatOperations for EncryptedDb {
             .collect();
 
         Ok(rows)
+    }
+    
+    fn get_message_count(&self, session_id: &str) -> Result<usize> {
+        let conn = self.connection()?;
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM chat_messages WHERE session_id = ?1",
+            [session_id],
+            |row| row.get(0),
+        )?;
+        Ok(count as usize)
     }
 
     fn get_message(&self, message_id: &str) -> Result<Option<ChatMessage>> {

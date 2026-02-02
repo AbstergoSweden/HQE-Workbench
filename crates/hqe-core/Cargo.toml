@@ -42,6 +42,9 @@ dirs = { workspace = true }
 # Persistence
 rusqlite = { version = "0.30", features = ["bundled-sqlcipher"] }
 
+# Unicode normalization for security
+unicode-normalization = "0.1"
+
 # HQE internal
 hqe-protocol = { path = "../hqe-protocol" }
 
