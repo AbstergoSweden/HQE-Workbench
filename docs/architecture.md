@@ -89,6 +89,44 @@ Responsibilities:
 - Writing `report.md`
 - Writing `session-log.json` (+ redaction logs where applicable)
 
+### hqe-mcp
+
+Purpose: Model Context Protocol implementation.
+
+Responsibilities:
+
+- Serving the Thinktank prompt library
+- Managing agent contexts and tools
+
+### hqe-ingest
+
+Purpose: Repository ingestion and file watching.
+
+Responsibilities:
+
+- Efficient file system walking
+- Handling ignore patterns (gitignore, etc.)
+- File change notifications
+
+### hqe-flow
+
+Purpose: Workflow execution and protocol orchestration.
+
+Responsibilities:
+
+- Executing multi-step agent flows
+- Validating protocol invariants
+- Orchestrating MCP tools
+
+### hqe-vector
+
+Purpose: Vector database operations (Future/Placeholder).
+
+Responsibilities:
+
+- Embedding storage and retrieval
+- Semantic search capabilities
+
 ## Data Flow
 
 ```mermaid

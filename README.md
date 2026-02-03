@@ -84,14 +84,18 @@ hqe-workbench/
 │   └── hqe/             # CLI Application Entry Point
 ├── crates/
 │   ├── hqe-core/        # Scan Engine, Logic, Encrypted Chat DB
+│   ├── hqe-flow/        # Workflow & Protocol Execution
 │   ├── hqe-git/         # Git Operations
+│   ├── hqe-ingest/      # Repository Ingestion & File Watching
 │   ├── hqe-mcp/         # Model Context Protocol
 │   ├── hqe-openai/      # AI Provider Client
-│   └── hqe-protocol/    # Schema & Type Defs
+│   ├── hqe-protocol/    # Schema & Type Defs
+│   └── hqe-vector/      # Vector Database Operations
 ├── desktop/
 │   └── workbench/       # Desktop App (Tauri/React)
 ├── docs/                # Architecture & Guides
-├── prompts/             # Expert Prompt Library
+├── mcp-server/          # Thinktank Prompt Library & MCP Server
+├── prompts/             # Prompt Examples & Guidance
 ├── protocol/            # HQE Protocol Schemas
 └── scripts/             # Build & Test Scripts
 ```

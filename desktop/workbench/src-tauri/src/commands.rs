@@ -9,6 +9,7 @@ use hqe_openai::profile::{
     ProviderProfile, ProviderProfileExt,
 };
 use hqe_openai::provider_discovery::{ProviderKind, ProviderModelList};
+use hqe_openai::ProviderKindExt;
 use secrecy::SecretString;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -312,7 +313,10 @@ pub async fn discover_models(
                 model_type: None,
                 context_length: m.context_window,
                 traits: Default::default(),
-                pricing: Default::default(),
+                pricing: hqe_openai::provider_discovery::ProviderModelPricing {
+                    input_usd_per_million: None,
+                    output_usd_per_million: None,
+                },
             })
             .collect(),
     })

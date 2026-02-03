@@ -246,8 +246,8 @@ export const ThinktankScreen: FC = () => {
       const response = await execute({
         tool_name: selectedPrompt.name,
         args: typedArgs,
-        profile_name: selectedProfile || null,
-        model: selectedModel || null,
+        profile_name: selectedProfile || undefined,
+        model: selectedModel || undefined,
       })
 
       // Create initial message for potential chat transition

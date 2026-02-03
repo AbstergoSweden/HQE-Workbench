@@ -335,14 +335,14 @@ pub async fn send_chat_message(
     };
 
     let history_messages = db.get_messages(&session_id).map_err(|e| e.to_string())?;
-    let mut inputs = build_inputs(&content, &prompt_template);
+    let inputs = build_inputs(&content, &prompt_template);
     let user_message_payload = build_user_message(&history_messages, &content);
 
     let execution_request = PromptExecutionRequest {
         prompt_template,
         user_message: user_message_payload,
         inputs,
-        context,
+        context: context.clone(),
         max_context_size: None,
     };
 
@@ -509,7 +509,7 @@ fn resolve_prompts_dir() -> Result<std::path::PathBuf, String> {
     if let Ok(dir) = std::env::var("HQE_PROMPTS_DIR") {
         let path = std::path::PathBuf::from(dir);
         if path.exists() {
-            return path.canonicalize().or(Ok(path)).map_err(|e| e.to_string());
+            return path.canonicalize().or_else(|_: std::io::Error| Ok(path.clone())).map_err(|e: std::io::Error| e.to_string());
         }
     }
 

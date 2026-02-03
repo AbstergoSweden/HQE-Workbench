@@ -44,9 +44,10 @@ Release build (macOS DMG):
 
 - `cli/hqe/`: CLI entry point (`hqe`).
 - `desktop/workbench/`: Tauri + React desktop app.
-- `crates/`: core libraries (pipeline, provider client, artifacts, git).
+- `crates/`: core libraries (`hqe-core`, `hqe-ingest`, `hqe-flow`, `hqe-mcp`, `hqe-git`, `hqe-openai`, `hqe-artifacts`, `hqe-vector`).
 - `protocol/`: protocol YAML + JSON schema.
-- `prompts/`: prompt library and the MCP prompts server.
+- `mcp-server/`: Thinktank prompt library and MCP server.
+- `prompts/`: Prompt examples and guidance.
 
 ## Provider Integration (Text Models Only)
 
