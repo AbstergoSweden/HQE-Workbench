@@ -1,8 +1,8 @@
-use hqe_openai::{
-    profile::ProfileManager, prompts::sanitize_for_prompt,
-    provider_discovery::is_local_or_private_base_url, ClientConfig, OpenAIClient,
+use crate::llm::{run_llm, LlmResponse};
+use hqe_core::prompt_runner::{
+    Compatibility, InputSpec, InputType, PromptCategory, PromptExecutionRequest, PromptTemplate,
 };
-use secrecy::SecretString;
+use hqe_openai::prompts::sanitize_for_prompt;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -32,11 +32,13 @@ pub struct ExecutePromptRequest {
     pub tool_name: String,
     pub args: serde_json::Value,
     pub profile_name: Option<String>,
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ExecutePromptResponse {
     pub result: String,
+    pub system_prompt_version: String,
 }
 
 /// List all available prompt tools
@@ -119,118 +121,36 @@ pub async fn execute_prompt(
     request: ExecutePromptRequest,
     app: AppHandle,
 ) -> Result<ExecutePromptResponse, String> {
-    // 1. Load Prompts & Find Tool
-    let prompts_dir = get_prompts_dir(&app).ok_or("Could not locate prompts directory")?;
-    let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
-    let loaded_tools = loader.load().map_err(|e| e.to_string())?;
+    let prompt_template = resolve_prompt_template(&app, &request.tool_name)?;
+    let inputs = build_inputs(&request.args);
+    let user_message = inputs
+        .get("message")
+        .cloned()
+        .or_else(|| inputs.get("args").cloned())
+        .unwrap_or_else(|| request.args.to_string());
 
-    let tool = loaded_tools
-        .into_iter()
-        .find(|t| {
-            t.definition.name == request.tool_name
-                || format!("prompts__{}", t.definition.name) == request.tool_name
-        })
-        .ok_or_else(|| format!("Tool '{}' not found", request.tool_name))?;
+    let execution_request = PromptExecutionRequest {
+        prompt_template,
+        user_message,
+        inputs,
+        context: Vec::new(),
+        max_context_size: None,
+    };
 
-    // 2. Initialize Client
-    let manager = ProfileManager::default();
-
-    // Use specified profile or first available
-    let profile_name = if let Some(name) = request.profile_name {
-        name
+    let session_key = if let Some(profile) = &request.profile_name {
+        let keys = app.state::<crate::AppState>().session_keys.clone();
+        let guard = keys.lock().await;
+        guard.get(profile).cloned()
     } else {
-        let profiles = manager.load_profiles().map_err(|e| e.to_string())?;
-        profiles
-            .first()
-            .ok_or("No provider profiles configured")?
-            .name
-            .clone()
+        None
     };
+    let response: LlmResponse =
+        run_llm(execution_request, request.profile_name, session_key, request.model).await?;
 
-    let (profile, api_key) = manager
-        .get_profile_with_key(&profile_name)
-        .map_err(|e| e.to_string())?
-        .ok_or("Profile not found")?;
-
-    let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
-    let api_key = match api_key {
-        Some(key) => key,
-        None if allow_missing_key => SecretString::new(String::new()),
-        None => return Err("API key not found for profile".to_string()),
-    };
-
-    let config = ClientConfig {
-        base_url: profile.base_url,
-        api_key,
-        default_model: profile.default_model.clone(),
-        headers: profile.headers.clone(),
-        organization: profile.organization.clone(),
-        project: profile.project.clone(),
-        disable_system_proxy: false,
-        timeout_seconds: profile.timeout_s,
-        max_retries: 1,
-        rate_limit_config: None,
-        cache_enabled: true,
-    };
-
-    let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;
-
-    // 3. Execute
-    let prompt_text = substitute_template(&tool.template, &request.args);
-
-    let response = client
-        .chat(hqe_openai::ChatRequest {
-            model: client.default_model().to_string(),
-            messages: vec![hqe_openai::Message {
-                role: hqe_openai::Role::User,
-                content: Some(prompt_text.into()),
-                tool_calls: None,
-            }],
-            frequency_penalty: None,
-            presence_penalty: None,
-            repetition_penalty: None,
-            logprobs: None,
-            top_logprobs: None,
-            temperature: Some(0.2),
-            min_temp: None,
-            max_temp: None,
-            top_p: None,
-            top_k: None,
-            max_tokens: None,
-            max_completion_tokens: None,
-            n: None,
-            stop: None,
-            stop_token_ids: None,
-            seed: None,
-            user: None,
-            prompt_cache_key: None,
-            prompt_cache_retention: None,
-            reasoning_effort: None,
-            reasoning: None,
-            stream: None,
-            stream_options: None,
-            tool_choice: None,
-            tools: None,
-            venice_parameters: None,
-            parallel_tool_calls: None,
-            response_format: None,
-        })
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let first = response
-        .choices
-        .first()
-        .ok_or_else(|| "No response choices returned".to_string())?;
-
-    let content = first
-        .message
-        .content
-        .as_ref()
-        .and_then(|c| c.to_text_lossy())
-        .ok_or_else(|| "No content returned in response".to_string())?;
-
-    Ok(ExecutePromptResponse { result: content })
+    Ok(ExecutePromptResponse {
+        result: response.content,
+        system_prompt_version: response.system_prompt_version,
+    })
 }
 
 fn get_prompts_dir(app: &AppHandle) -> Option<PathBuf> {
@@ -332,8 +252,8 @@ fn is_valid_key_name(key: &str) -> bool {
 /// - Key names are validated to prevent template injection
 /// - Values are sanitized to remove potentially dangerous content
 /// - Recursive template injection is prevented by single-pass substitution
-fn substitute_template(template: &str, args: &serde_json::Value) -> String {
-    let mut result = template.to_string();
+fn build_inputs(args: &serde_json::Value) -> std::collections::HashMap<String, String> {
+    let mut inputs = std::collections::HashMap::new();
 
     if let Some(obj) = args.as_object() {
         for (k, v) in obj {
@@ -346,14 +266,77 @@ fn substitute_template(template: &str, args: &serde_json::Value) -> String {
                 continue;
             }
 
-            let key = format!("{{{{{}}}}}", k); // {{key}}
             let val = v
                 .as_str()
-                .map(sanitize_for_prompt) // Validate string values
-                .unwrap_or_else(|| sanitize_for_prompt(&v.to_string())); // Validate non-string values
-            result = result.replace(&key, &val);
+                .map(sanitize_for_prompt)
+                .unwrap_or_else(|| sanitize_for_prompt(&v.to_string()));
+            inputs.insert(k.clone(), val);
         }
     }
 
-    result
+    inputs
+}
+
+fn resolve_prompt_template(app: &AppHandle, tool_name: &str) -> Result<PromptTemplate, String> {
+    let prompts_dir = get_prompts_dir(app).ok_or("Could not locate prompts directory")?;
+    let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
+    let mut registry = hqe_mcp::registry_v2::PromptRegistry::new(loader);
+    registry.load_all().map_err(|e| e.to_string())?;
+
+    let prompt = registry
+        .get(tool_name)
+        .or_else(|| registry.get(&tool_name.replace("prompts__", "")))
+        .ok_or_else(|| format!("Tool '{}' not found", tool_name))?;
+
+    Ok(PromptTemplate {
+        id: prompt.metadata.id.clone(),
+        title: prompt.metadata.title.clone(),
+        category: map_prompt_category(&prompt.metadata.category),
+        description: prompt.metadata.description.clone(),
+        version: prompt.metadata.version.clone(),
+        template: prompt.template.clone(),
+        required_inputs: prompt
+            .metadata
+            .inputs
+            .iter()
+            .map(|input| InputSpec {
+                name: input.name.clone(),
+                description: input.description.clone(),
+                input_type: map_prompt_input_type(&input.input_type),
+                required: input.required,
+                default: input.default.clone(),
+                validation: None,
+            })
+            .collect(),
+        compatibility: Compatibility::default(),
+        allowed_tools: prompt.metadata.allowed_tools.clone(),
+    })
+}
+
+fn map_prompt_category(category: &hqe_mcp::registry_v2::PromptCategory) -> PromptCategory {
+    match category {
+        hqe_mcp::registry_v2::PromptCategory::Security => PromptCategory::Security,
+        hqe_mcp::registry_v2::PromptCategory::Quality => PromptCategory::Quality,
+        hqe_mcp::registry_v2::PromptCategory::Refactor => PromptCategory::Refactor,
+        hqe_mcp::registry_v2::PromptCategory::Explain => PromptCategory::Explain,
+        hqe_mcp::registry_v2::PromptCategory::Test => PromptCategory::Test,
+        hqe_mcp::registry_v2::PromptCategory::Document => PromptCategory::Document,
+        _ => PromptCategory::Custom,
+    }
+}
+
+fn map_prompt_input_type(
+    input_type: &hqe_mcp::registry_v2::InputType,
+) -> hqe_core::prompt_runner::InputType {
+    match input_type {
+        hqe_mcp::registry_v2::InputType::String => InputType::String,
+        hqe_mcp::registry_v2::InputType::Integer => InputType::Integer,
+        hqe_mcp::registry_v2::InputType::Boolean => InputType::Boolean,
+        hqe_mcp::registry_v2::InputType::Json => InputType::Json,
+        hqe_mcp::registry_v2::InputType::Code => InputType::Code,
+        hqe_mcp::registry_v2::InputType::FilePath => InputType::FilePath,
+        hqe_mcp::registry_v2::InputType::TextArea
+        | hqe_mcp::registry_v2::InputType::Select
+        | hqe_mcp::registry_v2::InputType::MultiSelect => InputType::String,
+    }
 }

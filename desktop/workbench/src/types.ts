@@ -121,6 +121,11 @@ export interface ChatMessage {
   timestamp: string
 }
 
+export interface SendChatMessageResponse {
+  user_message: ChatMessage
+  assistant_message: ChatMessage
+}
+
 // Enhanced Prompt Types
 export type PromptCategory = 
   | 'security' 

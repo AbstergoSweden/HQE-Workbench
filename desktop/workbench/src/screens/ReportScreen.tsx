@@ -1,12 +1,100 @@
 import { useNavigate } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
-import { useReportStore } from '../store'
-import { Finding, Severity } from '../types'
+import { useReportStore, useRepoStore } from '../store'
+import { Finding, Severity, ChatMessage } from '../types'
 import { useToast } from '../context/ToastContext'
+import { UnifiedOutputPanel } from '../components/UnifiedOutputPanel'
+
+const buildReportMarkdown = (report: {
+  run_id: string
+  provider?: { name: string; model?: string | null; llm_enabled?: boolean } | null
+  executive_summary: { health_score: number; top_priorities: string[]; critical_findings: string[]; blockers: Array<{ description: string; reason: string; how_to_obtain: string }> }
+  deep_scan_results: {
+    security: Finding[]
+    code_quality: Finding[]
+    frontend: Finding[]
+    backend: Finding[]
+    testing: Finding[]
+  }
+  master_todo_backlog: Array<{ title: string; severity: Severity; category: string; fix_approach: string }>
+}) => {
+  const { run_id, executive_summary, deep_scan_results, master_todo_backlog, provider } = report
+  const sections: string[] = []
+
+  sections.push(`# HQE Report`)
+  sections.push(`**Run ID:** ${run_id}`)
+  if (provider?.name) {
+    sections.push(`**Provider:** ${provider.name}${provider.model ? ` (${provider.model})` : ''}`)
+  }
+  sections.push(`**Mode:** ${provider?.llm_enabled ? 'llm-enhanced' : 'local-only'}`)
+  sections.push('')
+  sections.push(`## Executive Summary`)
+  sections.push(`- Health score: **${executive_summary.health_score}/10**`)
+  if (executive_summary.top_priorities.length > 0) {
+    sections.push(`- Top priorities:`)
+    executive_summary.top_priorities.forEach((priority) => {
+      sections.push(`  - ${priority}`)
+    })
+  }
+  if (executive_summary.critical_findings.length > 0) {
+    sections.push(`- Critical findings:`)
+    executive_summary.critical_findings.forEach((finding) => {
+      sections.push(`  - ${finding}`)
+    })
+  }
+  if (executive_summary.blockers.length > 0) {
+    sections.push(`- Blockers:`)
+    executive_summary.blockers.forEach((blocker) => {
+      sections.push(`  - ${blocker.description} (reason: ${blocker.reason})`)
+    })
+  }
+  sections.push('')
+
+  const categories: Array<{ label: string; items: Finding[] }> = [
+    { label: 'Security', items: deep_scan_results.security },
+    { label: 'Code Quality', items: deep_scan_results.code_quality },
+    { label: 'Frontend', items: deep_scan_results.frontend },
+    { label: 'Backend', items: deep_scan_results.backend },
+    { label: 'Testing', items: deep_scan_results.testing },
+  ]
+
+  sections.push('## Findings')
+  categories.forEach((category) => {
+    sections.push(`### ${category.label} (${category.items.length})`)
+    if (category.items.length === 0) {
+      sections.push(`- None`)
+      return
+    }
+    category.items.forEach((finding) => {
+      sections.push(`- **${finding.severity.toUpperCase()}** ${finding.title} (${finding.id})`)
+      sections.push(`  - Category: ${finding.category}`)
+      sections.push(`  - Impact: ${finding.impact}`)
+      sections.push(`  - Recommendation: ${finding.recommendation}`)
+    })
+  })
+
+  sections.push('')
+  sections.push(`## TODO Backlog (${master_todo_backlog.length})`)
+  if (master_todo_backlog.length === 0) {
+    sections.push(`- None`)
+  } else {
+    master_todo_backlog.slice(0, 10).forEach((todo) => {
+      sections.push(`- **${todo.severity.toUpperCase()}** ${todo.title}`)
+      sections.push(`  - Category: ${todo.category}`)
+      sections.push(`  - Fix approach: ${todo.fix_approach}`)
+    })
+    if (master_todo_backlog.length > 10) {
+      sections.push(`- ... and ${master_todo_backlog.length - 10} more items`)
+    }
+  }
+
+  return sections.join('\n')
+}
 
 export function ReportScreen() {
   const navigate = useNavigate()
   const { report } = useReportStore()
+  const { path: repoPath } = useRepoStore()
   const toast = useToast()
 
   if (!report) {
@@ -76,6 +164,27 @@ export function ReportScreen() {
   const highCount = allFindings.filter(f => f.severity === 'high').length
   const mediumCount = allFindings.filter(f => f.severity === 'medium').length
   const lowCount = allFindings.filter(f => f.severity === 'low').length
+
+  const reportContent = buildReportMarkdown({
+    run_id,
+    provider: report.provider ?? undefined,
+    executive_summary,
+    deep_scan_results,
+    master_todo_backlog: master_todo_backlog.map((todo) => ({
+      title: todo.title,
+      severity: todo.severity,
+      category: todo.category,
+      fix_approach: todo.fix_approach,
+    })),
+  })
+
+  const reportMessages: ChatMessage[] = [{
+    id: `report-${run_id}`,
+    session_id: '',
+    role: 'assistant',
+    content: reportContent,
+    timestamp: new Date().toISOString(),
+  }]
 
   return (
     <div className="space-y-4">
@@ -269,6 +378,23 @@ export function ReportScreen() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Unified Output Panel */}
+      <div
+        className="card overflow-hidden"
+        style={{ borderColor: 'var(--dracula-comment)' }}
+      >
+        <UnifiedOutputPanel
+          initialMessages={reportMessages}
+          contextRef={{
+            repo_path: repoPath ?? undefined,
+            prompt_id: 'report',
+            provider: report.provider?.name ?? 'local',
+            model: report.provider?.model ?? 'default',
+          }}
+          showInput={true}
+        />
       </div>
     </div>
   )

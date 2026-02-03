@@ -81,22 +81,15 @@ export const useReportStore = create<ReportState>()(
   )
 )
 
-export const useChatStore = create<ChatState>()(
-  persist(
-    (set) => ({
-      sessions: [],
-      currentSession: null,
-      messages: [],
-      isLoading: false,
-      setSessions: (sessions) => set({ sessions }),
-      setCurrentSession: (session) => set({ currentSession: session }),
-      setMessages: (messages) => set({ messages }),
-      addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
-      setIsLoading: (loading) => set({ isLoading: loading }),
-      clearChat: () => set({ currentSession: null, messages: [] }),
-    }),
-    {
-      name: 'hqe-chat-storage',
-    }
-  )
-)
+export const useChatStore = create<ChatState>((set) => ({
+  sessions: [],
+  currentSession: null,
+  messages: [],
+  isLoading: false,
+  setSessions: (sessions) => set({ sessions }),
+  setCurrentSession: (session) => set({ currentSession: session }),
+  setMessages: (messages) => set({ messages }),
+  addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+  setIsLoading: (loading) => set({ isLoading: loading }),
+  clearChat: () => set({ currentSession: null, messages: [] }),
+}))

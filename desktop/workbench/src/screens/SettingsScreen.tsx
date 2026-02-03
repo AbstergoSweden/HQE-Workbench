@@ -101,6 +101,7 @@ export function SettingsScreen() {
     setTestResult(null)
   }
 
+
   const parseHeadersInput = () => {
     if (!headersText.trim()) {
       return {}
@@ -161,15 +162,19 @@ export function SettingsScreen() {
     setAvailableModels([])
     setModelsDiscovered(false)
     try {
-      const parsedHeaders = parseHeadersInput() ?? {}
-      const result = await invoke<ProviderModelList>('discover_models', {
-        input: {
-          base_url: url,
+      if (!name) {
+        toast.error('Profile name is required')
+        setDiscovering(false)
+        return
+      }
+      if (!keyLocked && keyToUse) {
+        await invoke('set_session_api_key', {
+          profile_name: name,
           api_key: keyToUse,
-          headers: parsedHeaders,
-          timeout_s: timeout,
-          no_cache: false,
-        }
+        })
+      }
+      const result = await invoke<ProviderModelList>('discover_models', {
+        profile_name: name,
       })
       if (result.models.length === 0) {
         setDiscoverError('No models discovered')
@@ -197,11 +202,19 @@ export function SettingsScreen() {
     setTestResult(null)
     try {
       const keyToUse = key || storedApiKey || ''
-      const result = await invoke<boolean>('test_provider', {
-        name,
-        baseUrl: url,
-        apiKey: keyToUse,
-        defaultModel: model || 'gpt-4o-mini',
+      if (!keyToUse) {
+        toast.error('API key is required for testing')
+        setTesting(false)
+        return
+      }
+      if (!keyLocked && keyToUse) {
+        await invoke('set_session_api_key', {
+          profile_name: name,
+          api_key: keyToUse,
+        })
+      }
+      const result = await invoke<boolean>('test_provider_connection', {
+        profile_name: name,
       })
       setTestResult(result)
       toast.success(result ? 'Connection successful' : 'Connection failed')
@@ -227,6 +240,12 @@ export function SettingsScreen() {
     setHeadersError(null)
     setSaving(true)
     try {
+      if (!keyLocked && key) {
+        await invoke('set_session_api_key', {
+          profile_name: name,
+          api_key: key,
+        })
+      }
       await invoke('save_provider_profile', {
         originalName: originalProfileName,
         profile: {
@@ -495,16 +514,18 @@ export function SettingsScreen() {
                     }
                     setValidating(true)
                     try {
-                      const parsedHeaders = parseHeadersInput() ?? {}
-                      await invoke('discover_models', {
-                        input: {
-                          base_url: url,
+                      if (!name) {
+                        toast.error('Profile name is required')
+                        setValidating(false)
+                        return
+                      }
+                      if (!keyLocked && keyToUse) {
+                        await invoke('set_session_api_key', {
+                          profile_name: name,
                           api_key: keyToUse,
-                          headers: parsedHeaders,
-                          timeout_s: timeout,
-                          no_cache: true,
-                        },
-                      })
+                        })
+                      }
+                      await invoke('discover_models', { profile_name: name })
                       toast.success('✓ API key is valid')
                     } catch (error) {
                       const msg = error instanceof Error ? error.message : String(error)

@@ -79,6 +79,9 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Verify Invariants
+        run: bash scripts/verify_invariants.sh
+
       - name: Build
         run: cargo build --workspace
 

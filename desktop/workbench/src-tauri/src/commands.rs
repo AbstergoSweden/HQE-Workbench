@@ -6,18 +6,12 @@ use hqe_core::models::*;
 use hqe_core::scan::ScanPipeline;
 use hqe_openai::profile::{
     ApiKeyStore, DefaultProfilesStore, KeychainStore, ProfileManager, ProfilesStore,
-    ProviderProfile,
+    ProviderProfile, ProviderProfileExt,
 };
-use hqe_openai::provider_discovery::{
-    is_local_or_private_base_url, DiskCache, ProviderDiscoveryClient, ProviderModelList,
-};
-use hqe_openai::OpenAIAnalyzer;
-use hqe_openai::ProviderKindExt;
+use hqe_openai::provider_discovery::{ProviderKind, ProviderModelList};
 use secrecy::SecretString;
-use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Duration;
 use tauri::{command, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 use url::Url;
@@ -67,18 +61,17 @@ pub async fn scan_repo(
             .clone()
             .ok_or_else(|| "Provider profile required for LLM scans".to_string())?;
 
-        let manager = ProfileManager::default();
-        let (profile, api_key) = manager
-            .get_profile_with_key(&profile_name)
-            .map_err(|e| e.to_string())?
-            .ok_or_else(|| "Profile not found".to_string())?;
-
-        let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
-        let api_key = match api_key {
-            Some(key) => key,
-            None if allow_missing_key => SecretString::new(String::new()),
-            None => return Err("No API key stored for profile".to_string()),
+        let session_key = {
+            let keys = state.session_keys.lock().await;
+            keys.get(&profile_name).cloned()
         };
+
+        let (analyzer, profile) = crate::llm::build_scan_analyzer(
+            &profile_name,
+            config.venice_parameters.clone(),
+            config.parallel_tool_calls,
+            session_key,
+        )?;
 
         pipeline.set_provider_info(ProviderInfo {
             name: profile.name.clone(),
@@ -87,24 +80,6 @@ pub async fn scan_repo(
             llm_enabled: true,
         });
 
-        let llm_client = hqe_openai::OpenAIClient::new(hqe_openai::ClientConfig {
-            base_url: profile.base_url,
-            api_key,
-            default_model: profile.default_model.clone(),
-            headers: profile.headers.clone(),
-            organization: profile.organization.clone(),
-            project: profile.project.clone(),
-            disable_system_proxy: false,
-            timeout_seconds: profile.timeout_s,
-            max_retries: 1,
-            rate_limit_config: None,
-            cache_enabled: true,
-        })
-        .map_err(|e| e.to_string())?;
-
-        let analyzer = OpenAIAnalyzer::new(llm_client)
-            .with_venice_parameters(config.venice_parameters.clone())
-            .with_parallel_tool_calls(config.parallel_tool_calls);
         pipeline = pipeline.with_llm_analyzer(Arc::new(analyzer));
     }
 
@@ -302,51 +277,45 @@ fn get_output_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 // Provider Profile Management Commands
 // ============================================================================
 
-/// Input type for provider discovery
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ProviderProfileInput {
-    pub base_url: String,
-    #[serde(default)]
-    pub headers: BTreeMap<String, String>,
-    pub api_key: String,
-    #[serde(default = "default_timeout_s")]
-    pub timeout_s: u64,
-    #[serde(default)]
-    pub no_cache: bool,
-}
-
-fn default_timeout_s() -> u64 {
-    60
-}
-
 /// Discover models from a provider
 #[command]
-pub async fn discover_models(input: ProviderProfileInput) -> Result<ProviderModelList, String> {
-    let cache = if input.no_cache {
-        None
-    } else {
-        Some(DiskCache::default())
+pub async fn discover_models(
+    state: State<'_, AppState>,
+    profile_name: String,
+) -> Result<ProviderModelList, String> {
+    let manager = ProfileManager::default();
+    let profile = manager
+        .get_profile_with_key(&profile_name)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Profile not found".to_string())?
+        .0;
+
+    let session_key = {
+        let keys = state.session_keys.lock().await;
+        keys.get(&profile_name).cloned()
     };
+    let normalized_url = profile.normalized_base_url().map_err(|e| e.to_string())?;
+    let kind = profile.provider_kind.unwrap_or_else(|| ProviderKind::detect(&normalized_url));
 
-    let api_key = if input.api_key.is_empty() {
-        None
-    } else {
-        Some(SecretString::new(input.api_key))
-    };
+    let models = crate::llm::discover_models(&profile.name, session_key).await?;
 
-    let client = ProviderDiscoveryClient::new(
-        &input.base_url,
-        &input.headers,
-        api_key,
-        Duration::from_secs(input.timeout_s),
-        cache,
-    )
-    .map_err(|e| e.to_string())?;
-
-    client
-        .discover_chat_models()
-        .await
-        .map_err(|e| e.to_string())
+    Ok(ProviderModelList {
+        provider_kind: kind,
+        base_url: profile.base_url.clone(),
+        fetched_at_unix_s: chrono::Utc::now().timestamp() as u64,
+        models: models
+            .into_iter()
+            .map(|m| hqe_openai::provider_discovery::DiscoveredModel {
+                id: m.id.clone(),
+                name: m.name.clone(),
+                provider_kind: kind,
+                model_type: None,
+                context_length: m.context_window,
+                traits: Default::default(),
+                pricing: Default::default(),
+            })
+            .collect(),
+    })
 }
 
 /// List all saved provider profiles
@@ -419,37 +388,38 @@ pub async fn delete_provider_profile(name: String) -> Result<bool, String> {
 
 /// Test provider connection using a stored profile
 #[command]
-pub async fn test_provider_connection(profile_name: String) -> Result<bool, String> {
-    let manager = ProfileManager::default();
-
-    let (profile, api_key) = manager
-        .get_profile_with_key(&profile_name)
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Profile not found".to_string())?;
-
-    let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
-    let api_key = match api_key {
-        Some(key) => key,
-        None if allow_missing_key => SecretString::new(String::new()),
-        None => return Err("No API key stored for profile".to_string()),
+pub async fn test_provider_connection(
+    state: State<'_, AppState>,
+    profile_name: String,
+) -> Result<bool, String> {
+    let session_key = {
+        let keys = state.session_keys.lock().await;
+        keys.get(&profile_name).cloned()
     };
+    crate::llm::test_connection(&profile_name, session_key).await
+}
 
-    let config = hqe_openai::ClientConfig {
-        base_url: profile.base_url.clone(),
-        api_key,
-        default_model: profile.default_model.clone(),
-        headers: profile.headers.clone(),
-        organization: profile.organization.clone(),
-        project: profile.project.clone(),
-        disable_system_proxy: false,
-        timeout_seconds: profile.timeout_s,
-        max_retries: 1,
-        rate_limit_config: None,
-        cache_enabled: true,
-    };
+/// Store a session-only API key (not persisted)
+#[command]
+pub async fn set_session_api_key(
+    state: State<'_, AppState>,
+    profile_name: String,
+    api_key: String,
+) -> Result<(), String> {
+    let mut keys = state.session_keys.lock().await;
+    keys.insert(profile_name, SecretString::new(api_key));
+    Ok(())
+}
 
-    let client = hqe_openai::OpenAIClient::new(config).map_err(|e| e.to_string())?;
-    client.test_connection().await.map_err(|e| e.to_string())
+/// Clear a session-only API key
+#[command]
+pub async fn clear_session_api_key(
+    state: State<'_, AppState>,
+    profile_name: String,
+) -> Result<(), String> {
+    let mut keys = state.session_keys.lock().await;
+    keys.remove(&profile_name);
+    Ok(())
 }
 
 /// Detect provider kind from a URL

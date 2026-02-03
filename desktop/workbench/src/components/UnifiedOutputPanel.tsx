@@ -1,11 +1,11 @@
-//! Conversation Panel - Unified Output for Reports and Chat
+//! Unified Output Panel - Screen-agnostic output for reports and chat
 //!
 //! This component provides a single UI for both:
-//! - One-shot report outputs (Thinktank/Report results)
+//! - One-shot outputs
 //! - Multi-turn chat follow-ups
 //!
-//! The transition from report to chat is seamless - the report output
-//! becomes the first assistant message in the chat thread.
+//! The transition from output to chat is seamless - the first assistant
+//! message seeds the thread and drives the message stream.
 
 import { FC, useCallback, useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
@@ -14,7 +14,7 @@ import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import DOMPurify from 'dompurify'
-import { ChatMessage, ChatSession } from '../types'
+import { ChatMessage, ChatSession, SendChatMessageResponse } from '../types'
 import { useChatStore } from '../store'
 import { useToast } from '../context/ToastContext'
 
@@ -25,10 +25,10 @@ interface ContextRef {
   model: string
 }
 
-interface ConversationPanelProps {
+interface UnifiedOutputPanelProps {
   /** Session ID - if provided, loads existing session */
   sessionId?: string
-  /** Initial messages - report output becomes first assistant message */
+  /** Initial messages - output becomes first assistant message */
   initialMessages?: ChatMessage[]
   /** Context reference for the conversation */
   contextRef: ContextRef
@@ -43,16 +43,16 @@ interface ConversationPanelProps {
 }
 
 /**
- * Conversation Panel - Unified output component for reports and chat.
+ * Unified Output Panel - screen-agnostic output component for reports and chat.
  * 
  * This component handles:
  * - Displaying chat messages (user and assistant)
  * - Rendering markdown with syntax highlighting
  * - Sending new messages
  * - Creating/loading chat sessions
- * - Smooth transition from report output to chat
+ * - Smooth transition from output to chat
  */
-export const ConversationPanel: FC<ConversationPanelProps> = ({
+export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
   sessionId,
   initialMessages = [],
   contextRef,
@@ -82,6 +82,9 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
   }, [messages])
 
   const loadSession = useCallback(async (id: string) => {
+    if (!(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
+      return
+    }
     try {
       const session = await invoke<ChatSession | null>('get_chat_session', { session_id: id })
       if (session) {
@@ -96,6 +99,9 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
   }, [setCurrentSession, setMessages, toast])
 
   const createNewSession = useCallback(async () => {
+    if (!(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
+      return
+    }
     try {
       const session = await invoke<ChatSession>('create_chat_session', {
         repo_path: contextRef.repo_path,
@@ -113,6 +119,16 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
   }, [contextRef, setCurrentSession, setMessages, toast])
 
   const createSessionWithMessages = useCallback(async (initialMsgs: ChatMessage[]) => {
+    if (!showInput) {
+      setMessages(initialMsgs)
+      return
+    }
+
+    if (!(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
+      setMessages(initialMsgs)
+      return
+    }
+
     try {
       const session = await invoke<ChatSession>('create_chat_session', {
         repo_path: contextRef.repo_path,
@@ -121,42 +137,62 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
         model: contextRef.model,
       })
       setCurrentSession(session)
-
-      // Add initial messages to the session
-      for (const msg of initialMsgs) {
-        await invoke('add_chat_message', {
+      if (initialMsgs.length > 0) {
+        const first = {
+          ...initialMsgs[0],
           session_id: session.id,
-          parent_id: msg.parent_id,
-          role: msg.role,
-          content: msg.content,
-        })
+        }
+        try {
+          await invoke('add_chat_message', {
+            session_id: session.id,
+            role: first.role,
+            content: first.content,
+            parent_id: null,
+          })
+        } catch (err) {
+          console.error('Failed to persist initial message:', err)
+        }
       }
-
-      // Reload messages from DB to get IDs
       const msgs = await invoke<ChatMessage[]>('get_chat_messages', { session_id: session.id })
       setMessages(msgs)
     } catch (err) {
       console.error('Failed to create session with messages:', err)
       toast.error('Failed to initialize chat')
     }
-  }, [contextRef, setCurrentSession, setMessages, toast])
+  }, [contextRef, setCurrentSession, setMessages, showInput, toast])
 
   // Initialize session on mount
   useEffect(() => {
     if (sessionId) {
       loadSession(sessionId)
     } else if (initialMessages.length > 0) {
-      // Create new session with initial messages (report → chat transition)
-      createSessionWithMessages(initialMessages)
-    } else {
+      if (showInput) {
+        // Create new session with initial messages (output → chat transition)
+        createSessionWithMessages(initialMessages)
+      } else {
+        // One-shot output view, no persistence
+        setMessages(initialMessages)
+      }
+    } else if (showInput) {
       // Start fresh session
       createNewSession()
     }
-  }, [sessionId, initialMessages, loadSession, createSessionWithMessages, createNewSession])
+  }, [
+    sessionId,
+    initialMessages,
+    showInput,
+    loadSession,
+    createSessionWithMessages,
+    createNewSession,
+    setMessages,
+  ])
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const node = messagesEndRef.current
+    if (typeof node?.scrollIntoView === 'function') {
+      node.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
   const handleSend = useCallback(async () => {
@@ -174,17 +210,25 @@ export const ConversationPanel: FC<ConversationPanelProps> = ({
       // Get the latest message ID from the ref to avoid stale closure issues
       // The ref always contains the most recent messages array
       const latestMessages = messagesRef.current
-      const latestMessageId = latestMessages[latestMessages.length - 1]?.id
+      let latestMessageId: string | undefined
+      for (let i = latestMessages.length - 1; i >= 0; i -= 1) {
+        const message = latestMessages[i]
+        if (message.session_id === currentSession.id) {
+          latestMessageId = message.id
+          break
+        }
+      }
 
       // Send via Tauri command
-      const response = await invoke<{ message: ChatMessage }>('send_chat_message', {
+      const response = await invoke<SendChatMessageResponse>('send_chat_message', {
         session_id: currentSession.id,
         content,
         parent_id: latestMessageId,
       })
 
       // Update local state
-      addMessage(response.message)
+      addMessage(response.user_message)
+      addMessage(response.assistant_message)
     } catch (err) {
       console.error('Failed to send message:', err)
       toast.error('Failed to send message')
@@ -370,7 +414,7 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
                   : 'var(--dracula-purple)',
             }}
           >
-            {isUser ? 'user' : isFirst ? 'report' : 'assistant'}
+            {isUser ? 'user' : isFirst ? 'output' : 'assistant'}
           </span>
           <span className="text-xs opacity-50" style={{ color: 'var(--dracula-comment)' }}>
             {new Date(message.timestamp).toLocaleTimeString()}
@@ -466,4 +510,4 @@ const LoadingBubble: FC = () => (
   </div>
 )
 
-export default ConversationPanel
+export default UnifiedOutputPanel

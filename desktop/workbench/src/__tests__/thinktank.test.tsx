@@ -31,8 +31,23 @@ describe('ThinktankScreen', () => {
           },
         ])
       }
+      if (cmd === 'list_provider_profiles') {
+        return Promise.resolve([
+          {
+            name: 'default',
+            base_url: 'https://api.example.com',
+            api_key_id: 'api_key:default',
+            default_model: 'model-1',
+            headers: {},
+            organization: null,
+            project: null,
+            provider_kind: 'generic',
+            timeout_s: 60,
+          },
+        ])
+      }
       if (cmd === 'execute_prompt') {
-        return Promise.resolve({ result: 'ok' })
+        return Promise.resolve({ result: 'ok', system_prompt_version: '1.0.0' })
       }
       return Promise.resolve(undefined)
     })
@@ -57,7 +72,8 @@ describe('ThinktankScreen', () => {
         request: {
           tool_name: 'demo_prompt',
           args: { count: 3, enabled: true },
-          profile_name: null,
+          profile_name: 'default',
+          model: 'model-1',
         },
       })
     })

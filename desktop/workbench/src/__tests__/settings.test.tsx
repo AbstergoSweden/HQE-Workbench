@@ -32,6 +32,9 @@ describe('SettingsScreen', () => {
 
     renderWithProviders(<SettingsScreen />)
 
+    const nameInput = screen.getByPlaceholderText('my-provider')
+    await userEvent.type(nameInput, 'Venice')
+
     const baseUrl = screen.getByPlaceholderText('https://api.openai.com/v1')
     await userEvent.type(baseUrl, 'https://api.venice.ai/api/v1')
 
@@ -90,16 +93,10 @@ describe('SettingsScreen', () => {
     const discover = screen.getByRole('button', { name: /^discover$/i })
     await userEvent.click(discover)
 
-    // The new API uses 'input' wrapper with snake_case fields
+    // Discovery now uses profile_name
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith('discover_models', {
-        input: {
-          base_url: 'https://api.venice.ai/api/v1',
-          api_key: 'stored-secret',
-          headers: { 'X-Test': '1' },
-          timeout_s: 60,
-          no_cache: false,
-        },
+        profile_name: 'Venice',
       })
     })
   })

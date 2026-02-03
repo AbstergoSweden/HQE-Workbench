@@ -1,6 +1,7 @@
 //! Prompt Execution Pipeline — Deterministic PromptRunner
 //!
 //! This module provides a centralized `PromptRunner` responsible for all model calls.
+//! INVARIANT: Only model request builder in codebase
 //! It ensures consistent request composition:
 //!
 //! ```text

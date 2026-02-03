@@ -44,7 +44,7 @@ describe('ReportScreen', () => {
 
     renderWithProviders(<ReportScreen />, '/report')
 
-    expect(screen.getByText(/local-only/i)).not.toBeNull()
+    expect(screen.getAllByText(/local-only/i).length).toBeGreaterThan(0)
     // Multiple elements contain 'high' (severity badge and summary)
     expect(screen.getAllByText(/high/i).length).toBeGreaterThan(0)
   })

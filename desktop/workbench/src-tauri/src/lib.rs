@@ -5,10 +5,13 @@
 
 pub mod chat;
 pub mod commands;
+pub mod llm;
 pub mod prompts;
 use chat::*;
 use commands::*;
 use hqe_core::encrypted_db::EncryptedDb;
+use secrecy::SecretString;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -17,6 +20,8 @@ pub struct AppState {
     pub current_repo: Arc<Mutex<Option<String>>>,
     /// Shared database instance for all chat operations
     pub db: Arc<Mutex<EncryptedDb>>,
+    /// Session-only API keys (not persisted)
+    pub session_keys: Arc<Mutex<HashMap<String, SecretString>>>,
 }
 
 /// Run the Tauri application
@@ -32,6 +37,7 @@ pub fn run() {
         .manage(AppState {
             current_repo: Arc::new(Mutex::new(None)),
             db: Arc::new(Mutex::new(db)),
+            session_keys: Arc::new(Mutex::new(HashMap::new())),
         })
         .invoke_handler(tauri::generate_handler![
             select_folder,
@@ -39,6 +45,8 @@ pub fn run() {
             get_repo_info,
             load_report,
             export_artifacts,
+            set_session_api_key,
+            clear_session_api_key,
             save_provider_config,
             test_provider_connection,
             // Provider discovery commands

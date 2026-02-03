@@ -16,11 +16,15 @@ export interface PromptExecutionRequest {
   args: Record<string, unknown>
   /** Provider profile to use (optional, uses default if not specified) */
   profile_name?: string
+  /** Model override (optional) */
+  model?: string
 }
 
 export interface PromptExecutionResponse {
   /** The generated result from the AI */
   result: string
+  /** System prompt version used */
+  system_prompt_version?: string
 }
 
 export interface UsePromptExecutionReturn {
@@ -34,7 +38,7 @@ export interface UsePromptExecutionReturn {
   result: string | null
   /** Clear result and error */
   reset: () => void
-  /** Convert result to chat messages for ConversationPanel */
+  /** Convert result to chat messages for UnifiedOutputPanel */
   toChatMessages: () => ChatMessage[]
 }
 
@@ -72,6 +76,7 @@ export function usePromptExecution(): UsePromptExecutionReturn {
           tool_name: request.tool_name,
           args: request.args,
           profile_name: request.profile_name ?? null,
+          model: request.model ?? null,
         }
       })
 

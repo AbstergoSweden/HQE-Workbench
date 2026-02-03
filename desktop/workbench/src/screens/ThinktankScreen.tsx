@@ -1,9 +1,10 @@
 import { FC, useCallback, useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { useLocation } from 'react-router-dom'
 import { useToast } from '../context/ToastContext'
-import { ConversationPanel } from '../components/ConversationPanel'
+import { UnifiedOutputPanel } from '../components/UnifiedOutputPanel'
 import { usePrompts, usePromptExecution } from '../hooks'
-import { ChatMessage } from '../types'
+import { ChatMessage, ProviderProfile } from '../types'
 
 // Extended Prompt interface with metadata
 interface PromptTool {
@@ -137,6 +138,9 @@ export const ThinktankScreen: FC = () => {
   const [args, setArgs] = useState<Record<string, unknown>>({})
   const [chatMode, setChatMode] = useState(false)
   const [initialMessages, setInitialMessages] = useState<ChatMessage[]>([])
+  const [profiles, setProfiles] = useState<ProviderProfile[]>([])
+  const [selectedProfile, setSelectedProfile] = useState<string>('')
+  const [selectedModel, setSelectedModel] = useState<string>('default')
 
   // Use the enhanced prompts hook
   const {
@@ -161,6 +165,23 @@ export const ThinktankScreen: FC = () => {
     result,
     reset,
   } = usePromptExecution()
+
+  useEffect(() => {
+    const loadProfiles = async () => {
+      try {
+        const result = await invoke<ProviderProfile[]>('list_provider_profiles')
+        setProfiles(result ?? [])
+        if (result && result.length > 0) {
+          setSelectedProfile(result[0].name)
+          setSelectedModel(result[0].default_model || 'default')
+        }
+      } catch (error) {
+        console.error('Failed to load provider profiles:', error)
+        toast.error('Failed to load provider profiles')
+      }
+    }
+    loadProfiles()
+  }, [toast])
 
   const handleSelectPrompt = useCallback((prompt: PromptTool, initialArgs?: Record<string, unknown>) => {
     if (isAgentPrompt(prompt.name)) {
@@ -218,9 +239,15 @@ export const ThinktankScreen: FC = () => {
       Object.keys(properties).length === 0 ? args : buildTypedArgs(properties, args)
 
     try {
+      if (!selectedProfile) {
+        toast.error('Select a provider profile in Settings')
+        return
+      }
       const response = await execute({
         tool_name: selectedPrompt.name,
         args: typedArgs,
+        profile_name: selectedProfile || null,
+        model: selectedModel || null,
       })
 
       // Create initial message for potential chat transition
@@ -245,6 +272,8 @@ export const ThinktankScreen: FC = () => {
 
   const displayedError = promptsError || executionError
   const hiddenAgentCount = prompts.filter(p => isAgentPrompt(p.name)).length
+
+  const selectedProfileInfo = profiles.find((p) => p.name === selectedProfile)
 
   // Chat mode view
   if (chatMode && result) {
@@ -292,12 +321,12 @@ export const ThinktankScreen: FC = () => {
 
         {/* Main chat area */}
         <div className="flex-1 card overflow-hidden" style={{ borderColor: 'var(--dracula-comment)' }}>
-          <ConversationPanel
+          <UnifiedOutputPanel
             initialMessages={initialMessages}
             contextRef={{
               prompt_id: selectedPrompt?.name,
-              provider: 'default',
-              model: 'default',
+              provider: selectedProfile || 'default',
+              model: selectedModel || 'default',
             }}
             showInput={true}
           />
@@ -519,6 +548,45 @@ export const ThinktankScreen: FC = () => {
                 )}
               </div>
 
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                    --profile
+                  </label>
+                  <select
+                    value={selectedProfile}
+                    onChange={(e) => {
+                      const name = e.target.value
+                      setSelectedProfile(name)
+                      const profile = profiles.find((p) => p.name === name)
+                      setSelectedModel(profile?.default_model || 'default')
+                    }}
+                    className="input text-sm"
+                  >
+                    {profiles.length === 0 && (
+                      <option value="">No profiles configured</option>
+                    )}
+                    {profiles.map((profile) => (
+                      <option key={profile.name} value={profile.name}>
+                        {profile.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                    --model
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="input text-sm"
+                    placeholder={selectedProfileInfo?.default_model || 'default'}
+                  />
+                </div>
+              </div>
+
               {isAgentPrompt(selectedPrompt.name) && (
                 <div
                   className="mb-4 text-sm p-3 rounded"
@@ -696,7 +764,7 @@ export const ThinktankScreen: FC = () => {
                 </div>
 
                 <div className="flex-1 overflow-hidden" style={{ background: 'var(--dracula-bg)' }}>
-                  <ConversationPanel
+                  <UnifiedOutputPanel
                     initialMessages={result ? [{
                       id: `report-stable`,
                       session_id: '',
@@ -706,8 +774,8 @@ export const ThinktankScreen: FC = () => {
                     }] : []}
                     contextRef={{
                       prompt_id: selectedPrompt.name,
-                      provider: 'default',
-                      model: 'default',
+                      provider: selectedProfile || 'default',
+                      model: selectedModel || 'default',
                     }}
                     showInput={false}
                     isLoading={executing}
