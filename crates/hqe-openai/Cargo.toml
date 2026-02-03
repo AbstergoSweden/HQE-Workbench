@@ -37,6 +37,7 @@ dirs = { workspace = true }
 # HQE internal
 hqe-core = { workspace = true }
 hqe-protocol = { path = "../hqe-protocol" }
+chrono.workspace = true
 
 [dev-dependencies]
 mockito = { workspace = true }

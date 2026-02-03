@@ -32,6 +32,16 @@ impl LocalDb {
         // Enable WAL mode for better concurrency
         conn.execute("PRAGMA journal_mode=WAL;", [])?;
 
+        // Initialize tables
+        Self::init_tables(&conn)?;
+
+        Ok(Self {
+            conn: Arc::new(Mutex::new(conn)),
+        })
+    }
+
+    /// Initialize database schema
+    fn init_tables(conn: &Connection) -> Result<()> {
         // Create tables
         conn.execute(
             "CREATE TABLE IF NOT EXISTS request_cache (
@@ -57,9 +67,25 @@ impl LocalDb {
             [],
         )?;
 
-        Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
-        })
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS usage_history (
+                id INTEGER PRIMARY KEY,
+                date TEXT NOT NULL,
+                model TEXT NOT NULL,
+                input_tokens INTEGER NOT NULL,
+                output_tokens INTEGER NOT NULL,
+                estimated_cost_usd REAL NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+            [],
+        )?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_usage_date ON usage_history(date)",
+            [],
+        )?;
+
+        Ok(())
     }
 
     /// Calculate a stable hash for a request to be used as a cache key.
@@ -143,7 +169,43 @@ impl LocalDb {
         )?;
         Ok(())
     }
+
+    /// Log API usage/cost for a request.
+    pub fn log_usage(
+        &self,
+        date: &str,
+        model: &str,
+        input_tokens: i32,
+        output_tokens: i32,
+        cost_usd: f64,
+    ) -> Result<()> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| rusqlite::Error::InvalidParameterName("Mutex poisoned".to_string()))?;
+        conn.execute(
+            "INSERT INTO usage_history (date, model, input_tokens, output_tokens, estimated_cost_usd)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![date, model, input_tokens, output_tokens, cost_usd],
+        )?;
+        Ok(())
+    }
+
+    /// Get total estimated cost for a given date (YYYY-MM-DD).
+    pub fn get_daily_cost(&self, date: &str) -> Result<f64> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| rusqlite::Error::InvalidParameterName("Mutex poisoned".to_string()))?;
+        let mut stmt =
+            conn.prepare("SELECT SUM(estimated_cost_usd) FROM usage_history WHERE date = ?1")?;
+        // SUM returns NULL if no rows match, but query_row always finds a row for SUM.
+        // We must handle the NULL column value.
+        let cost: Option<f64> = stmt.query_row(params![date], |row| row.get(0))?;
+        Ok(cost.unwrap_or(0.0))
+    }
 }
+// Add optional trait import for query_row optional
 
 #[cfg(test)]
 mod tests {
@@ -229,6 +291,31 @@ mod tests {
         let long_message = "a".repeat(10000);
         let hash = LocalDb::calculate_hash("model", &long_message, "{}");
         assert_eq!(hash.len(), 64);
+    }
+
+    #[test]
+    fn test_usage_logging_persistence() {
+        let conn = Connection::open_in_memory().unwrap();
+        LocalDb::init_tables(&conn).unwrap();
+        let db = LocalDb {
+            conn: Arc::new(Mutex::new(conn)),
+        };
+
+        // Log some usage
+        db.log_usage("2024-01-01", "gpt-4", 100, 50, 0.05).unwrap();
+        db.log_usage("2024-01-01", "gpt-3.5", 200, 100, 0.01)
+            .unwrap();
+        db.log_usage("2024-01-02", "gpt-4", 50, 25, 0.02).unwrap();
+
+        // Verify daily totals
+        let cost_day1 = db.get_daily_cost("2024-01-01").unwrap();
+        assert!((cost_day1 - 0.06).abs() < f64::EPSILON);
+
+        let cost_day2 = db.get_daily_cost("2024-01-02").unwrap();
+        assert!((cost_day2 - 0.02).abs() < f64::EPSILON);
+
+        let cost_empty_day = db.get_daily_cost("2024-01-03").unwrap();
+        assert_eq!(cost_empty_day, 0.0);
     }
 }
 

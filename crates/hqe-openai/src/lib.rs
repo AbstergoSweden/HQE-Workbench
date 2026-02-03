@@ -53,9 +53,11 @@ pub struct OpenAIClient {
     project: Option<String>,
     max_retries: u32,
     local_db: Option<hqe_core::persistence::LocalDb>,
+    daily_budget: f64,
+    provider_kind: ProviderKind,
+    disk_cache: Option<provider_discovery::DiskCache>,
 }
 
-/// Configuration for the client
 /// Configuration for the client
 #[derive(Debug, Clone)]
 pub struct ClientConfig {
@@ -81,6 +83,8 @@ pub struct ClientConfig {
     pub rate_limit_config: Option<rate_limiter::RateLimitConfig>,
     /// Enable local decision cache and logging (Privacy-First)
     pub cache_enabled: bool,
+    /// Daily budget limit in USD (default: 1.0)
+    pub daily_budget: f64,
 }
 
 impl Default for ClientConfig {
@@ -97,6 +101,7 @@ impl Default for ClientConfig {
             max_retries: 3,
             rate_limit_config: None,
             cache_enabled: true,
+            daily_budget: 1.0,
         }
     }
 }
@@ -109,7 +114,6 @@ fn get_default_timeout() -> u64 {
         .unwrap_or(60) // Default to 60 seconds if not set or invalid
 }
 
-/// Chat completion request
 /// Chat completion request
 #[derive(Debug, Clone, Serialize)]
 pub struct ChatRequest {
@@ -340,7 +344,6 @@ pub enum Role {
 }
 
 /// Chat completion response
-/// Chat completion response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatResponse {
     /// Unique ID of the response
@@ -383,7 +386,6 @@ pub struct Usage {
     pub total_tokens: i32,
 }
 
-/// API error response
 /// API error response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiError {
@@ -428,6 +430,13 @@ impl OpenAIClient {
 
         let rate_limiter = config.rate_limit_config.map(rate_limiter::RateLimiter::new);
 
+        let provider_kind = provider_discovery::ProviderKind::detect(&base_url);
+        let disk_cache = if config.cache_enabled {
+            Some(provider_discovery::DiskCache::default())
+        } else {
+            None
+        };
+
         Ok(Self {
             base_url,
             api_key: config.api_key,
@@ -449,6 +458,9 @@ impl OpenAIClient {
             } else {
                 None
             },
+            daily_budget: config.daily_budget,
+            provider_kind,
+            disk_cache,
         })
     }
 
@@ -505,9 +517,61 @@ impl OpenAIClient {
         Ok(headers)
     }
 
+    /// Retrieve cost pricing for a model (input/1M tokens, output/1M tokens)
+    ///
+    /// Checks the disk cache first for dynamic provider pricing.
+    /// Falls back to hardcoded defaults based on model ID patterns.
+    fn get_model_cost(&self, model_id: &str) -> (f64, f64) {
+        // 1. Try dynamic pricing from disk cache (if available)
+        if let Some(cache) = &self.disk_cache {
+            let key = provider_discovery::generate_cache_key(self.provider_kind, &self.base_url);
+            // We use get_stale because pricing doesn't change THAT often, better to have stale data than none
+            if let Ok(Some(list)) = cache.get_stale(&key) {
+                if let Some(model) = list.models.iter().find(|m| m.id == model_id) {
+                    if let (Some(input), Some(output)) = (
+                        model.pricing.input_usd_per_million,
+                        model.pricing.output_usd_per_million,
+                    ) {
+                        return (input, output);
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback heuristics
+        let m = model_id.to_lowercase();
+        if m.contains("gpt-4") || m.contains("opus") {
+            (5.00, 15.00)
+        } else if m.contains("gpt-3.5") || m.contains("haiku") || m.contains("flash") {
+            (0.50, 1.50)
+        } else if m.contains("sonnet") {
+            (3.00, 15.00)
+        } else {
+            // Safe default for unknowns
+            (0.20, 0.20)
+        }
+    }
+
     /// Send a chat completion request
     #[instrument(skip(self, request))]
     pub async fn chat(&self, request: ChatRequest) -> anyhow::Result<ChatResponse> {
+        // Enforce Daily Budget
+        if let Some(db) = &self.local_db {
+            let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+            let current_spend = db.get_daily_cost(&today).unwrap_or(0.0);
+
+            if current_spend >= self.daily_budget {
+                error!(
+                    "Daily budget exceeded: spent ${:.4} / limit ${:.4}",
+                    current_spend, self.daily_budget
+                );
+                return Err(anyhow::anyhow!(
+                    "Daily API budget exceeded (${:.2}). Please increase limit in config if needed.", 
+                    self.daily_budget
+                ));
+            }
+        }
+
         // Apply rate limiting before making the request
         if let Some(limiter) = &self.rate_limiter {
             // Estimate tokens: max_tokens + rough estimate of input size
@@ -583,6 +647,12 @@ impl OpenAIClient {
                     let status = resp.status();
                     if status.is_success() {
                         let chat_response: ChatResponse = resp.json().await?;
+
+                        let usage_tokens = chat_response
+                            .usage
+                            .as_ref()
+                            .map(|u| (u.prompt_tokens, u.completion_tokens))
+                            .unwrap_or((0, 0));
                         info!(
                             "Chat completion successful: {} tokens used",
                             chat_response
@@ -625,6 +695,22 @@ impl OpenAIClient {
                                         "assistant",
                                         "Response received",
                                         Some(&resp_json),
+                                    );
+
+                                    // Log usage and cost
+                                    let (input_cost_m, output_cost_m) =
+                                        self.get_model_cost(&request.model);
+                                    let est_cost = (usage_tokens.0 as f64 * input_cost_m
+                                        + usage_tokens.1 as f64 * output_cost_m)
+                                        / 1_000_000.0;
+
+                                    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+                                    let _ = db.log_usage(
+                                        &today,
+                                        &request.model,
+                                        usage_tokens.0,
+                                        usage_tokens.1,
+                                        est_cost,
                                     );
                                 }
                             }
@@ -874,6 +960,7 @@ mod tests {
             max_retries: 0,
             rate_limit_config: None,
             cache_enabled: false,
+            daily_budget: 1.0,
         };
 
         // Would need mockito or similar to test properly

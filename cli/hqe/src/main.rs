@@ -305,6 +305,7 @@ async fn handle_prompt(
                 max_retries: 1,
                 rate_limit_config: None,
                 cache_enabled: !no_cache,
+                daily_budget: 1.0,
             };
             Some(hqe_openai::OpenAIClient::new(config)?)
         } else {
@@ -735,6 +736,7 @@ async fn scan_repo(args: ScanRepoArgs) -> anyhow::Result<()> {
             max_retries: 2,
             rate_limit_config: None,
             cache_enabled: !no_cache,
+            daily_budget: 1.0,
         })?;
         let analyzer = OpenAIAnalyzer::new(llm_client)
             .with_venice_parameters(venice_parameters)
@@ -1109,6 +1111,7 @@ async fn handle_config(command: ConfigCommands) -> anyhow::Result<()> {
                     max_retries: 1,
                     rate_limit_config: None,
                     cache_enabled: true,
+                    daily_budget: 1.0,
                 };
 
                 let client = hqe_openai::OpenAIClient::new(config)?;

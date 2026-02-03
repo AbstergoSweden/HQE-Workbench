@@ -57,6 +57,7 @@ pub async fn run_llm(
         max_retries: 1,
         rate_limit_config: None,
         cache_enabled: true,
+        daily_budget: 1.0,
     };
 
     let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;
@@ -148,6 +149,7 @@ pub async fn test_connection(
         max_retries: 1,
         rate_limit_config: None,
         cache_enabled: true,
+        daily_budget: 1.0,
     };
 
     let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;
@@ -228,6 +230,7 @@ pub fn build_scan_analyzer(
         max_retries: 1,
         rate_limit_config: None,
         cache_enabled: true,
+        daily_budget: 1.0,
     };
 
     let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;

@@ -298,15 +298,20 @@ impl ProviderDiscoveryClient {
     }
 
     fn cache_key(&self) -> String {
-        // URL-safe slug, no secrets
-        let mut s = format!("{:?}_{}", self.provider_kind, self.base_url);
-        s.make_ascii_lowercase();
-        let slug: String = s
-            .chars()
-            .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
-            .collect();
-        slug.trim_matches('_').to_string()
+        generate_cache_key(self.provider_kind, &self.base_url)
     }
+}
+
+/// Generate a consistent cache key for a provider and base URL
+pub fn generate_cache_key(kind: ProviderKind, base_url: &Url) -> String {
+    // URL-safe slug, no secrets
+    let mut s = format!("{:?}_{}", kind, base_url);
+    s.make_ascii_lowercase();
+    let slug: String = s
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+        .collect();
+    slug.trim_matches('_').to_string()
 }
 
 fn unix_now() -> u64 {
