@@ -226,7 +226,7 @@ export class ConfigManager extends EventEmitter {
         const validLevelsStr = validLevels.join(', ');
         console.warn(
           `Invalid LOG_LEVEL environment variable: "${envLogLevel}". ` +
-          `Valid levels: ${validLevelsStr}. Using configured level: "${configLogging.level}"`
+            `Valid levels: ${validLevelsStr}. Using configured level: "${configLogging.level}"`
         );
       }
     }

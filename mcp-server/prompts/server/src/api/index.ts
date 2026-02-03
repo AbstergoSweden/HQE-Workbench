@@ -382,8 +382,9 @@ export class ApiManager {
         this.logger.error('Error refreshing server:', refreshError);
         res.status(500).json({
           success: false,
-          message: `Failed to refresh server: ${refreshError instanceof Error ? refreshError.message : String(refreshError)
-            }`,
+          message: `Failed to refresh server: ${
+            refreshError instanceof Error ? refreshError.message : String(refreshError)
+          }`,
         });
       }
     } catch (error) {

@@ -165,10 +165,10 @@ export class PromptExecutionService {
     const sessionConfig = configManager.getChainSessionConfig?.();
     const chainSessionOptions = sessionConfig
       ? {
-        defaultSessionTimeoutMs: sessionConfig.sessionTimeoutMinutes * 60 * 1000,
-        reviewSessionTimeoutMs: sessionConfig.reviewTimeoutMinutes * 60 * 1000,
-        cleanupIntervalMs: sessionConfig.cleanupIntervalMinutes * 60 * 1000,
-      }
+          defaultSessionTimeoutMs: sessionConfig.sessionTimeoutMinutes * 60 * 1000,
+          reviewSessionTimeoutMs: sessionConfig.reviewTimeoutMinutes * 60 * 1000,
+          cleanupIntervalMs: sessionConfig.cleanupIntervalMinutes * 60 * 1000,
+        }
       : undefined;
 
     this.argumentHistoryTracker = new ArgumentHistoryTracker(
@@ -730,19 +730,19 @@ export class PromptExecutionService {
 
     const frameworkStage: PipelineStage = this.frameworkManager
       ? new FrameworkResolutionStage(
-        this.frameworkManager,
-        () => this.frameworkStateManager?.isFrameworkSystemEnabled() ?? false,
-        this.logger,
-        this.lightweightGateSystem.gateLoader
-      )
+          this.frameworkManager,
+          () => this.frameworkStateManager?.isFrameworkSystemEnabled() ?? false,
+          this.logger,
+          this.lightweightGateSystem.gateLoader
+        )
       : {
-        name: 'FrameworkResolution',
-        execute: async () => {
-          this.logger.debug(
-            '[PromptExecutionService] Framework stage skipped (framework manager unavailable)'
-          );
-        },
-      };
+          name: 'FrameworkResolution',
+          execute: async () => {
+            this.logger.debug(
+              '[PromptExecutionService] Framework stage skipped (framework manager unavailable)'
+            );
+          },
+        };
 
     const judgeSelectionStage = new JudgeSelectionStage(
       () => this.convertedPrompts,

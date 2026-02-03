@@ -585,7 +585,9 @@ ExecutionContext:
       if (check.type === 'llm_self_check') {
         hints.push('Review the quality criteria and improve content structure and depth');
         // When LLM validation is implemented, this would include specific feedback
-        const detailParams = check.details as { passed?: boolean; score?: number; feedback?: string } | undefined;
+        const detailParams = check.details as
+          | { passed?: boolean; score?: number; feedback?: string }
+          | undefined;
         if (detailParams?.feedback !== undefined) {
           hints.push(detailParams.feedback);
         }

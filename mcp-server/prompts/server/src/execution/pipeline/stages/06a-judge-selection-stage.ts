@@ -295,15 +295,15 @@ export class JudgeSelectionStage extends BasePipelineStage {
 
     const introLines = methodologyJudgePrompt
       ? [
-        methodologyJudgePrompt.systemMessage ?? '',
-        '',
-        '### Methodology-Specific Instructions',
-        methodologyJudgePrompt.userMessageTemplate ?? '',
-        '',
-      ]
+          methodologyJudgePrompt.systemMessage ?? '',
+          '',
+          '### Methodology-Specific Instructions',
+          methodologyJudgePrompt.userMessageTemplate ?? '',
+          '',
+        ]
       : [
-        'You are an expert resource selector. Analyze the task below and select appropriate enhancement resources to improve the response quality.',
-      ];
+          'You are an expert resource selector. Analyze the task below and select appropriate enhancement resources to improve the response quality.',
+        ];
 
     const responseLines = [
       '## Resource Selection Required',
@@ -329,14 +329,16 @@ export class JudgeSelectionStage extends BasePipelineStage {
       '',
       'Analyze the task and select resources that will enhance the response:',
       '',
-      `${frameworkInstructions}${operatorContext.hasFrameworkOperator ? '1' : '2'
+      `${frameworkInstructions}${
+        operatorContext.hasFrameworkOperator ? '1' : '2'
       }. **Style** (recommended): Select a response style matching the task type`,
       '   - analytical: Systematic analysis and data-driven responses',
       '   - procedural: Step-by-step instructions and processes',
       '   - creative: Innovative thinking and brainstorming',
       '   - reasoning: Logical decomposition and problem-solving',
       '',
-      `${operatorContext.hasFrameworkOperator ? '2' : '3'
+      `${
+        operatorContext.hasFrameworkOperator ? '2' : '3'
       }. **Gates** (optional): Select quality gates to ensure specific aspects`,
       '   - Select gates relevant to the task domain (code, research, security, etc.)',
       '',
@@ -348,7 +350,8 @@ export class JudgeSelectionStage extends BasePipelineStage {
       '',
       '```',
       `prompt_engine({`,
-      `  command: "${escapedCommand}${operatorContext.hasFrameworkOperator ? '' : ' @<framework>'
+      `  command: "${escapedCommand}${
+        operatorContext.hasFrameworkOperator ? '' : ' @<framework>'
       } :: <gate_id or criteria> #<analytical|procedural|creative|reasoning>"`,
       `})`,
       '```',

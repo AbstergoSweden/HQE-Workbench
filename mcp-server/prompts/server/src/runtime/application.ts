@@ -443,8 +443,9 @@ export class Application {
       this.logger.error('Framework switch error:', error);
       return {
         success: false,
-        message: `Error switching framework: ${error instanceof Error ? error.message : String(error)
-          }`,
+        message: `Error switching framework: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       };
     }
   }
@@ -655,7 +656,7 @@ export class Application {
       };
       this.logger.info(
         `✅ Framework switching system ready: ${switchingStatus.currentFrameworkName} active ` +
-        `(${switchingStatus.enabledFrameworks}/${switchingStatus.availableFrameworks} frameworks available)`
+          `(${switchingStatus.enabledFrameworks}/${switchingStatus.availableFrameworks} frameworks available)`
       );
 
       // complexity removed - focusing on simple framework switching instead of multi-framework consensus
@@ -727,12 +728,9 @@ export class Application {
               : undefined;
 
             // Collect all auxiliary reloads
-            const auxiliaryReloads = [
-              methodologyAux,
-              gateAux,
-              scriptAux,
-              agentCodeCacheAux,
-            ].filter((aux): aux is NonNullable<typeof aux> => aux !== undefined);
+            const auxiliaryReloads = [methodologyAux, gateAux, scriptAux, agentCodeCacheAux].filter(
+              (aux): aux is NonNullable<typeof aux> => aux !== undefined
+            );
 
             const hotReloadOptions: Parameters<typeof this.promptManager.startHotReload>[2] = {};
 
@@ -775,7 +773,8 @@ export class Application {
     const reloadPromise = (async () => {
       try {
         this.logger.info(
-          `🔥 Hot reload event received (${event.type}): ${event.reason
+          `🔥 Hot reload event received (${event.type}): ${
+            event.reason
           } [${event.affectedFiles.join(', ')}]`
         );
 
@@ -1131,7 +1130,8 @@ export class Application {
       };
     } catch (error) {
       errors.push(
-        `Error collecting diagnostic info: ${error instanceof Error ? error.message : String(error)
+        `Error collecting diagnostic info: ${
+          error instanceof Error ? error.message : String(error)
         }`
       );
 

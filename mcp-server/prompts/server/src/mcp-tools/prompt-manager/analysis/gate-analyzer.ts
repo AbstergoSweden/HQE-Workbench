@@ -33,6 +33,24 @@ export interface GateAnalysisResult {
 }
 
 /**
+ * Content analysis result from analyzing prompt content
+ */
+interface ContentAnalysis {
+  hasDataRequirements: boolean;
+  hasCodeRequirements: boolean;
+  hasResearchRequirements: boolean;
+  hasEducationalContent: boolean;
+  hasTechnicalContent: boolean;
+  requiresAccuracy: boolean;
+  requiresStructure: boolean;
+}
+
+/**
+ * Gate configuration preview type
+ */
+type GateConfigurationPreview = GateAnalysisResult['gateConfigurationPreview'];
+
+/**
  * Analyzes prompts for gate recommendations
  */
 export class GateAnalyzer {
@@ -51,8 +69,8 @@ export class GateAnalyzer {
     this.logger.debug('[GATE ANALYZER] Analyzing prompt for gate recommendations:', {
       promptId: prompt.id,
       category: prompt.category,
-      hasChainSteps: !!prompt.chainSteps?.length,
-      argumentsCount: prompt.arguments?.length || 0,
+      hasChainSteps: (prompt.chainSteps?.length ?? 0) > 0,
+      argumentsCount: prompt.arguments.length,
     });
 
     // Extract context from prompt
@@ -67,13 +85,11 @@ export class GateAnalyzer {
     // Generate temporary gate suggestions
     const temporaryGates = this.generateTemporaryGateSuggestions(context, contentAnalysis);
 
-    // TODO: Confidence calculation requires semantic LLM layer (future feature)
-    // const confidence = this.calculateConfidence(
-    //   context,
-    //   contentAnalysis,
-    //   recommendedGates.length + temporaryGates.length
-    // );
-    const confidence = 0.0; // Placeholder until semantic LLM integration
+    const confidence = this.calculateConfidence(
+      context,
+      contentAnalysis,
+      recommendedGates.length + temporaryGates.length
+    );
 
     // Create reasoning
     const reasoning = this.generateReasoning(
@@ -119,17 +135,15 @@ export class GateAnalyzer {
   } {
     // Determine execution type
     let executionType: 'single' | 'chain' = 'single';
-    if (prompt.chainSteps && prompt.chainSteps.length > 0) {
+    if (prompt.chainSteps != null && prompt.chainSteps.length > 0) {
       executionType = 'chain';
-    } else if (prompt.systemMessage || (prompt.arguments && prompt.arguments.length > 2)) {
-      executionType = 'single';
     }
 
     // Determine complexity
     let complexity: 'low' | 'medium' | 'high' = 'low';
     const complexityIndicators = [
-      prompt.arguments?.length || 0,
-      prompt.chainSteps?.length || 0,
+      prompt.arguments.length,
+      prompt.chainSteps?.length ?? 0,
       prompt.userMessageTemplate.length / 100,
     ];
     const complexityScore = complexityIndicators.reduce((a, b) => a + b, 0);
@@ -156,8 +170,9 @@ export class GateAnalyzer {
       complexity: 'high' | 'medium' | 'low';
     };
 
-    const activeFramework = this.dependencies.frameworkStateManager?.getActiveFramework()?.type;
-    if (activeFramework) {
+    const activeFramework =
+      this.dependencies.frameworkStateManager?.getActiveFramework().type ?? null;
+    if (activeFramework != null) {
       result.framework = activeFramework;
     }
 
@@ -176,7 +191,7 @@ export class GateAnalyzer {
     requiresAccuracy: boolean;
     requiresStructure: boolean;
   } {
-    const content = (prompt.userMessageTemplate + ' ' + (prompt.systemMessage || '')).toLowerCase();
+    const content = (prompt.userMessageTemplate + ' ' + (prompt.systemMessage ?? '')).toLowerCase();
 
     return {
       hasDataRequirements: /data|statistics|numbers|metrics|analytics/.test(content),
@@ -200,7 +215,7 @@ export class GateAnalyzer {
       intentKeywords?: string[];
       complexity: 'low' | 'medium' | 'high';
     },
-    contentAnalysis: any
+    contentAnalysis: ContentAnalysis
   ): string[] {
     const gates: string[] = [];
 
@@ -222,7 +237,7 @@ export class GateAnalyzer {
     }
 
     // Category-based recommendations
-    const categoryGates = this.getCategoryGateMapping()[context.category] || [];
+    const categoryGates = this.getCategoryGateMapping()[context.category] ?? [];
     gates.push(...categoryGates);
 
     // Remove duplicates
@@ -240,7 +255,7 @@ export class GateAnalyzer {
       intentKeywords?: string[];
       complexity: 'low' | 'medium' | 'high';
     },
-    contentAnalysis: any
+    contentAnalysis: ContentAnalysis
   ): TemporaryGateDefinition[] {
     const temporaryGates: TemporaryGateDefinition[] = [];
 
@@ -310,7 +325,7 @@ export class GateAnalyzer {
       intentKeywords?: string[];
       complexity: 'low' | 'medium' | 'high';
     },
-    contentAnalysis: any,
+    contentAnalysis: ContentAnalysis,
     totalGatesRecommended: number
   ): number {
     let confidence = 0.5; // Base confidence
@@ -321,8 +336,8 @@ export class GateAnalyzer {
 
     // Adjust for context clarity
     if (context.category !== 'general') confidence += 0.1;
-    if (context.framework) confidence += 0.1;
-    if (context.intentKeywords && context.intentKeywords.length > 0) confidence += 0.1;
+    if (context.framework != null) confidence += 0.1;
+    if (context.intentKeywords != null && context.intentKeywords.length > 0) confidence += 0.1;
 
     // Adjust for recommendation count
     if (totalGatesRecommended > 0) confidence += 0.1;
@@ -342,7 +357,7 @@ export class GateAnalyzer {
       intentKeywords?: string[];
       complexity: 'low' | 'medium' | 'high';
     },
-    contentAnalysis: any,
+    contentAnalysis: ContentAnalysis,
     recommendedGates: string[],
     temporaryGates: TemporaryGateDefinition[]
   ): string[] {
@@ -381,8 +396,8 @@ export class GateAnalyzer {
   private generateGateConfigurationPreview(
     recommendedGates: string[],
     temporaryGates: TemporaryGateDefinition[]
-  ): any {
-    const preview: any = {};
+  ): GateConfigurationPreview {
+    const preview: GateConfigurationPreview = {};
 
     if (recommendedGates.length > 0) {
       preview.include = recommendedGates;
@@ -434,7 +449,7 @@ export class GateAnalyzer {
 
     const gates: string[] = [];
     for (const intent of intentKeywords) {
-      const intentGates = intentGateMapping[intent] || [];
+      const intentGates = intentGateMapping[intent] ?? [];
       gates.push(...intentGates);
     }
 
@@ -468,6 +483,6 @@ export class GateAnalyzer {
       SCAMPER: ['educational-clarity'],
     };
 
-    return frameworkGateMapping[framework] || ['framework-compliance'];
+    return frameworkGateMapping[framework] ?? ['framework-compliance'];
   }
 }

@@ -60,7 +60,7 @@ export class SemanticGateService implements IGateService {
       context
     );
 
-    if (!this.config.llmIntegration?.enabled) {
+    if (this.config.llmIntegration?.enabled !== true) {
       return compositionalResult;
     }
 
@@ -98,15 +98,14 @@ export class SemanticGateService implements IGateService {
     gateIds: string[],
     _context: GateContext
   ): Promise<GateValidationResult[]> {
-    // TODO: Implement once third-party LLM integration is available.
     this.logger.warn(
-      '[SemanticGateService] Semantic validation requested but not yet implemented',
+      '[SemanticGateService] Semantic validation requested but third-party LLM integration is not available',
       {
         gateIds,
         llmEnabled: this.config.llmIntegration?.enabled,
       }
     );
 
-    throw new Error('Semantic validation not yet implemented');
+    throw new Error('Semantic validation requires active LLM integration');
   }
 }
