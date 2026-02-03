@@ -412,7 +412,11 @@ fn build_inputs(
 ) -> std::collections::HashMap<String, String> {
     let mut inputs = std::collections::HashMap::new();
     inputs.insert("message".to_string(), content.to_string());
-    if prompt_template.required_inputs.iter().any(|input| input.name == "args") {
+    if prompt_template
+        .required_inputs
+        .iter()
+        .any(|input| input.name == "args")
+    {
         inputs.insert("args".to_string(), content.to_string());
     }
     inputs
@@ -492,8 +496,8 @@ fn detect_content_type(path: &str) -> ContentType {
     match ext.as_str() {
         "md" | "markdown" | "txt" | "rst" | "adoc" => ContentType::Documentation,
         "toml" | "yaml" | "yml" | "json" => ContentType::Configuration,
-        "rs" | "ts" | "tsx" | "js" | "jsx" | "py" | "go" | "java" | "kt" | "swift"
-        | "rb" | "php" | "c" | "cpp" | "cc" | "h" | "hpp" => ContentType::SourceCode,
+        "rs" | "ts" | "tsx" | "js" | "jsx" | "py" | "go" | "java" | "kt" | "swift" | "rb"
+        | "php" | "c" | "cpp" | "cc" | "h" | "hpp" => ContentType::SourceCode,
         "test" => ContentType::TestFile,
         _ => ContentType::Unknown,
     }
@@ -509,7 +513,10 @@ fn resolve_prompts_dir() -> Result<std::path::PathBuf, String> {
     if let Ok(dir) = std::env::var("HQE_PROMPTS_DIR") {
         let path = std::path::PathBuf::from(dir);
         if path.exists() {
-            return path.canonicalize().or_else(|_: std::io::Error| Ok(path.clone())).map_err(|e: std::io::Error| e.to_string());
+            return path
+                .canonicalize()
+                .or_else(|_: std::io::Error| Ok(path.clone()))
+                .map_err(|e: std::io::Error| e.to_string());
         }
     }
 

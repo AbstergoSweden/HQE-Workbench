@@ -144,8 +144,13 @@ pub async fn execute_prompt(
     } else {
         None
     };
-    let response: LlmResponse =
-        run_llm(execution_request, request.profile_name, session_key, request.model).await?;
+    let response: LlmResponse = run_llm(
+        execution_request,
+        request.profile_name,
+        session_key,
+        request.model,
+    )
+    .await?;
 
     Ok(ExecutePromptResponse {
         result: response.content,

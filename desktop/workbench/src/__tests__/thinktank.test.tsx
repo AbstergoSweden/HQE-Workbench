@@ -64,7 +64,7 @@ describe('ThinktankScreen', () => {
     const enabledCheckbox = screen.getByLabelText('--enabled')
     await userEvent.click(enabledCheckbox)
 
-    const runButton = screen.getByRole('button', { name: /execute prompt/i })
+    const runButton = screen.getByRole('button', { name: /run prompt/i })
     await userEvent.click(runButton)
 
     await waitFor(() => {

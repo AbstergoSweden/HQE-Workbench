@@ -296,7 +296,9 @@ pub async fn discover_models(
         keys.get(&profile_name).cloned()
     };
     let normalized_url = profile.normalized_base_url().map_err(|e| e.to_string())?;
-    let kind = profile.provider_kind.unwrap_or_else(|| ProviderKind::detect(&normalized_url));
+    let kind = profile
+        .provider_kind
+        .unwrap_or_else(|| ProviderKind::detect(&normalized_url));
 
     let models = crate::llm::discover_models(&profile.name, session_key).await?;
 

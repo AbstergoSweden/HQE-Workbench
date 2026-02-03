@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext'
 import { UnifiedOutputPanel } from '../components/UnifiedOutputPanel'
 import { usePrompts, usePromptExecution } from '../hooks'
 import { ChatMessage, ProviderProfile } from '../types'
+import { PlayIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/solid'
 
 // Extended Prompt interface with metadata
 interface PromptTool {
@@ -702,24 +703,39 @@ export const ThinktankScreen: FC = () => {
                   )
                 })}
 
-                <div className="flex justify-end mt-2">
+                {/* Execute Button & Chat Access */}
+                <div className="flex gap-2 mt-4">
                   <button
+                    className="btn btn-primary flex-1 h-12 text-lg font-bold"
                     onClick={handleExecute}
-                    disabled={executing}
-                    className="btn btn-primary flex items-center gap-2"
+                    disabled={executing || !selectedPrompt || !selectedProfile}
                   >
                     {executing ? (
                       <>
-                        <span className="animate-spin">⟳</span>
-                        Executing...
+                        <span className="loading loading-spinner"></span>
+                        Executing Prompt...
                       </>
                     ) : (
                       <>
-                        <span className="text-terminal-green">❯</span>
-                        Execute Prompt
+                        <PlayIcon className="w-5 h-5 mr-2" />
+                        Run Prompt
                       </>
                     )}
                   </button>
+
+                  {selectedProfile && (
+                    <button
+                      className="btn btn-secondary h-12 px-6"
+                      onClick={() => {
+                        setInitialMessages([]);
+                        setChatMode(true);
+                      }}
+                      title="Start a direct chat session without running a prompt"
+                    >
+                      <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                      <span className="ml-2">Chat</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
