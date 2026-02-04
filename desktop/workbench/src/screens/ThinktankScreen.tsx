@@ -124,7 +124,7 @@ const getCategoryStyle = (category?: string) => {
 }
 
 const isAgentPrompt = (name: string): boolean => {
-  return name.startsWith('conductor_') || name.startsWith('cli_security_')
+  return name.startsWith('conductor_') || name.startsWith('cli_security_') || name.startsWith('agent_')
 }
 
 export const ThinktankScreen: FC = () => {

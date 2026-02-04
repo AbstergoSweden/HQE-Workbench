@@ -8,6 +8,7 @@ export interface GateValidationResult {
   score?: number;
   feedback?: string;
   validatedBy: 'compositional' | 'semantic';
+  status?: 'active' | 'simulated' | 'skipped' | 'error' | 'not-implemented';
   timestamp: number;
 }
 
@@ -21,6 +22,7 @@ export interface GateEnhancementResult {
 
 export interface GateServiceConfig {
   enabled: boolean;
+  failClosedOnSemanticError?: boolean; // When true, semantic errors cause validation failure instead of degrading to compositional
   llmIntegration?: {
     enabled: boolean;
     apiKey?: string;

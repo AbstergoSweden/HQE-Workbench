@@ -119,7 +119,9 @@ export function usePrompts(options: UsePromptsOptions = {}): UsePromptsReturn {
     // Filter out agent prompts unless included
     if (!includeAgentPrompts) {
       filtered = filtered.filter(p =>
-        !p.name.startsWith('conductor_') && !p.name.startsWith('cli_security_')
+        !p.name.startsWith('conductor_') &&
+        !p.name.startsWith('cli_security_') &&
+        !p.name.startsWith('agent_')
       )
     }
 

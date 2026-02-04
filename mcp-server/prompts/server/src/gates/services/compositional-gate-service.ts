@@ -9,8 +9,32 @@ import type { ConvertedPrompt } from '../../types/index.js';
 import type { GateContext } from '../core/gate-definitions.js';
 import type { GateGuidanceRenderer } from '../guidance/GateGuidanceRenderer.js';
 
+// Utility function for deep merging configuration objects
+function deepMerge<T>(target: T, source: Partial<T>): T {
+  const result: any = { ...target };
+
+  for (const key in source) {
+    if (source.hasOwnProperty(key)) {
+      const sourceValue = source[key];
+
+      if (sourceValue !== null && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+        if (result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])) {
+          result[key] = deepMerge(result[key], sourceValue);
+        } else {
+          result[key] = { ...sourceValue };
+        }
+      } else {
+        result[key] = sourceValue;
+      }
+    }
+  }
+
+  return result;
+}
+
 const DEFAULT_CONFIG: GateServiceConfig = {
   enabled: true,
+  failClosedOnSemanticError: false, // Default to fail-open for backward compatibility
 };
 
 /**
@@ -32,7 +56,7 @@ export class CompositionalGateService implements IGateService {
   ) {
     this.logger = logger;
     this.gateGuidanceRenderer = gateGuidanceRenderer;
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = deepMerge(DEFAULT_CONFIG, config || {});
   }
 
   async enhancePrompt(
@@ -116,6 +140,6 @@ export class CompositionalGateService implements IGateService {
   }
 
   updateConfig(config: Partial<GateServiceConfig>): void {
-    this.config = { ...this.config, ...config };
+    this.config = deepMerge(this.config, config);
   }
 }

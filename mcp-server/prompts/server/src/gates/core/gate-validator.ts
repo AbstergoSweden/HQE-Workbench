@@ -47,11 +47,24 @@ export interface GateValidationStatistics {
 
 /**
  * Core gate validator with pass/fail logic
+ *
+ * The GateValidator provides the core validation infrastructure for gate-based quality control.
+ * It handles validation of content against various criteria types including content checks,
+ * pattern matching, and LLM-based self-checks.
+ *
+ * Key features:
+ * - Validation framework and gate loading
+ * - Statistics tracking and retry logic
+ * - LLM self-check stub (for future implementation)
+ * - Retry hints generation
+ * - Comprehensive error handling and logging
+ * - Regex pattern caching for performance optimization
  */
 export class GateValidator {
   private logger: Logger;
   private gateLoader: GateDefinitionProvider;
   private llmConfig: LLMIntegrationConfig | undefined;
+  private readonly regexCache: Map<string, RegExp> = new Map();
   private validationStats: GateValidationStatistics = {
     totalValidations: 0,
     successfulValidations: 0,
@@ -169,10 +182,14 @@ export class GateValidator {
    */
   async validateGates(gateIds: string[], context: ValidationContext): Promise<ValidationResult[]> {
     const startTime = Date.now();
-    const results: ValidationResult[] = [];
 
-    for (const gateId of gateIds) {
-      const result = await this.validateGate(gateId, context);
+    // Run validations in parallel for better performance
+    const validationPromises = gateIds.map(gateId => this.validateGate(gateId, context));
+    const allResults = await Promise.all(validationPromises);
+
+    // Filter out null results and update statistics
+    const results: ValidationResult[] = [];
+    for (const result of allResults) {
       if (result !== null) {
         results.push(result);
 
@@ -274,6 +291,62 @@ export class GateValidator {
    *
    * Current behavior: Gracefully skips when LLM not configured
    */
+  /**
+   * Validates LLM configuration parameters to ensure they are properly set
+   *
+   * This method performs comprehensive validation of LLM integration configuration:
+   * - Verifies API key is present and not empty
+   * - Ensures model is specified and not empty
+   * - Validates maxTokens is within acceptable range (1 to 1,000,000)
+   * - Checks temperature is within valid range (0 to 2)
+   * - Validates endpoint URL format if provided
+   *
+   * @param llmConfig - The LLM integration configuration to validate
+   * @returns null if valid, or an error message string if validation fails
+   */
+  private validateLLMConfig(llmConfig: LLMIntegrationConfig): string | null {
+    if (!llmConfig.apiKey || llmConfig.apiKey.trim() === '') {
+      return 'LLM API key is missing or empty';
+    }
+
+    if (!llmConfig.model || llmConfig.model.trim() === '') {
+      return 'LLM model is missing or empty';
+    }
+
+    if (llmConfig.maxTokens !== undefined && (llmConfig.maxTokens <= 0 || llmConfig.maxTokens > 1000000)) {
+      return 'LLM maxTokens must be between 1 and 1,000,000';
+    }
+
+    if (llmConfig.temperature !== undefined && (llmConfig.temperature < 0 || llmConfig.temperature > 2)) {
+      return 'LLM temperature must be between 0 and 2';
+    }
+
+    // Validate endpoint URL format if present
+    if (llmConfig.endpoint) {
+      try {
+        new URL(llmConfig.endpoint);
+      } catch (e) {
+        return `LLM endpoint is not a valid URL: ${llmConfig.endpoint}`;
+      }
+    }
+
+    return null; // No validation errors
+  }
+
+  /**
+   * Runs LLM-based self-check validation for the given criteria and context.
+   *
+   * This method performs LLM-based validation with comprehensive error handling:
+   * - Validates LLM configuration parameters before execution
+   * - Handles missing or invalid endpoint configurations
+   * - Manages API key and model validation
+   * - Provides appropriate feedback when LLM integration is disabled
+   * - Implements graceful fallback when LLM services are unavailable
+   *
+   * @param criteria - The validation criteria to check
+   * @param context - The validation context containing content and metadata
+   * @returns A ValidationCheck result with pass/fail status and details
+   */
   private async runLLMSelfCheck(
     criteria: GatePassCriteria,
     context: ValidationContext
@@ -296,15 +369,31 @@ export class GateValidator {
       };
     }
 
+    // Validate LLM configuration parameters
+    const validationError = this.validateLLMConfig(llmConfig);
+    if (validationError) {
+      this.logger.warn(`[LLM GATE] LLM configuration validation failed: ${validationError}`);
+      return {
+        type: 'llm_self_check',
+        passed: false,
+        score: 0,
+        message: `LLM configuration validation failed: ${validationError}`,
+        details: {
+          validationError,
+          reason: 'Invalid LLM configuration parameters',
+        },
+      };
+    }
+
     if (llmConfig.endpoint === undefined || llmConfig.endpoint === '') {
       this.logger.warn('[LLM GATE] LLM self-check skipped - no endpoint configured');
       return {
         type: 'llm_self_check',
-        passed: true,
-        score: 1.0,
-        message: 'LLM validation skipped (no endpoint configured)',
+        passed: false, // Changed to fail when no endpoint is configured
+        score: 0,
+        message: 'LLM validation failed (no endpoint configured)',
         details: {
-          skipped: true,
+          skipped: false,
           reason: 'No LLM endpoint configured',
           configPath: 'config.analysis.semanticAnalysis.llmIntegration.endpoint',
         },
@@ -344,6 +433,26 @@ export class GateValidator {
     }
   }
 
+  private getOrCreateRegex(pattern: string, flags: string = 'i'): RegExp {
+    const cacheKey = `${pattern}:${flags}`;
+    const cached = this.regexCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const regex = new RegExp(pattern, flags);
+    this.regexCache.set(cacheKey, regex);
+    return regex;
+  }
+
+  /**
+   * Clears the regex cache to free up memory
+   * Useful for long-running processes to prevent memory accumulation
+   */
+  clearRegexCache(): void {
+    this.regexCache.clear();
+  }
+
   private runContentCheck(criteria: GatePassCriteria, context: ValidationContext): ValidationCheck {
     const content = context.content ?? '';
     const messages: string[] = [];
@@ -362,7 +471,7 @@ export class GateValidator {
     if (criteria.required_patterns && criteria.required_patterns.length > 0) {
       for (const pattern of criteria.required_patterns) {
         try {
-          const regex = new RegExp(pattern, 'i');
+          const regex = this.getOrCreateRegex(pattern, 'i');
           if (!regex.test(content)) {
             passed = false;
             messages.push(`Missing required pattern: ${pattern}`);
@@ -376,7 +485,7 @@ export class GateValidator {
     if (criteria.forbidden_patterns && criteria.forbidden_patterns.length > 0) {
       for (const pattern of criteria.forbidden_patterns) {
         try {
-          const regex = new RegExp(pattern, 'i');
+          const regex = this.getOrCreateRegex(pattern, 'i');
           if (regex.test(content)) {
             passed = false;
             messages.push(`Contains forbidden pattern: ${pattern}`);
@@ -403,7 +512,7 @@ export class GateValidator {
     if (criteria.regex_patterns && criteria.regex_patterns.length > 0) {
       for (const pattern of criteria.regex_patterns) {
         try {
-          const regex = new RegExp(pattern, 'i');
+          const regex = this.getOrCreateRegex(pattern, 'i');
           if (!regex.test(content)) {
             passed = false;
             messages.push(`Missing regex pattern: ${pattern}`);
@@ -416,10 +525,15 @@ export class GateValidator {
 
     if (criteria.keyword_count) {
       for (const [keyword, count] of Object.entries(criteria.keyword_count)) {
-        const found = (content.match(new RegExp(keyword, 'gi')) || []).length;
-        if (found < count) {
-          passed = false;
-          messages.push(`Keyword '${keyword}' appears ${found}/${count} times`);
+        try {
+          const regex = this.getOrCreateRegex(keyword, 'gi');
+          const found = (content.match(regex) || []).length;
+          if (found < count) {
+            passed = false;
+            messages.push(`Keyword '${keyword}' appears ${found}/${count} times`);
+          }
+        } catch {
+          messages.push(`Invalid keyword regex pattern: ${keyword}`);
         }
       }
     }

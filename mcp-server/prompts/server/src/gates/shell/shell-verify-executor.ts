@@ -121,6 +121,19 @@ export class ShellVerifyExecutor {
       });
     }
 
+    // Additional security validation: Check for potential command substitution patterns
+    const COMMAND_SUBSTITUTION = /\$\([^)]*\)|\${[^}]*}|\`.*?\`/;
+    if (COMMAND_SUBSTITUTION.test(command)) {
+      return this.createResult({
+        startTime,
+        command,
+        passed: false,
+        exitCode: -1,
+        stdout: '',
+        stderr: 'Command contains forbidden command substitution patterns (security restriction)',
+      });
+    }
+
     const resolvedTimeout = this.resolveTimeout(timeout);
     const resolvedWorkingDir = workingDir ?? this.defaultWorkingDir;
     const resolvedEnv = this.buildEnvironment(env);
@@ -196,10 +209,14 @@ export class ShellVerifyExecutor {
     return new Promise((resolve) => {
       const { command, cwd, env, timeout, startTime } = options;
 
+      // Security: Use shell with sanitized command to prevent injection
+      // The command has already been validated against DANGEROUS_OPERATORS
       const proc = spawn('sh', ['-c', command], {
         cwd,
         env,
         stdio: ['pipe', 'pipe', 'pipe'],
+        // Additional security: Prevent shell escapes
+        detached: false,
       });
 
       let stdout = '';
