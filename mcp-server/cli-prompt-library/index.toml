@@ -221,12 +221,6 @@ tags = ["presentation", "slides", "talks"]
 
 [[categories.prompts]]
 name = "blog-post"
-file = "commands/writing/blog-post.toml"
+file = "commands/writing/technical-blog.toml"
 description = "Write technical blog posts and articles"
 tags = ["blog", "writing", "content"]
-
-[[categories.prompts]]
-name = "documentation"
-file = "commands/writing/documentation.toml"
-description = "Write comprehensive technical documentation"
-tags = ["documentation", "technical-writing"]

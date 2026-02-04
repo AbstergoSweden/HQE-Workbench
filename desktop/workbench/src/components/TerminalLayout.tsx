@@ -13,7 +13,7 @@ interface NavItem {
 
 export function TerminalLayout({ children }: TerminalLayoutProps) {
   const location = useLocation()
-  
+
   const navItems: NavItem[] = [
     { path: '/', label: 'home', shortcut: '⌘1' },
     { path: '/scan', label: 'scan', shortcut: '⌘2' },
@@ -28,17 +28,17 @@ export function TerminalLayout({ children }: TerminalLayoutProps) {
     <div className="flex h-screen terminal-bg" style={{ backgroundColor: 'var(--dracula-bg)' }}>
       {/* Scanline Effect */}
       <div className="scanline" />
-      
+
       {/* Sidebar */}
-      <aside 
+      <aside
         className="w-64 flex flex-col border-r"
-        style={{ 
+        style={{
           backgroundColor: 'var(--dracula-bg)',
           borderColor: 'var(--dracula-comment)'
         }}
       >
         {/* Header */}
-        <div 
+        <div
           className="px-4 py-3 border-b"
           style={{ borderColor: 'var(--dracula-comment)' }}
         >
@@ -52,27 +52,27 @@ export function TerminalLayout({ children }: TerminalLayoutProps) {
             v0.1.0 | protocol v3.0
           </div>
         </div>
-        
+
         {/* Navigation */}
         <nav className="flex-1 py-2">
           <div className="px-3 py-2 text-xs uppercase tracking-wider" style={{ color: 'var(--dracula-comment)' }}>
             Navigation
           </div>
-          
+
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               className="flex items-center justify-between px-3 py-2 mx-2 text-sm transition-all duration-150"
               style={{
-                backgroundColor: isActive(item.path) 
-                  ? 'var(--dracula-current-line)' 
+                backgroundColor: isActive(item.path)
+                  ? 'var(--dracula-current-line)'
                   : 'transparent',
-                borderLeft: isActive(item.path) 
-                  ? '2px solid var(--dracula-green)' 
+                borderLeft: isActive(item.path)
+                  ? '2px solid var(--dracula-green)'
                   : '2px solid transparent',
-                color: isActive(item.path) 
-                  ? 'var(--dracula-green)' 
+                color: isActive(item.path)
+                  ? 'var(--dracula-green)'
                   : 'var(--dracula-fg)',
               }}
               onMouseEnter={(e) => {
@@ -100,14 +100,14 @@ export function TerminalLayout({ children }: TerminalLayoutProps) {
             </Link>
           ))}
         </nav>
-        
+
         {/* Status Panel */}
-        <div 
+        <div
           className="px-3 py-3 border-t text-xs"
           style={{ borderColor: 'var(--dracula-comment)' }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <div 
+            <div
               className="w-2 h-2 rounded-full animate-pulse"
               style={{ backgroundColor: 'var(--dracula-green)' }}
             />
@@ -118,13 +118,13 @@ export function TerminalLayout({ children }: TerminalLayoutProps) {
           </div>
         </div>
       </aside>
-      
+
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header 
+        <header
           className="h-10 flex items-center px-4 border-b justify-between"
-          style={{ 
+          style={{
             backgroundColor: 'var(--dracula-bg)',
             borderColor: 'var(--dracula-comment)'
           }}
@@ -144,19 +144,19 @@ export function TerminalLayout({ children }: TerminalLayoutProps) {
             <span>tauri 2.0</span>
           </div>
         </header>
-        
+
         {/* Content Area */}
-        <div 
-          className="flex-1 overflow-auto p-6"
+        <div
+          className="flex-1 overflow-hidden relative"
           style={{ backgroundColor: 'var(--dracula-bg)' }}
         >
           {children}
         </div>
-        
+
         {/* Bottom Status Bar */}
-        <footer 
+        <footer
           className="h-6 flex items-center px-3 text-xs border-t"
-          style={{ 
+          style={{
             backgroundColor: 'var(--dracula-current-line)',
             borderColor: 'var(--dracula-comment)',
             color: 'var(--dracula-comment)'
