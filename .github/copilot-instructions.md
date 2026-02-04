@@ -9,6 +9,8 @@ HQE Workbench is a local-first macOS desktop application and CLI tool for runnin
 - **Tauri v2 desktop app** - Native macOS application with web frontend
 - **Security-first design** - Local-only mode, secret redaction, keychain storage
 - **Protocol-driven** - Implements HQE Protocol v4.2.1 (YAML schema in `protocol/`)
+- **macOS only** - Development and releases target macOS 12.0+
+- **Agent Prompts MCP server** - Node/TypeScript MCP server + prompt library in `mcp-server/`
 
 ## Build, Test, and Lint
 
@@ -26,18 +28,21 @@ HQE Workbench is a local-first macOS desktop application and CLI tool for runnin
 # Run all Rust tests
 cargo test --workspace
 
+# Run Rust tests with SQLCipher (requires library installed)
+cargo test --workspace --features sqlcipher-tests
+
 # Run single Rust crate tests
 cargo test -p hqe-core
 cargo test -p hqe-openai
 
-# Run single test
-cargo test --test integration_test test_name
+# Run a single Rust test (example)
+cargo test -p hqe-ingest --test integration_test test_ingestion_engine_detects_new_topic
 
 # Run frontend tests (from desktop/workbench)
 cd desktop/workbench && npm test
 
-# Watch mode for frontend
-cd desktop/workbench && npm test -- --watch
+# Run a single frontend test (Vitest)
+npm test -- <test_file_or_pattern>
 ```
 
 ### Linting and Formatting
@@ -78,31 +83,23 @@ cargo build --workspace
 ./scripts/validate_protocol.sh
 ```
 
+### MCP server (mcp-server/prompts/server)
+```bash
+cd mcp-server/prompts/server
+
+# Build/typecheck
+npm run build
+npm run typecheck
+
+# Lint
+npm run lint
+
+# Tests
+npm test
+npm run test:unit -- tests/unit/<name>.test.ts
+```
+
 ## Architecture
-
-### Workspace Structure
-
-```
-hqe-workbench/
-├── desktop/workbench/          # Tauri v2 desktop app (React + TypeScript)
-│   ├── src/                 # React frontend
-│   ├── src-tauri/          # Tauri Rust backend
-│   └── vite.config.ts      # Dev server on port 1420
-├── cli/hqe/                # CLI entry point (Rust)
-├── crates/                 # Shared Rust libraries
-│   ├── hqe-core/           # Core scan pipeline, models, redaction
-│   ├── hqe-openai/         # OpenAI-compatible LLM client
-│   ├── hqe-git/            # Git operations wrapper
-│   ├── hqe-artifacts/      # Report and manifest generation
-│   ├── hqe-protocol/       # Protocol schema types
-│   ├── hqe-mcp/            # Model Context Protocol
-│   ├── hqe-ingest/         # Content ingestion
-│   ├── hqe-vector/         # Vector operations
-│   └── hqe-flow/           # Flow control
-├── protocol/               # HQE Protocol v4.2.1 (YAML schemas)
-├── scripts/                # Build and utility scripts
-└── docs/                   # Architecture documentation
-```
 
 ### Key Crates and Responsibilities
 
@@ -133,6 +130,15 @@ Report and manifest generation.
 - **Responsibilities:** Markdown report rendering, JSON serialization, file output management
 - **Key types:** `ArtifactWriter`
 
+#### `hqe-mcp` + `hqe-flow`
+Thinktank prompt library and protocol workflow execution.
+
+#### Agent Prompts MCP server (`mcp-server/prompts/server`)
+Node/TypeScript MCP server used for prompt management; prompt catalogs live in `mcp-server/cli-prompt-library` and `mcp-server/cli-security`.
+
+#### Tauri app
+React UI in `desktop/workbench/src` calls Rust commands in `desktop/workbench/src-tauri` to access the scan pipeline.
+
 ### Data Flow
 
 1. **User Input** → CLI or Desktop UI
@@ -144,12 +150,10 @@ Report and manifest generation.
 
 ### Frontend Architecture
 
-- **Framework:** React 18.2.0 with TypeScript 5.3.0
+- **Framework:** React + TypeScript (Tauri WebView)
 - **State management:** Zustand (global state)
-- **Routing:** react-router-dom
 - **Styling:** Tailwind CSS
-- **Testing:** Vitest
-- **Build tool:** Vite 5.0.0
+- **Build tool:** Vite
 - **Entry point:** `desktop/workbench/src/main.tsx`
 
 ## Key Conventions
@@ -208,14 +212,17 @@ pub enum HqeError {
 
 - **Workspace dependencies** - Shared deps defined in root `Cargo.toml` under `[workspace.dependencies]`
 - **Version pinning** - Use workspace versions: `tokio = { workspace = true }`
-- **Security auditing** - `cargo audit` runs in CI
+
+### MCP Server Conventions
+
+- **Node runtime** - `mcp-server/prompts/server` requires Node.js >= 18.18.
+- **Contracts are generated** - Update `mcp-server/prompts/server/tooling/contracts/*.json`, then run `npm run generate:contracts`; do not edit `src/tooling/contracts/_generated` directly.
+- **Operational rules** - Follow `mcp-server/prompts/MCP_SERVER_HANDBOOK.md` for prompt/gate/methodology workflows.
 
 ### Testing Patterns
 
 - **Integration tests** - Place in `crates/*/tests/*.rs` (separate from `src/`)
 - **Unit tests** - Place in same file as code under `#[cfg(test)] mod tests { ... }`
-- **Test utilities** - Use `pretty_assertions` for readable diffs, `mockito` for HTTP mocks
-- **Frontend tests** - Use Vitest, place alongside components as `*.test.tsx`
 
 ### Commit Messages
 
@@ -225,6 +232,12 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `docs: update readme`
 - `test(git): add patch application tests`
 
+### Branch Naming
+
+- `feat/` for features
+- `fix/` for bug fixes
+- `docs/` for documentation updates
+
 ## Protocol-Driven Development
 
 The HQE Protocol (v4.2.1) is the source of truth for scan phases, report structure, and findings format.
@@ -232,76 +245,3 @@ The HQE Protocol (v4.2.1) is the source of truth for scan phases, report structu
 - **Schema location:** `protocol/hqe-engineer.yaml`
 - **Validation required:** Run `./scripts/validate_protocol.sh` before commits
 - **Changes propagate:** Protocol changes require updates to Rust types in `crates/hqe-protocol/`
-
-## Common Tasks
-
-### Adding a new scan heuristic
-1. Add logic to `crates/hqe-core/src/scan.rs` or `crates/hqe-core/src/repo.rs`
-2. Update `ScanPipeline` to call your heuristic
-3. Add tests in `crates/hqe-core/tests/` or inline `#[cfg(test)]`
-4. Validate output matches protocol schema
-
-### Adding a new LLM provider
-1. Implement client in `crates/hqe-openai/src/` (even if not OpenAI)
-2. Add configuration to `ProviderProfile`
-3. Update CLI args in `cli/hqe/src/main.rs` to accept new provider
-4. Add integration test with `mockito` HTTP mocking
-
-### Modifying the desktop UI
-1. Edit React components in `desktop/workbench/src/`
-2. Use Zustand stores for state (see existing stores)
-3. Run `cd desktop/workbench && npm run lint` before committing
-4. Test with `./scripts/dev.sh` (auto-reloads on save)
-
-### Adding a new crate
-1. Add to `Cargo.toml` workspace members: `members = ["crates/new-crate"]`
-2. Create `crates/new-crate/Cargo.toml` with workspace dependencies
-3. Export main types from `crates/new-crate/src/lib.rs`
-4. Add to dependent crates via workspace path: `new-crate = { path = "crates/new-crate" }`
-
-## Files to Check Before Modifying
-
-- **Protocol changes:** `protocol/hqe-engineer.yaml` + run validation script
-- **Core models:** `crates/hqe-core/src/models.rs` (used across all crates)
-- **CLI arguments:** `cli/hqe/src/main.rs` (uses `clap` derive macros)
-- **Frontend state:** `desktop/workbench/src/stores/` (Zustand stores)
-- **Build config:** Root `Cargo.toml` for Rust, `desktop/workbench/package.json` for frontend
-
-## Tauri-Specific Notes
-
-- **Commands** - Rust functions exposed to frontend via `#[tauri::command]` in `desktop/workbench/src-tauri/src/main.rs`
-- **Permissions** - Configure in `desktop/workbench/src-tauri/tauri.conf.json`
-- **Plugins** - Tauri v2 uses plugins for fs, dialog, shell (see `desktop/workbench/package.json` dependencies)
-- **IPC** - Frontend calls backend via `@tauri-apps/api`: `import { invoke } from '@tauri-apps/api/core'`
-
-## GitHub MCP Server Integration
-
-The GitHub MCP server is configured and available in Copilot Chat for this repository.
-
-**Available capabilities:**
-- **Workflows:** List and inspect CI/Security workflows, check run status, download logs
-- **Issues:** Search, read, and track issues (currently 0 open issues)
-- **Pull Requests:** List, review, get diffs, check status and review comments
-- **Commits:** View commit history, diffs, and file changes
-- **Branches:** List branches and compare changes
-- **Code Search:** Search across the repository codebase
-
-**Example queries you can ask Copilot:**
-- "Show me the latest CI workflow runs"
-- "What failed in the last Security workflow?"
-- "List recent commits on main branch"
-- "Search for uses of RedactionEngine in the codebase"
-- "Show me open pull requests"
-
-**Repository details:**
-- Owner: `AbstergoSweden`
-- Repo: `HQE-Workbench`
-- Active workflows: CI, Security
-
-## Development Tips
-
-- **Fast iteration:** Use `./scripts/dev.sh` for hot-reloading frontend + Rust backend
-- **Debug logging:** Set `RUST_LOG=debug` to see tracing output
-- **Protocol validation:** Auto-runs in `./scripts/dev.sh`, but explicitly run `./scripts/validate_protocol.sh` if modifying protocol
-- **Preflight checks:** Always run `npm run preflight` before pushing (runs tests, linting, formatting checks)
-- **macOS only:** This project targets macOS 12.0+; Linux/Windows support not planned
