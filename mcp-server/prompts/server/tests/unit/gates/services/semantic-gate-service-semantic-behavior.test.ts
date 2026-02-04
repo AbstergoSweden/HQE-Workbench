@@ -30,7 +30,7 @@ describe('SemanticGateService - Semantic Validation Behavior', () => {
     mockValidator = createMockGateValidator();
   });
 
-  test('should return validation results with semantic-skipped when semantic validation is enabled but not implemented (fail-open)', async () => {
+  test('should return validation results with status "skipped" when semantic validation is enabled but not implemented (fail-open)', async () => {
     service = new SemanticGateService(mockLogger, mockRenderer, mockValidator);
     service.updateConfig({
       llmIntegration: { enabled: true },
@@ -46,13 +46,14 @@ describe('SemanticGateService - Semantic Validation Behavior', () => {
       expect(validation.gateId).toMatch(/^(gate1|gate2)$/);
       expect(validation.passed).toBe(true); // Should pass in fail-open mode
       expect(validation.score).toBe(0); // Zero confidence
-      expect(validation.validatedBy).toBe('semantic-skipped');
+      expect(validation.validatedBy).toBe('semantic');
+      expect(validation.status).toBe('skipped');
       expect(validation.feedback).toContain('was skipped - LLM integration not implemented');
       expect(validation.feedback).toContain('fail-open mode');
     }
   });
 
-  test('should return validation results with semantic-not-implemented when semantic validation is enabled but not implemented (fail-closed)', async () => {
+  test('should return validation results with status "not-implemented" when semantic validation is enabled but not implemented (fail-closed)', async () => {
     service = new SemanticGateService(mockLogger, mockRenderer, mockValidator);
     service.updateConfig({
       llmIntegration: { enabled: true },
@@ -68,7 +69,8 @@ describe('SemanticGateService - Semantic Validation Behavior', () => {
       expect(validation.gateId).toMatch(/^(gate1|gate2)$/);
       expect(validation.passed).toBe(false); // Should fail in fail-closed mode
       expect(validation.score).toBe(0); // Zero confidence
-      expect(validation.validatedBy).toBe('semantic-not-implemented');
+      expect(validation.validatedBy).toBe('semantic');
+      expect(validation.status).toBe('not-implemented');
       expect(validation.feedback).toContain('failed - LLM integration not implemented');
       expect(validation.feedback).toContain('fail-closed mode');
     }
@@ -105,7 +107,8 @@ describe('SemanticGateService - Semantic Validation Behavior', () => {
     expect(result.validationResults).toHaveLength(1);
     expect(result.validationResults![0].gateId).toBe('gate1');
     expect(result.validationResults![0].passed).toBe(false);
-    expect(result.validationResults![0].validatedBy).toBe('semantic-error');
+    expect(result.validationResults![0].validatedBy).toBe('semantic');
+    expect(result.validationResults![0].status).toBe('error');
     expect(result.validationResults![0].feedback).toContain('Test semantic validation error');
 
     // Restore the original method

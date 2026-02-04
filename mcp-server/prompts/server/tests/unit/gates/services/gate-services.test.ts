@@ -104,7 +104,8 @@ describe('SemanticGateService', () => {
     expect(validationResult.passed).toBe(true); // Allow flow to continue in fail-open mode
     expect(validationResult.score).toBe(0); // Zero confidence in validation that didn't happen
     expect(validationResult.feedback).toBe('Semantic validation for gate was skipped - LLM integration not implemented (fail-open mode).');
-    expect(validationResult.validatedBy).toBe('semantic-skipped');
+    expect(validationResult.validatedBy).toBe('semantic');
+    expect(validationResult.status).toBe('skipped');
     expect(typeof validationResult.timestamp).toBe('number');
     expect(result.injectedGateIds).toEqual(['gate']);
     expect(service.supportsValidation()).toBe(true);

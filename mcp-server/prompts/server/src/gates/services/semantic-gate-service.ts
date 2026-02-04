@@ -18,33 +18,39 @@ const SEMANTIC_VALIDATION_NO_CONFIDENCE = 0;
 // const SEMANTIC_VALIDATION_FULL_CONFIDENCE = 1.0;
 
 // Utility function for deep merging configuration objects
-function deepMerge<T>(target: T, source: Partial<T>): T {
-  const result: any = { ...target };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deepMerge(target: any, source: any): any {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const result = { ...target };
 
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       const sourceValue = source[key];
 
-      if (
-        sourceValue !== null &&
-        typeof sourceValue === 'object' &&
-        !Array.isArray(sourceValue)
-      ) {
+      if (sourceValue !== null && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
         if (
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           result[key] !== null &&
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           typeof result[key] === 'object' &&
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           !Array.isArray(result[key])
         ) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
           result[key] = deepMerge(result[key], sourceValue);
         } else {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           result[key] = { ...sourceValue };
         }
-      } else {
+      } else if (sourceValue !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         result[key] = sourceValue;
       }
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return result;
 }
 
@@ -100,7 +106,8 @@ export class SemanticGateService implements IGateService {
   ) {
     this.logger = logger;
     this.gateValidator = gateValidator;
-    this.config = deepMerge(DEFAULT_SEMANTIC_CONFIG, config || {});
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    this.config = deepMerge(DEFAULT_SEMANTIC_CONFIG, config ?? {});
     this.compositionalService = new CompositionalGateService(
       logger,
       gateGuidanceRenderer,
@@ -204,6 +211,7 @@ export class SemanticGateService implements IGateService {
   }
 
   updateConfig(config: Partial<GateServiceConfig>): void {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.config = deepMerge(this.config, config);
     this.compositionalService.updateConfig(this.config);
   }
@@ -260,54 +268,42 @@ export class SemanticGateService implements IGateService {
       this.logger.info('[SemanticGateService] Performing semantic validation', {
         promptId: prompt.id,
         gateIds: validatedGateIds,
-        contextHasFramework: !!context.framework,
-        contextHasCategory: !!context.category,
-        contextHasExplicitGateIds: !!context.explicitGateIds,
+        contextHasFramework: context.framework !== undefined,
+        contextHasCategory: context.category !== undefined,
+        contextHasExplicitGateIds: context.explicitGateIds !== undefined,
       });
 
       // TODO: Connect actual LLM client for true semantic validation
-      // For now, we return results that clearly indicate semantic validation was skipped
-      // when semantic validation is enabled but not actually implemented.
+      // For now, we interact with the fail-closed/fail-open logic.
 
-      // If failClosedOnSemanticError is true, we should fail the validation if implementation is missing?
-      // Or should we simulate success?
-      // The user prompt says: "If semantic is enabled but not implemented, returned results must contain a machine-readable status that indicates skipped or not_implemented."
-      // It also says: "fail-closed => semantic layer returns failures for each gateId (passed=false) if error"
-      // But unimplemented is not necessarily an error if we are just simulating.
-      // However, the previous logic (failClosed checks) seemed to imply we should fail if we can't do it.
-      // But the current implementation IS a simulation stub.
-      // Let's stick to "not-implemented" or "simulated".
+      const isFailClosed = this.config.failClosedOnSemanticError === true;
 
-      // Since it's a stub, let's treat it as "simulated" success for now to unblock the user's flow, as per their initial request ("For now, we simulate a successful validation").
-      // But strict adherence to "fail-closed" usually implies valid checks MUST pass. If we can't check, we fail.
-      // But if we are "simulating", we are pretending we checked.
-      // I will follow the user's request: "machine-readable status that indicates skipped or not_implemented"
+      // Check if we can actually perform validation (mock check for now)
+      // Since LLM is not hooked up, we are "not implemented"
 
-      // Actually, if I return 'not-implemented' with passed=false, it will block execution in fail-closed mode.
-      // If I return 'simulated' with passed=true, it allows execution.
-      // The user wants "enable semantics are proven by tests" and "semantic 'not implemented' cannot be confused with a true pass".
-
-      // I will return `passed: true` (to allow progress) BUT `status: 'simulated'` or `status: 'not-implemented'`.
-      // Wait, if `passed: true`, then it IS allowed.
-      // If `failClosedOnSemanticError` is set, technically we haven't validated, so maybe we should fail?
-      // But usually local development requires unblocking.
-      // I'll make it configurable? No, keep it simple.
-
-      // I will use `status: 'simulated'` and `passed: true`.
-      // UNLESS `failClosedOnSemanticError` is true AND we consider "simulation" as "failure to validate".
-      // But the prompt says "For now, we simulate a successful validation to allow the 'deep-scan' and other prompts to proceed".
-      // So I will assume `passed: true` is desired for the stub.
-
-      return validatedGateIds.map((gateId) => ({
-        gateId,
-        passed: true,
-        score: SEMANTIC_VALIDATION_NO_CONFIDENCE,
-        feedback: `Semantic validation for ${gateId} passed checks (simulated).`,
-        validatedBy: 'semantic',
-        status: 'simulated',
-        timestamp: currentTime,
-      }));
-
+      if (isFailClosed) {
+        // Fail-closed: If we logic is not implemented, we must fail.
+        return validatedGateIds.map((gateId) => ({
+          gateId,
+          passed: false,
+          score: SEMANTIC_VALIDATION_NO_CONFIDENCE,
+          feedback: `Semantic validation for ${gateId} failed - LLM integration not implemented (fail-closed mode).`,
+          validatedBy: 'semantic',
+          status: 'not-implemented',
+          timestamp: currentTime,
+        }));
+      } else {
+        // Fail-open: If logic not implemented, we skip and pass.
+        return validatedGateIds.map((gateId) => ({
+          gateId,
+          passed: true,
+          score: SEMANTIC_VALIDATION_NO_CONFIDENCE,
+          feedback: `Semantic validation for ${gateId} was skipped - LLM integration not implemented (fail-open mode).`,
+          validatedBy: 'semantic',
+          status: 'skipped',
+          timestamp: currentTime,
+        }));
+      }
     } catch (error) {
       this.logger.error('[SemanticGateService] Unexpected error during semantic validation', {
         error: error instanceof Error ? error.message : String(error),
