@@ -11,9 +11,12 @@
 //! ```
 
 use crate::system_prompt::SystemPromptGuard;
+pub use hqe_protocol::PromptCategory;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};
+
+const REGEX_SIZE_LIMIT_BYTES: usize = 1024 * 1024;
 
 /// Errors that can occur during prompt execution
 #[derive(Debug, Clone, thiserror::Error)]
@@ -74,40 +77,6 @@ pub struct PromptTemplate {
     pub compatibility: Compatibility,
     /// Allowed MCP tools (if any)
     pub allowed_tools: Vec<String>,
-}
-
-/// Categories for prompt classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PromptCategory {
-    /// Security analysis prompts
-    Security,
-    /// Code quality prompts
-    Quality,
-    /// Refactoring prompts
-    Refactor,
-    /// Code explanation prompts
-    Explain,
-    /// Testing prompts
-    Test,
-    /// Documentation prompts
-    Document,
-    /// Custom user prompts
-    Custom,
-}
-
-impl std::fmt::Display for PromptCategory {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PromptCategory::Security => write!(f, "Security"),
-            PromptCategory::Quality => write!(f, "Quality"),
-            PromptCategory::Refactor => write!(f, "Refactor"),
-            PromptCategory::Explain => write!(f, "Explain"),
-            PromptCategory::Test => write!(f, "Test"),
-            PromptCategory::Document => write!(f, "Document"),
-            PromptCategory::Custom => write!(f, "Custom"),
-        }
-    }
 }
 
 /// Specification for a required input
@@ -352,12 +321,14 @@ impl PromptRunner {
 
                         // Regex validation
                         if let Some(pattern) = &spec.validation {
-                            let regex = regex::Regex::new(pattern).map_err(|e| {
-                                PromptRunnerError::InvalidInput {
+                            let regex = regex::RegexBuilder::new(pattern)
+                                .size_limit(REGEX_SIZE_LIMIT_BYTES)
+                                .dfa_size_limit(REGEX_SIZE_LIMIT_BYTES)
+                                .build()
+                                .map_err(|e| PromptRunnerError::InvalidInput {
                                     field: spec.name.clone(),
                                     reason: format!("Invalid validation pattern: {}", e),
-                                }
-                            })?;
+                                })?;
                             if !regex.is_match(value) {
                                 return Err(PromptRunnerError::InvalidInput {
                                     field: spec.name.clone(),
@@ -423,6 +394,22 @@ impl PromptRunner {
         Ok(result)
     }
 
+    fn truncate_to_bytes(input: &str, max_bytes: usize) -> String {
+        if input.len() <= max_bytes {
+            return input.to_string();
+        }
+
+        let mut end = 0;
+        for (idx, ch) in input.char_indices() {
+            let next = idx + ch.len_utf8();
+            if next > max_bytes {
+                break;
+            }
+            end = next;
+        }
+        input[..end].to_string()
+    }
+
     /// Build the delimited untrusted context block
     fn build_context_block(
         &self,
@@ -434,22 +421,11 @@ impl PromptRunner {
         }
 
         let max_size = max_size.unwrap_or(self.config.max_context_bytes);
-        let mut total_size = 0usize;
+        let mut remaining_size = max_size;
         let mut blocks = Vec::new();
 
         for ctx in contexts {
-            // Check size limit
-            total_size += ctx.size_bytes;
-            if total_size > max_size {
-                warn!(
-                    total_size = total_size,
-                    max_size = max_size,
-                    "Context size limit exceeded, truncating"
-                );
-                blocks.push(format!(
-                    "--- BEGIN UNTRUSTED CONTEXT ---\nSource: {}\nType: {:?}\n\n[Content truncated due to size limit]\n\n--- END UNTRUSTED CONTEXT ---",
-                    ctx.source, ctx.content_type
-                ));
+            if remaining_size == 0 {
                 break;
             }
 
@@ -459,12 +435,27 @@ impl PromptRunner {
                 .replace("--- BEGIN UNTRUSTED CONTEXT ---", "[BEGIN_CONTEXT]")
                 .replace("--- END UNTRUSTED CONTEXT ---", "[END_CONTEXT]");
 
+            if escaped_content.len() > remaining_size {
+                warn!(
+                    remaining_size = remaining_size,
+                    max_size = max_size,
+                    "Context size limit exceeded, truncating"
+                );
+                let truncated = Self::truncate_to_bytes(&escaped_content, remaining_size);
+                blocks.push(format!(
+                    "--- BEGIN UNTRUSTED CONTEXT ---\nSource: {}\nType: {:?}\n\n{}\n\n[Content truncated due to size limit]\n\n--- END UNTRUSTED CONTEXT ---",
+                    ctx.source, ctx.content_type, truncated
+                ));
+                break;
+            }
+
             let block = format!(
                 "--- BEGIN UNTRUSTED CONTEXT ---\nSource: {}\nType: {:?}\n\n{}\n\n--- END UNTRUSTED CONTEXT ---",
                 ctx.source, ctx.content_type, escaped_content
             );
 
             blocks.push(block);
+            remaining_size = remaining_size.saturating_sub(escaped_content.len());
         }
 
         if blocks.is_empty() {
@@ -684,6 +675,41 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_inputs_regex_limit_rejects_oversized_pattern() {
+        let runner = PromptRunner::default();
+
+        let mut template = test_template();
+        template.required_inputs.push(InputSpec {
+            name: "pattern".to_string(),
+            description: "Regex pattern".to_string(),
+            input_type: InputType::String,
+            required: true,
+            default: None,
+            validation: Some("a".repeat(REGEX_SIZE_LIMIT_BYTES + 1)),
+        });
+
+        let mut inputs = HashMap::new();
+        inputs.insert("language".to_string(), "Rust".to_string());
+        inputs.insert("focus".to_string(), "security".to_string());
+        inputs.insert("code".to_string(), "fn main() {}".to_string());
+        inputs.insert("pattern".to_string(), "anything".to_string());
+
+        let request = PromptExecutionRequest {
+            prompt_template: template,
+            user_message: "Please analyze".to_string(),
+            inputs,
+            context: vec![],
+            max_context_size: None,
+        };
+
+        let result = runner.validate_inputs(&request);
+        assert!(matches!(
+            result,
+            Err(PromptRunnerError::InvalidInput { .. })
+        ));
+    }
+
+    #[test]
     fn test_substitute_template() {
         let runner = PromptRunner::default();
         let template = test_template();
@@ -727,6 +753,22 @@ mod tests {
         assert!(result.contains("src/main.rs"));
         assert!(result.contains("fn main()"));
         assert!(result.contains("UNTRUSTED"));
+    }
+
+    #[test]
+    fn test_build_context_block_truncates_and_preserves_prefix() {
+        let runner = PromptRunner::default();
+        let content = "0123456789";
+        let contexts = vec![UntrustedContext {
+            source: "src/main.rs".to_string(),
+            content_type: ContentType::SourceCode,
+            content: content.to_string(),
+            size_bytes: content.len(),
+        }];
+
+        let result = runner.build_context_block(&contexts, Some(5)).unwrap();
+        assert!(result.contains("01234"));
+        assert!(result.contains("[Content truncated due to size limit]"));
     }
 
     #[test]

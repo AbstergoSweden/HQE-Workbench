@@ -1,6 +1,6 @@
 use crate::llm::{run_llm, LlmResponse};
 use hqe_core::prompt_runner::{
-    Compatibility, InputSpec, InputType, PromptCategory, PromptExecutionRequest, PromptTemplate,
+    Compatibility, InputSpec, InputType, PromptExecutionRequest, PromptTemplate,
 };
 use hqe_openai::prompts::sanitize_for_prompt;
 use serde::{Deserialize, Serialize};
@@ -46,6 +46,7 @@ pub struct ExecutePromptResponse {
 pub async fn get_available_prompts(app: AppHandle) -> Result<Vec<PromptToolInfo>, String> {
     let prompts_dir = get_prompts_dir(&app).ok_or("Could not locate prompts directory")?;
 
+    hqe_mcp::PromptLoader::clear_cache(&prompts_dir);
     let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
     let loaded_tools = loader.load().map_err(|e| e.to_string())?;
 
@@ -67,6 +68,7 @@ pub async fn get_available_prompts_with_metadata(
 ) -> Result<Vec<PromptToolInfoWithMetadata>, String> {
     let prompts_dir = get_prompts_dir(&app).ok_or("Could not locate prompts directory")?;
 
+    hqe_mcp::PromptLoader::clear_cache(&prompts_dir);
     // Try to use the enhanced registry if available
     let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
     let mut registry = hqe_mcp::registry_v2::PromptRegistry::new(loader);
@@ -96,6 +98,7 @@ pub async fn get_available_prompts_with_metadata(
         }
         Err(_) => {
             // Fallback to basic loader
+            hqe_mcp::PromptLoader::clear_cache(&prompts_dir);
             let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
             let loaded_tools = loader.load().map_err(|e| e.to_string())?;
 
@@ -284,6 +287,7 @@ fn build_inputs(args: &serde_json::Value) -> std::collections::HashMap<String, S
 
 fn resolve_prompt_template(app: &AppHandle, tool_name: &str) -> Result<PromptTemplate, String> {
     let prompts_dir = get_prompts_dir(app).ok_or("Could not locate prompts directory")?;
+    hqe_mcp::PromptLoader::clear_cache(&prompts_dir);
     let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
     let mut registry = hqe_mcp::registry_v2::PromptRegistry::new(loader);
     registry.load_all().map_err(|e| e.to_string())?;
@@ -296,7 +300,7 @@ fn resolve_prompt_template(app: &AppHandle, tool_name: &str) -> Result<PromptTem
     Ok(PromptTemplate {
         id: prompt.metadata.id.clone(),
         title: prompt.metadata.title.clone(),
-        category: map_prompt_category(&prompt.metadata.category),
+        category: prompt.metadata.category,
         description: prompt.metadata.description.clone(),
         version: prompt.metadata.version.clone(),
         template: prompt.template.clone(),
@@ -316,18 +320,6 @@ fn resolve_prompt_template(app: &AppHandle, tool_name: &str) -> Result<PromptTem
         compatibility: Compatibility::default(),
         allowed_tools: prompt.metadata.allowed_tools.clone(),
     })
-}
-
-fn map_prompt_category(category: &hqe_mcp::registry_v2::PromptCategory) -> PromptCategory {
-    match category {
-        hqe_mcp::registry_v2::PromptCategory::Security => PromptCategory::Security,
-        hqe_mcp::registry_v2::PromptCategory::Quality => PromptCategory::Quality,
-        hqe_mcp::registry_v2::PromptCategory::Refactor => PromptCategory::Refactor,
-        hqe_mcp::registry_v2::PromptCategory::Explain => PromptCategory::Explain,
-        hqe_mcp::registry_v2::PromptCategory::Test => PromptCategory::Test,
-        hqe_mcp::registry_v2::PromptCategory::Document => PromptCategory::Document,
-        _ => PromptCategory::Custom,
-    }
 }
 
 fn map_prompt_input_type(

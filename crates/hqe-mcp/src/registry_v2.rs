@@ -7,6 +7,7 @@
 //! - Complete prompt discovery from all directories
 
 use crate::loader::{LoadedPromptTool, PromptLoader};
+use hqe_protocol::PromptCategory;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
@@ -30,94 +31,6 @@ pub enum RegistryError {
     /// The requested prompt could not be found.
     #[error("Prompt not found: {0}")]
     NotFound(String),
-}
-
-/// Categories for prompt classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum PromptCategory {
-    /// Uncategorized/default
-    #[default]
-    Uncategorized,
-    /// Security analysis prompts
-    Security,
-    /// Code quality analysis
-    Quality,
-    /// Code refactoring
-    Refactor,
-    /// Code explanation
-    Explain,
-    /// Testing and test generation
-    Test,
-    /// Documentation generation
-    Document,
-    /// Architecture and design
-    Architecture,
-    /// Performance analysis
-    Performance,
-    /// Dependency analysis
-    Dependencies,
-    /// Custom user-defined prompts
-    Custom,
-    /// Agent-specific prompts (internal)
-    Agent,
-}
-
-impl std::fmt::Display for PromptCategory {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PromptCategory::Uncategorized => write!(f, "Uncategorized"),
-            PromptCategory::Security => write!(f, "Security"),
-            PromptCategory::Quality => write!(f, "Quality"),
-            PromptCategory::Refactor => write!(f, "Refactor"),
-            PromptCategory::Explain => write!(f, "Explain"),
-            PromptCategory::Test => write!(f, "Test"),
-            PromptCategory::Document => write!(f, "Document"),
-            PromptCategory::Architecture => write!(f, "Architecture"),
-            PromptCategory::Performance => write!(f, "Performance"),
-            PromptCategory::Dependencies => write!(f, "Dependencies"),
-            PromptCategory::Custom => write!(f, "Custom"),
-            PromptCategory::Agent => write!(f, "Agent"),
-        }
-    }
-}
-
-impl PromptCategory {
-    /// Get the emoji/icon for this category
-    pub fn icon(&self) -> &'static str {
-        match self {
-            PromptCategory::Uncategorized => "❓",
-            PromptCategory::Security => "🔒",
-            PromptCategory::Quality => "✨",
-            PromptCategory::Refactor => "🔧",
-            PromptCategory::Explain => "📖",
-            PromptCategory::Test => "🧪",
-            PromptCategory::Document => "📝",
-            PromptCategory::Architecture => "🏗️",
-            PromptCategory::Performance => "⚡",
-            PromptCategory::Dependencies => "📦",
-            PromptCategory::Custom => "🎨",
-            PromptCategory::Agent => "🤖",
-        }
-    }
-
-    /// Get the default sort order
-    pub fn sort_order(&self) -> u8 {
-        match self {
-            PromptCategory::Uncategorized => 255, // Always last
-            PromptCategory::Security => 0,
-            PromptCategory::Quality => 1,
-            PromptCategory::Performance => 2,
-            PromptCategory::Architecture => 3,
-            PromptCategory::Refactor => 4,
-            PromptCategory::Test => 5,
-            PromptCategory::Document => 6,
-            PromptCategory::Explain => 7,
-            PromptCategory::Dependencies => 8,
-            PromptCategory::Custom => 9,
-            PromptCategory::Agent => 10,
-        }
-    }
 }
 
 /// Compatibility requirements for a prompt
@@ -503,11 +416,8 @@ impl PromptRegistry {
     pub fn sorted(&self) -> Vec<&EnrichedPrompt> {
         let mut prompts: Vec<_> = self.prompts.values().collect();
         prompts.sort_by(|a, b| {
-            let cat_ord = a
-                .metadata
-                .category
-                .sort_order()
-                .cmp(&b.metadata.category.sort_order());
+            let cat_ord = PromptCategory::sort_order(&a.metadata.category)
+                .cmp(&PromptCategory::sort_order(&b.metadata.category));
             if cat_ord != std::cmp::Ordering::Equal {
                 return cat_ord;
             }
@@ -674,7 +584,7 @@ mod tests {
         let custom = PromptCategory::Custom;
         let agent = PromptCategory::Agent;
 
-        assert!(security.sort_order() < custom.sort_order());
-        assert!(custom.sort_order() < agent.sort_order());
+        assert!(PromptCategory::sort_order(&security) < PromptCategory::sort_order(&custom));
+        assert!(PromptCategory::sort_order(&custom) < PromptCategory::sort_order(&agent));
     }
 }

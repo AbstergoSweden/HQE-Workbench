@@ -93,10 +93,9 @@ describe('SettingsScreen', () => {
     const discover = screen.getByRole('button', { name: /^discover$/i })
     await userEvent.click(discover)
 
-    // Discovery now uses profile_name
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith('discover_models', {
-        profile_name: 'Venice',
+        profileName: 'Venice',
       })
     })
   })

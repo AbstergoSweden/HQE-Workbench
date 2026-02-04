@@ -1,10 +1,14 @@
 use hqe_protocol::models::MCPToolDefinition;
 use serde::{de::Error, Deserialize};
 use serde_json::json;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 use thiserror::Error;
 use tracing::{info, warn};
 use walkdir::WalkDir;
+
+static PROMPT_CACHE: OnceLock<Mutex<HashMap<PathBuf, Vec<LoadedPromptTool>>>> = OnceLock::new();
 
 /// Errors that can occur during prompt loading
 #[derive(Debug, Error)]
@@ -96,11 +100,25 @@ impl PromptLoader {
 
     /// Load all prompt files from the root directory
     pub fn load(&self) -> Result<Vec<LoadedPromptTool>, LoaderError> {
+        let cache_key = self
+            .root_path
+            .canonicalize()
+            .unwrap_or_else(|_| self.root_path.clone());
+        if let Ok(cache) = PROMPT_CACHE
+            .get_or_init(|| Mutex::new(HashMap::new()))
+            .lock()
+        {
+            if let Some(cached) = cache.get(&cache_key) {
+                return Ok(cached.clone());
+            }
+        }
+
         let mut tools = Vec::new();
         info!("Scanning prompts from: {}", self.root_path.display());
 
         for entry in WalkDir::new(&self.root_path)
-            .follow_links(true)
+            .follow_links(false)
+            .max_depth(5)
             .into_iter()
             // Avoid scanning vendored/build outputs that can explode runtime and log volume
             // (e.g. `node_modules` after installing prompt-server deps).
@@ -121,7 +139,27 @@ impl PromptLoader {
         }
 
         info!("Loaded {} prompt tools", tools.len());
+        if let Ok(mut cache) = PROMPT_CACHE
+            .get_or_init(|| Mutex::new(HashMap::new()))
+            .lock()
+        {
+            cache.insert(cache_key, tools.clone());
+        }
         Ok(tools)
+    }
+
+    /// Clear cached prompt results (used when refreshing prompts).
+    pub fn clear_cache(root_path: impl AsRef<Path>) {
+        if let Ok(mut cache) = PROMPT_CACHE
+            .get_or_init(|| Mutex::new(HashMap::new()))
+            .lock()
+        {
+            let key = root_path
+                .as_ref()
+                .canonicalize()
+                .unwrap_or_else(|_| root_path.as_ref().to_path_buf());
+            cache.remove(&key);
+        }
     }
 
     fn load_prompt_file(&self, path: &Path) -> Result<LoadedPromptTool, LoaderError> {

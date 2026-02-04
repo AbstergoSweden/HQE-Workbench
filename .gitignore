@@ -112,6 +112,10 @@ __MACOSX/
 !.vscode/*.code-snippets
 *.code-workspace
 
+# Cursor
+.cursor/*
+!.cursor/mcp.json
+
 # JetBrains IDEs (IntelliJ, CLion, RustRover, etc.)
 .idea/
 *.iml

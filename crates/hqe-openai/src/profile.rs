@@ -241,7 +241,7 @@ impl ApiKeyStore for KeychainStore {
         match e.get_password() {
             Ok(pw) => {
                 debug!("Retrieved API key from keychain");
-                Ok(Some(SecretString::new(pw)))
+                Ok(Some(SecretString::new(pw.into_boxed_str())))
             }
             Err(keyring::Error::NoEntry) => {
                 debug!("No API key found in keychain");
@@ -266,7 +266,7 @@ impl ApiKeyStore for KeychainStore {
     #[instrument(skip(self), fields(profile_name))]
     fn delete_api_key(&self, profile_name: &str) -> Result<(), KeyStoreError> {
         let e = self.entry(profile_name)?;
-        match e.delete_password() {
+        match e.delete_credential() {
             Ok(_) => {
                 info!("Deleted API key from keychain");
                 Ok(())

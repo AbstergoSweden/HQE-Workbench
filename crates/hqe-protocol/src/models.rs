@@ -35,6 +35,94 @@ impl std::fmt::Display for ProviderKind {
     }
 }
 
+/// Categories for prompt classification.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Hash, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PromptCategory {
+    /// Uncategorized/default.
+    #[default]
+    Uncategorized,
+    /// Security analysis prompts.
+    Security,
+    /// Code quality analysis.
+    Quality,
+    /// Code refactoring.
+    Refactor,
+    /// Code explanation.
+    Explain,
+    /// Testing and test generation.
+    Test,
+    /// Documentation generation.
+    Document,
+    /// Architecture and design.
+    Architecture,
+    /// Performance analysis.
+    Performance,
+    /// Dependency analysis.
+    Dependencies,
+    /// Custom user-defined prompts.
+    Custom,
+    /// Agent-specific prompts (internal).
+    Agent,
+}
+
+impl std::fmt::Display for PromptCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PromptCategory::Uncategorized => write!(f, "Uncategorized"),
+            PromptCategory::Security => write!(f, "Security"),
+            PromptCategory::Quality => write!(f, "Quality"),
+            PromptCategory::Refactor => write!(f, "Refactor"),
+            PromptCategory::Explain => write!(f, "Explain"),
+            PromptCategory::Test => write!(f, "Test"),
+            PromptCategory::Document => write!(f, "Document"),
+            PromptCategory::Architecture => write!(f, "Architecture"),
+            PromptCategory::Performance => write!(f, "Performance"),
+            PromptCategory::Dependencies => write!(f, "Dependencies"),
+            PromptCategory::Custom => write!(f, "Custom"),
+            PromptCategory::Agent => write!(f, "Agent"),
+        }
+    }
+}
+
+impl PromptCategory {
+    /// Returns an emoji/icon for display.
+    pub fn icon(&self) -> &'static str {
+        match self {
+            PromptCategory::Uncategorized => "❓",
+            PromptCategory::Security => "🔒",
+            PromptCategory::Quality => "✨",
+            PromptCategory::Refactor => "🔧",
+            PromptCategory::Explain => "📖",
+            PromptCategory::Test => "🧪",
+            PromptCategory::Document => "📝",
+            PromptCategory::Architecture => "🏗️",
+            PromptCategory::Performance => "⚡",
+            PromptCategory::Dependencies => "📦",
+            PromptCategory::Custom => "🎨",
+            PromptCategory::Agent => "🤖",
+        }
+    }
+
+    /// Returns default sort order (lower is higher priority).
+    pub fn sort_order(&self) -> u8 {
+        match self {
+            PromptCategory::Uncategorized => 255, // Always last
+            PromptCategory::Security => 0,
+            PromptCategory::Quality => 1,
+            PromptCategory::Performance => 2,
+            PromptCategory::Architecture => 3,
+            PromptCategory::Refactor => 4,
+            PromptCategory::Test => 5,
+            PromptCategory::Document => 6,
+            PromptCategory::Explain => 7,
+            PromptCategory::Dependencies => 8,
+            PromptCategory::Custom => 9,
+            PromptCategory::Agent => 10,
+        }
+    }
+}
+
 /// Unified Provider Profile definition
 ///
 /// This is the single source of truth for provider configuration across all crates.

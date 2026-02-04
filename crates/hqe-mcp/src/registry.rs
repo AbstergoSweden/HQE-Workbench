@@ -1,6 +1,6 @@
 use anyhow::Result;
 use hqe_protocol::models::MCPToolDefinition;
-use jsonschema::JSONSchema;
+use jsonschema::Validator;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::future::Future;
@@ -30,7 +30,7 @@ pub struct RegisteredTool {
     /// Topic that registered this tool
     pub topic_id: String,
     /// Compiled JSON schema for validation
-    schema_validator: Option<JSONSchema>,
+    schema_validator: Option<Validator>,
 }
 
 /// Errors that can occur during tool operations
@@ -57,8 +57,8 @@ impl ToolRegistry {
     }
 
     /// Compile a JSON schema for validation
-    fn compile_schema(schema: &Value) -> Result<JSONSchema, ToolError> {
-        JSONSchema::compile(schema).map_err(|e| ToolError::SchemaError(e.to_string()))
+    fn compile_schema(schema: &Value) -> Result<Validator, ToolError> {
+        jsonschema::validator_for(schema).map_err(|e| ToolError::SchemaError(e.to_string()))
     }
 
     /// Register a new tool from a topic.
@@ -118,9 +118,10 @@ impl ToolRegistry {
                     );
                     Ok(())
                 }
-                Err(errors) => {
-                    let error_messages: Vec<String> = errors
-                        .map(|e| format!("{}: {}", e.instance_path, e))
+                Err(_error) => {
+                    let error_messages: Vec<String> = validator
+                        .iter_errors(args)
+                        .map(|e| format!("{}: {}", e.instance_path(), e))
                         .collect();
                     let error_msg = error_messages.join("; ");
                     warn!(

@@ -288,8 +288,8 @@ async fn handle_prompt(
             let allow_missing_key =
                 is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
             let api_key = match entry.get_password() {
-                Ok(key) => SecretString::new(key),
-                Err(err) if allow_missing_key => SecretString::new(String::new()),
+                Ok(key) => SecretString::new(key.into_boxed_str()),
+                Err(err) if allow_missing_key => SecretString::new(String::new().into_boxed_str()),
                 Err(err) => return Err(err.into()),
             };
 
@@ -710,7 +710,7 @@ async fn scan_repo(args: ScanRepoArgs) -> anyhow::Result<()> {
         let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
         let api_key = match api_key {
             Some(key) => key,
-            None if allow_missing_key => SecretString::new(String::new()),
+            None if allow_missing_key => SecretString::new(String::new().into_boxed_str()),
             None => return Err(anyhow::anyhow!("No API key stored for profile")),
         };
 
@@ -1093,8 +1093,10 @@ async fn handle_config(command: ConfigCommands) -> anyhow::Result<()> {
                 let allow_missing_key =
                     is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
                 let api_key = match entry.get_password() {
-                    Ok(key) => SecretString::new(key),
-                    Err(err) if allow_missing_key => SecretString::new(String::new()),
+                    Ok(key) => SecretString::new(key.into_boxed_str()),
+                    Err(err) if allow_missing_key => {
+                        SecretString::new(String::new().into_boxed_str())
+                    }
                     Err(err) => return Err(err.into()),
                 };
 
@@ -1145,7 +1147,7 @@ async fn handle_config(command: ConfigCommands) -> anyhow::Result<()> {
 
                 // Also remove from keychain
                 let _ = keyring::Entry::new("hqe-workbench", &format!("api_key:{}", name))?
-                    .delete_password();
+                    .delete_credential();
 
                 println!("{}", style("✅ Profile removed").green());
             }

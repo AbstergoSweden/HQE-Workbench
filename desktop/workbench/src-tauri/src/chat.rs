@@ -4,7 +4,7 @@
 //! via the encrypted local database.
 
 use crate::llm::run_llm;
-use hqe_core::encrypted_db::{ChatMessage, ChatOperations, ChatSession, MessageRole};
+use hqe_core::encrypted_db::{ChatMessage, ChatOperations, ChatSession, MessageRole, Pagination};
 use hqe_core::prompt_runner::{
     Compatibility, ContentType, InputSpec, InputType, PromptCategory, PromptExecutionRequest,
     PromptTemplate, UntrustedContext,
@@ -12,8 +12,10 @@ use hqe_core::prompt_runner::{
 use hqe_core::redaction::RedactionEngine;
 use hqe_core::repo::RepoScanner;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::command;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use uuid::Uuid;
 
 /// Chat session DTO for frontend
@@ -50,6 +52,11 @@ pub struct SendChatMessageResponse {
 const MAX_CONTEXT_BYTES: usize = 100_000;
 const MAX_CONTEXT_FILES: usize = 50;
 const MAX_HISTORY_CHARS: usize = 8_000;
+const MAX_HISTORY_MESSAGES: usize = 200;
+const DEFAULT_MESSAGE_PAGE_LIMIT: usize = 100;
+const MIN_MESSAGE_INTERVAL_SECS: u64 = 1;
+
+static LAST_MESSAGE_TIME_SECS: AtomicU64 = AtomicU64::new(0);
 
 /// Create a new chat session
 #[command]
@@ -75,7 +82,7 @@ pub async fn create_chat_session(
     };
 
     db.create_session(&session)
-        .map_err(|e: hqe_core::encrypted_db::EncryptedDbError| e.to_string())?;
+        .map_err(|e| log_and_wrap_error("Failed to create chat session", e))?;
 
     Ok(ChatSessionDto {
         id: session.id,
@@ -102,7 +109,7 @@ pub async fn list_chat_sessions(
 
     let sessions = db
         .list_sessions(repo_path.as_deref())
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| log_and_wrap_error("Failed to list chat sessions", e))?;
 
     let dtos: Vec<ChatSessionDto> = sessions
         .into_iter()
@@ -115,7 +122,10 @@ pub async fn list_chat_sessions(
             model: s.model,
             created_at: s.created_at.to_rfc3339(),
             updated_at: s.updated_at.to_rfc3339(),
-            message_count: db.get_messages(&s.id).map(|m| m.len()).unwrap_or(0),
+            message_count: db.get_message_count(&s.id).unwrap_or_else(|e| {
+                error!(error = %e, session_id = %s.id, "Failed to load message count");
+                0
+            }),
         })
         .collect();
 
@@ -127,6 +137,8 @@ pub async fn list_chat_sessions(
 pub async fn get_chat_session(
     state: tauri::State<'_, crate::AppState>,
     session_id: String,
+    limit: Option<usize>,
+    offset: Option<usize>,
 ) -> Result<(ChatSessionDto, Vec<ChatMessageDto>), String> {
     debug!(session_id = %session_id, "Getting chat session");
 
@@ -134,10 +146,13 @@ pub async fn get_chat_session(
 
     let session = db
         .get_session(&session_id)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| log_and_wrap_error("Failed to load chat session", e))?
         .ok_or_else(|| "Session not found".to_string())?;
 
-    let messages = db.get_messages(&session_id).map_err(|e| e.to_string())?;
+    let (pagination, total_count) = resolve_pagination(&db, &session_id, limit, offset)?;
+    let messages = db
+        .get_messages_paginated(&session_id, pagination)
+        .map_err(|e| log_and_wrap_error("Failed to load chat messages", e))?;
 
     let session_dto = ChatSessionDto {
         id: session.id.clone(),
@@ -148,7 +163,7 @@ pub async fn get_chat_session(
         model: session.model,
         created_at: session.created_at.to_rfc3339(),
         updated_at: session.updated_at.to_rfc3339(),
-        message_count: messages.len(),
+        message_count: total_count,
     };
 
     let message_dtos: Vec<ChatMessageDto> = messages
@@ -203,7 +218,8 @@ pub async fn add_chat_message(
         metadata: None,
     };
 
-    db.add_message(&message).map_err(|e| e.to_string())?;
+    db.add_message(&message)
+        .map_err(|e| log_and_wrap_error("Failed to add chat message", e))?;
 
     Ok(ChatMessageDto {
         id: message.id,
@@ -220,11 +236,16 @@ pub async fn add_chat_message(
 pub async fn get_chat_messages(
     state: tauri::State<'_, crate::AppState>,
     session_id: String,
+    limit: Option<usize>,
+    offset: Option<usize>,
 ) -> Result<Vec<ChatMessageDto>, String> {
     debug!(session_id = %session_id, "Getting chat messages");
 
     let db = state.db.lock().await;
-    let messages = db.get_messages(&session_id).map_err(|e| e.to_string())?;
+    let (pagination, _) = resolve_pagination(&db, &session_id, limit, offset)?;
+    let messages = db
+        .get_messages_paginated(&session_id, pagination)
+        .map_err(|e| log_and_wrap_error("Failed to load chat messages", e))?;
 
     let dtos: Vec<ChatMessageDto> = messages
         .into_iter()
@@ -256,11 +277,20 @@ pub async fn send_chat_message(
 ) -> Result<SendChatMessageResponse, String> {
     info!(session_id = %session_id, "Sending chat message");
 
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| log_and_wrap_error("Failed to read system time", e))?
+        .as_secs();
+    let last = LAST_MESSAGE_TIME_SECS.swap(now, Ordering::SeqCst);
+    if now.saturating_sub(last) < MIN_MESSAGE_INTERVAL_SECS {
+        return Err("Please wait before sending another message".to_string());
+    }
+
     let db = state.db.lock().await;
 
     let session = db
         .get_session(&session_id)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| log_and_wrap_error("Failed to load chat session", e))?
         .ok_or_else(|| "Session not found".to_string())?;
 
     // Add user message
@@ -275,11 +305,15 @@ pub async fn send_chat_message(
         metadata: None,
     };
 
-    db.add_message(&user_message).map_err(|e| e.to_string())?;
+    db.add_message(&user_message)
+        .map_err(|e| log_and_wrap_error("Failed to save user message", e))?;
 
     let prompt_template = if let Some(prompt_id) = &session.prompt_id {
-        let mut registry = load_prompt_registry()?;
-        registry.load_all().map_err(|e| e.to_string())?;
+        let mut registry = load_prompt_registry()
+            .map_err(|e| log_and_wrap_error("Failed to load prompt registry", e))?;
+        registry
+            .load_all()
+            .map_err(|e| log_and_wrap_error("Failed to load prompts", e))?;
         let prompt = registry
             .get(prompt_id)
             .ok_or_else(|| format!("Prompt '{}' not found", prompt_id))?;
@@ -287,7 +321,7 @@ pub async fn send_chat_message(
         PromptTemplate {
             id: prompt.metadata.id.clone(),
             title: prompt.metadata.title.clone(),
-            category: map_prompt_category(&prompt.metadata.category),
+            category: prompt.metadata.category,
             description: prompt.metadata.description.clone(),
             version: prompt.metadata.version.clone(),
             template: prompt.template.clone(),
@@ -334,7 +368,9 @@ pub async fn send_chat_message(
         Vec::new()
     };
 
-    let history_messages = db.get_messages(&session_id).map_err(|e| e.to_string())?;
+    let history_messages = db
+        .get_messages_paginated(&session_id, Pagination::new(MAX_HISTORY_MESSAGES, 0))
+        .map_err(|e| log_and_wrap_error("Failed to load chat history", e))?;
     let inputs = build_inputs(&content, &prompt_template);
     let user_message_payload = build_user_message(&history_messages, &content);
 
@@ -356,7 +392,8 @@ pub async fn send_chat_message(
         session_key,
         Some(session.model.clone()),
     )
-    .await?;
+    .await
+    .map_err(|e| log_and_wrap_error("Failed to generate response", e))?;
 
     let assistant_message = ChatMessage {
         id: Uuid::new_v4().to_string(),
@@ -380,7 +417,7 @@ pub async fn send_chat_message(
     };
 
     db.add_message(&assistant_message)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| log_and_wrap_error("Failed to save assistant message", e))?;
 
     let user_dto = ChatMessageDto {
         id: user_message.id,
@@ -459,7 +496,9 @@ fn build_history_block(messages: &[ChatMessage]) -> String {
 
 async fn load_repo_context(repo_path: &str) -> Result<Vec<UntrustedContext>, String> {
     let scanner = RepoScanner::new(repo_path);
-    let scan = scanner.scan().map_err(|e| e.to_string())?;
+    let scan = scanner
+        .scan()
+        .map_err(|e| log_and_wrap_error("Failed to scan repository", e))?;
     let mut redaction = RedactionEngine::new();
     let mut contexts = Vec::new();
     let mut total_size = 0usize;
@@ -468,7 +507,11 @@ async fn load_repo_context(repo_path: &str) -> Result<Vec<UntrustedContext>, Str
         if total_size >= MAX_CONTEXT_BYTES {
             break;
         }
-        if let Some(content) = scanner.read_file(&file).await.map_err(|e| e.to_string())? {
+        if let Some(content) = scanner
+            .read_file(&file)
+            .await
+            .map_err(|e| log_and_wrap_error("Failed to read repository file", e))?
+        {
             let redacted = redaction.redact(&content);
             let size = redacted.len();
             if total_size + size > MAX_CONTEXT_BYTES {
@@ -516,11 +559,14 @@ fn resolve_prompts_dir() -> Result<std::path::PathBuf, String> {
             return path
                 .canonicalize()
                 .or_else(|_: std::io::Error| Ok(path.clone()))
-                .map_err(|e: std::io::Error| e.to_string());
+                .map_err(|e: std::io::Error| {
+                    log_and_wrap_error("Failed to resolve prompts directory", e)
+                });
         }
     }
 
-    let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
+    let cwd = std::env::current_dir()
+        .map_err(|e| log_and_wrap_error("Failed to resolve prompts directory", e))?;
     for ancestor in cwd.ancestors() {
         let cli_library = ancestor.join("mcp-server").join("cli-prompt-library");
         if cli_library.exists() {
@@ -534,18 +580,6 @@ fn resolve_prompts_dir() -> Result<std::path::PathBuf, String> {
     }
 
     Err("Could not locate prompts directory".to_string())
-}
-
-fn map_prompt_category(category: &hqe_mcp::registry_v2::PromptCategory) -> PromptCategory {
-    match category {
-        hqe_mcp::registry_v2::PromptCategory::Security => PromptCategory::Security,
-        hqe_mcp::registry_v2::PromptCategory::Quality => PromptCategory::Quality,
-        hqe_mcp::registry_v2::PromptCategory::Refactor => PromptCategory::Refactor,
-        hqe_mcp::registry_v2::PromptCategory::Explain => PromptCategory::Explain,
-        hqe_mcp::registry_v2::PromptCategory::Test => PromptCategory::Test,
-        hqe_mcp::registry_v2::PromptCategory::Document => PromptCategory::Document,
-        _ => PromptCategory::Custom,
-    }
 }
 
 fn map_prompt_input_type(
@@ -564,6 +598,25 @@ fn map_prompt_input_type(
     }
 }
 
+fn log_and_wrap_error(context: &str, error: impl std::fmt::Display) -> String {
+    error!(error = %error, "{context}");
+    context.to_string()
+}
+
+fn resolve_pagination(
+    db: &hqe_core::encrypted_db::EncryptedDb,
+    session_id: &str,
+    limit: Option<usize>,
+    offset: Option<usize>,
+) -> Result<(Pagination, usize), String> {
+    let total = db
+        .get_message_count(session_id)
+        .map_err(|e| log_and_wrap_error("Failed to load message count", e))?;
+    let limit = limit.unwrap_or(DEFAULT_MESSAGE_PAGE_LIMIT).clamp(1, 1000);
+    let resolved_offset = offset.unwrap_or_else(|| total.saturating_sub(limit));
+    Ok((Pagination::new(limit, resolved_offset), total))
+}
+
 /// Delete a chat session
 #[command]
 pub async fn delete_chat_session(
@@ -573,7 +626,8 @@ pub async fn delete_chat_session(
     info!(session_id = %session_id, "Deleting chat session");
 
     let db = state.db.lock().await;
-    db.delete_session(&session_id).map_err(|e| e.to_string())?;
+    db.delete_session(&session_id)
+        .map_err(|e| log_and_wrap_error("Failed to delete chat session", e))?;
 
     Ok(())
 }
@@ -615,7 +669,7 @@ pub async fn apply_provider_spec(
     profile_name: Option<String>,
 ) -> Result<serde_json::Value, String> {
     use hqe_openai::prefilled::get_spec;
-    use hqe_openai::profile::{ProfileError, ProfileManager};
+    use hqe_openai::profile::ProfileManager;
     use hqe_protocol::models::ProviderProfile;
 
     info!(spec_id = %spec_id, "Applying provider spec");
@@ -639,7 +693,7 @@ pub async fn apply_provider_spec(
     let manager = ProfileManager::default();
     manager
         .save_profile(profile, Some(&api_key))
-        .map_err(|e: ProfileError| e.to_string())?;
+        .map_err(|e| log_and_wrap_error("Failed to save provider profile", e))?;
 
     Ok(serde_json::json!({
         "profile_name": profile_name,

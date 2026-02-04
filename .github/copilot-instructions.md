@@ -35,14 +35,23 @@ cargo test --workspace --features sqlcipher-tests
 cargo test -p hqe-core
 cargo test -p hqe-openai
 
-# Run a single Rust test (example)
-cargo test -p hqe-ingest --test integration_test test_ingestion_engine_detects_new_topic
+# Run a single Rust test by name (substring match)
+cargo test -p hqe-core -- redaction
 
-# Run frontend tests (from desktop/workbench)
+# Run a single Rust integration test file
+cargo test -p hqe-core --test <test_file_stem> -- <test_name_substring>
+
+# Run Workbench frontend tests (Vitest)
 cd desktop/workbench && npm test
 
-# Run a single frontend test (Vitest)
-npm test -- <test_file_or_pattern>
+# Run a single Workbench test by name (Vitest)
+cd desktop/workbench && npm test -- -t "<test name substring>"
+
+# Run prompts MCP server tests (Jest)
+cd mcp-server/prompts/server && npm test
+
+# Run a single prompts MCP server unit test
+cd mcp-server/prompts/server && npm run test:unit -- tests/unit/<name>.test.ts -t "<test name substring>"
 ```
 
 ### Linting and Formatting
@@ -77,10 +86,20 @@ cargo build --release -p hqe
 cargo build --workspace
 ```
 
+### CI Invariants
+```bash
+# CI enforces a small set of architectural invariants (run this when touching LLM/provider plumbing)
+bash scripts/verify_invariants.sh
+```
+
 ### Protocol Validation
 ```bash
-# Validate protocol schema (required before commits)
+# Validate protocol YAML against JSON schema (auto-installs pyyaml/jsonschema if missing)
 ./scripts/validate_protocol.sh
+
+# Or via the CLI
+cargo build --release -p hqe
+./target/release/hqe validate-protocol
 ```
 
 ### MCP server (mcp-server/prompts/server)
@@ -97,6 +116,49 @@ npm run lint
 # Tests
 npm test
 npm run test:unit -- tests/unit/<name>.test.ts
+
+# Validate MCP server resolves prompts/gates/etc
+MCP_WORKSPACE="$(pwd)/resources" node dist/index.js --startup-test --verbose
+```
+
+### GitHub MCP Server (Cursor)
+
+Cursor supports GitHub's official MCP server. **Do not commit your PAT** — add GitHub MCP to your *global* Cursor config at `~/.cursor/mcp.json`.
+
+Remote (recommended):
+```json
+{
+  "mcpServers": {
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer YOUR_GITHUB_PAT"
+      }
+    }
+  }
+}
+```
+
+Local (Docker):
+```json
+{
+  "mcpServers": {
+    "github-local": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_PAT"
+      }
+    }
+  }
+}
 ```
 
 ## Architecture
@@ -199,6 +261,12 @@ pub enum HqeError {
 - **Keychain storage** - API keys stored in macOS Keychain, never in config files
 - **Local-only mode** - Prioritized for sensitive repos; uses heuristics instead of LLMs
 - **Patterns to detect:** AWS keys, API tokens, private keys (see `crates/hqe-core/src/redaction.rs`)
+
+### LLM/Provider Call-Site Invariants (Tauri)
+
+- **Only provider HTTP call site** lives in `desktop/workbench/src-tauri/src/llm.rs` (guarded by `scripts/verify_invariants.sh`).
+- **Only model request builder** lives in `crates/hqe-core/src/prompt_runner.rs`.
+- If you need new provider/network behavior, route it through these modules rather than adding new call sites.
 
 ### TypeScript/React Conventions
 

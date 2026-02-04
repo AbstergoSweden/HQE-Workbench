@@ -33,11 +33,17 @@ export interface ChatState {
   currentSession: ChatSession | null
   messages: ChatMessage[]
   isLoading: boolean
+  hasMoreHistory: boolean
+  isLoadingHistory: boolean
   setSessions: (sessions: ChatSession[]) => void
   setCurrentSession: (session: ChatSession | null) => void
   setMessages: (messages: ChatMessage[]) => void
+  setChatState: (session: ChatSession | null, messages: ChatMessage[]) => void
   addMessage: (message: ChatMessage) => void
+  prependMessages: (messages: ChatMessage[]) => void
   setIsLoading: (loading: boolean) => void
+  setHasMoreHistory: (hasMore: boolean) => void
+  setIsLoadingHistory: (loading: boolean) => void
   clearChat: () => void
 }
 
@@ -86,10 +92,22 @@ export const useChatStore = create<ChatState>((set) => ({
   currentSession: null,
   messages: [],
   isLoading: false,
+  hasMoreHistory: false,
+  isLoadingHistory: false,
   setSessions: (sessions) => set({ sessions }),
   setCurrentSession: (session) => set({ currentSession: session }),
   setMessages: (messages) => set({ messages }),
+  setChatState: (session, messages) => set({ currentSession: session, messages }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+  prependMessages: (messages) => set((state) => ({ messages: [...messages, ...state.messages] })),
   setIsLoading: (loading) => set({ isLoading: loading }),
-  clearChat: () => set({ currentSession: null, messages: [] }),
+  setHasMoreHistory: (hasMore) => set({ hasMoreHistory: hasMore }),
+  setIsLoadingHistory: (loading) => set({ isLoadingHistory: loading }),
+  clearChat: () =>
+    set({
+      currentSession: null,
+      messages: [],
+      hasMoreHistory: false,
+      isLoadingHistory: false,
+    }),
 }))

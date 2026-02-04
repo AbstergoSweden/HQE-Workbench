@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "agent-prompts": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/mcp-server/prompts/server/dist/index.js",
+        "--transport=stdio",
+        "--quiet"
+      ],
+      "env": {
+        "MCP_WORKSPACE": "${workspaceFolder}/mcp-server/prompts/server/resources"
+      }
+    }
+  }
+}

@@ -180,16 +180,19 @@ impl EncryptedDb {
     fn generate_key() -> String {
         use rand::RngCore;
         let mut bytes = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut bytes);
+        rand::rng().fill_bytes(&mut bytes);
         hex::encode(bytes)
     }
 
     /// Initialize database schema
     fn initialize_schema(&self) -> Result<()> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
+        let conn = match self.conn.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                warn!("EncryptedDb mutex poisoned; recovering");
+                poisoned.into_inner()
+            }
+        };
 
         // Chat sessions table
         conn.execute(
@@ -289,10 +292,13 @@ impl EncryptedDb {
             return Err(EncryptedDbError::InvalidKey);
         }
 
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
+        let conn = match self.conn.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                warn!("EncryptedDb mutex poisoned; recovering");
+                poisoned.into_inner()
+            }
+        };
 
         // Re-key the database using pragma_update to avoid SQL injection
         // The key is validated to be hex-only, making SQL injection impossible
@@ -352,10 +358,13 @@ impl EncryptedDb {
             ));
         }
 
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
+        let conn = match self.conn.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                warn!("EncryptedDb mutex poisoned; recovering");
+                poisoned.into_inner()
+            }
+        };
 
         // SQLCipher backup using vacuum into with validated path
         // Path has been canonicalized and validated, making SQL injection impossible
@@ -378,10 +387,13 @@ impl EncryptedDb {
 
     /// Verify database integrity
     pub fn verify_integrity(&self) -> Result<bool> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))?;
+        let conn = match self.conn.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                warn!("EncryptedDb mutex poisoned; recovering");
+                poisoned.into_inner()
+            }
+        };
 
         match conn.execute("PRAGMA integrity_check", []) {
             Ok(_) => Ok(true),
@@ -394,9 +406,13 @@ impl EncryptedDb {
 
     /// Get connection for direct queries
     pub fn connection(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
-        self.conn
-            .lock()
-            .map_err(|_| EncryptedDbError::Encryption("Mutex poisoned".to_string()))
+        match self.conn.lock() {
+            Ok(guard) => Ok(guard),
+            Err(poisoned) => {
+                warn!("EncryptedDb mutex poisoned; recovering");
+                Ok(poisoned.into_inner())
+            }
+        }
     }
 }
 

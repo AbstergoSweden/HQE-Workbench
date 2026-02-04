@@ -413,7 +413,7 @@ pub async fn set_session_api_key(
     api_key: String,
 ) -> Result<(), String> {
     let mut keys = state.session_keys.lock().await;
-    keys.insert(profile_name, SecretString::new(api_key));
+    keys.insert(profile_name, SecretString::new(api_key.into_boxed_str()));
     Ok(())
 }
 

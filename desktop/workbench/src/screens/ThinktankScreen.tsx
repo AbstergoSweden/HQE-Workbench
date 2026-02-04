@@ -132,9 +132,12 @@ export const ThinktankScreen: FC = () => {
   const toast = useToast()
 
   // Local UI state
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showAgentPrompts, setShowAgentPrompts] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [filters, setFilters] = useState({
+    searchQuery: '',
+    showAgentPrompts: false,
+    selectedCategory: 'all',
+  })
+  const { searchQuery, showAgentPrompts, selectedCategory } = filters
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTool | null>(null)
   const [args, setArgs] = useState<Record<string, unknown>>({})
   const [chatMode, setChatMode] = useState(false)
@@ -186,7 +189,7 @@ export const ThinktankScreen: FC = () => {
 
   const handleSelectPrompt = useCallback((prompt: PromptTool, initialArgs?: Record<string, unknown>) => {
     if (isAgentPrompt(prompt.name)) {
-      setShowAgentPrompts(true)
+      setFilters(prev => ({ ...prev, showAgentPrompts: true }))
     }
     setSelectedPrompt(prompt)
     reset()
@@ -365,7 +368,9 @@ export const ThinktankScreen: FC = () => {
           {/* Category filter */}
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) =>
+              setFilters(prev => ({ ...prev, selectedCategory: e.target.value }))
+            }
             className="input text-sm"
           >
             <option value="all">All Categories ({prompts.length})</option>
@@ -381,7 +386,9 @@ export const ThinktankScreen: FC = () => {
             type="text"
             placeholder="Search prompts..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) =>
+              setFilters(prev => ({ ...prev, searchQuery: e.target.value }))
+            }
             className="input text-sm"
           />
 
@@ -390,7 +397,9 @@ export const ThinktankScreen: FC = () => {
             <input
               type="checkbox"
               checked={showAgentPrompts}
-              onChange={(e) => setShowAgentPrompts(e.target.checked)}
+              onChange={(e) =>
+                setFilters(prev => ({ ...prev, showAgentPrompts: e.target.checked }))
+              }
             />
             Show agent prompts {hiddenAgentCount > 0 && `(${hiddenAgentCount} hidden)`}
           </label>

@@ -64,6 +64,8 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
   const toast = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesRef = useRef<ChatMessage[]>([])  // Track latest messages to avoid stale closures
+  const sendingRef = useRef(false)
+  const DEFAULT_PAGE_LIMIT = 100
   const [inputValue, setInputValue] = useState('')
   const [localLoading, setLocalLoading] = useState(false)
 
@@ -72,8 +74,14 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
     currentSession,
     setMessages,
     addMessage,
+    prependMessages,
     setCurrentSession,
+    setChatState,
     setIsLoading,
+    hasMoreHistory,
+    isLoadingHistory,
+    setHasMoreHistory,
+    setIsLoadingHistory,
   } = useChatStore()
 
   // Keep messagesRef in sync with messages to avoid stale closures
@@ -86,17 +94,25 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
       return
     }
     try {
-      const session = await invoke<ChatSession | null>('get_chat_session', { session_id: id })
+      const session = await invoke<ChatSession | null>('get_chat_session', {
+        session_id: id,
+        limit: DEFAULT_PAGE_LIMIT,
+      })
       if (session) {
-        setCurrentSession(session)
-        const msgs = await invoke<ChatMessage[]>('get_chat_messages', { session_id: id })
-        setMessages(msgs)
+        const msgs = await invoke<ChatMessage[]>('get_chat_messages', {
+          session_id: id,
+          limit: DEFAULT_PAGE_LIMIT,
+        })
+        setChatState(session, msgs)
+        setHasMoreHistory(
+          Boolean(session.message_count && msgs.length < session.message_count)
+        )
       }
     } catch (err) {
       console.error('Failed to load session:', err)
       toast.error('Failed to load chat session')
     }
-  }, [setCurrentSession, setMessages, toast])
+  }, [setChatState, setHasMoreHistory, toast])
 
   const createNewSession = useCallback(async () => {
     if (!(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
@@ -110,13 +126,12 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
         model: contextRef.model,
       })
       // Atomic state update to prevent race conditions
-      setCurrentSession(session)
-      setMessages([])
+      setChatState(session, [])
     } catch (err) {
       console.error('Failed to create session:', err)
       toast.error('Failed to create chat session')
     }
-  }, [contextRef, setCurrentSession, setMessages, toast])
+  }, [contextRef, setChatState, toast])
 
   const createSessionWithMessages = useCallback(async (initialMsgs: ChatMessage[]) => {
     if (!showInput) {
@@ -153,13 +168,27 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
           console.error('Failed to persist initial message:', err)
         }
       }
-      const msgs = await invoke<ChatMessage[]>('get_chat_messages', { session_id: session.id })
-      setMessages(msgs)
+      const msgs = await invoke<ChatMessage[]>('get_chat_messages', {
+        session_id: session.id,
+        limit: DEFAULT_PAGE_LIMIT,
+      })
+      setChatState(session, msgs)
+      setHasMoreHistory(
+        Boolean(session.message_count && msgs.length < session.message_count)
+      )
     } catch (err) {
       console.error('Failed to create session with messages:', err)
       toast.error('Failed to initialize chat')
     }
-  }, [contextRef, setCurrentSession, setMessages, showInput, toast])
+  }, [
+    contextRef,
+    setChatState,
+    setCurrentSession,
+    setMessages,
+    setHasMoreHistory,
+    showInput,
+    toast,
+  ])
 
   // Initialize session on mount
   useEffect(() => {
@@ -197,6 +226,8 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || !currentSession) return
+    if (sendingRef.current) return
+    sendingRef.current = true
 
     const content = inputValue.trim()
     setInputValue('')
@@ -229,14 +260,62 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
       // Update local state
       addMessage(response.user_message)
       addMessage(response.assistant_message)
+      setHasMoreHistory(
+        Boolean(
+          currentSession.message_count &&
+            messagesRef.current.length + 2 < currentSession.message_count
+        )
+      )
     } catch (err) {
       console.error('Failed to send message:', err)
       toast.error('Failed to send message')
     } finally {
+      sendingRef.current = false
       setLocalLoading(false)
       setIsLoading(false)
     }
-  }, [inputValue, currentSession, onSend, addMessage, toast, setIsLoading])  // Note: messages removed - using ref instead
+  }, [
+    inputValue,
+    currentSession,
+    onSend,
+    addMessage,
+    setHasMoreHistory,
+    toast,
+    setIsLoading,
+  ])  // Note: messages removed - using ref instead
+
+  const handleLoadMore = useCallback(async () => {
+    if (!currentSession || isLoadingHistory) return
+    if (!(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
+      return
+    }
+    setIsLoadingHistory(true)
+    try {
+      const offset = messagesRef.current.length
+      const msgs = await invoke<ChatMessage[]>('get_chat_messages', {
+        session_id: currentSession.id,
+        limit: DEFAULT_PAGE_LIMIT,
+        offset,
+      })
+      if (msgs.length > 0) {
+        prependMessages(msgs)
+      }
+      const total = currentSession.message_count || 0
+      setHasMoreHistory(offset + msgs.length < total)
+    } catch (err) {
+      console.error('Failed to load more messages:', err)
+      toast.error('Failed to load more messages')
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }, [
+    currentSession,
+    isLoadingHistory,
+    prependMessages,
+    setHasMoreHistory,
+    setIsLoadingHistory,
+    toast,
+  ])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -264,6 +343,17 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
           </div>
         ) : (
           <>
+            {hasMoreHistory && (
+              <div className="flex justify-center">
+                <button
+                  className="btn text-xs"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingHistory}
+                >
+                  {isLoadingHistory ? 'Loading...' : 'Load earlier messages'}
+                </button>
+              </div>
+            )}
             {displayMessages.map((message, idx) => (
               <MessageBubble
                 key={message.id || idx}

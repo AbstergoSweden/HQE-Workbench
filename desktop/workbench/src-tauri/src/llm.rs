@@ -39,7 +39,7 @@ pub async fn run_llm(
     let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
     let api_key = match api_key {
         Some(key) => key,
-        None if allow_missing_key => SecretString::new(String::new()),
+        None if allow_missing_key => SecretString::new(String::new().into_boxed_str()),
         None => return Err("No API key stored for profile".to_string()),
     };
 
@@ -132,7 +132,7 @@ pub async fn test_connection(
     let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
     let api_key = match api_key {
         Some(key) => key,
-        None if allow_missing_key => SecretString::new(String::new()),
+        None if allow_missing_key => SecretString::new(String::new().into_boxed_str()),
         None => return Err("No API key stored for profile".to_string()),
     };
 
@@ -213,7 +213,7 @@ pub fn build_scan_analyzer(
     let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
     let api_key = match api_key {
         Some(key) => key,
-        None if allow_missing_key => SecretString::new(String::new()),
+        None if allow_missing_key => SecretString::new(String::new().into_boxed_str()),
         None => return Err("No API key stored for profile".to_string()),
     };
 
