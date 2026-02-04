@@ -9,7 +9,7 @@ serde_json = "1.0"
 tokio = { version = "1.35", features = ["full"] }
 anyhow = "1.0"
 tracing = "0.1"
-notify = "6.1"
+notify = "8.2"
 serde_yaml = "0.9"
 hqe-protocol = { path = "../hqe-protocol" }
 
