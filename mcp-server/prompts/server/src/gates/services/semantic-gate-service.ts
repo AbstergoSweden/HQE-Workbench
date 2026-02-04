@@ -40,17 +40,16 @@ function deepMerge(target: any, source: any): any {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
           result[key] = deepMerge(result[key], sourceValue);
         } else {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
           result[key] = { ...sourceValue };
         }
       } else if (sourceValue !== undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         result[key] = sourceValue;
       }
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return result;
 }
 

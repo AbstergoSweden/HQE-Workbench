@@ -14,9 +14,12 @@ describe('SemanticGateService - Semantic Validation Behavior', () => {
 
   const mockPrompt: ConvertedPrompt = {
     id: 'test-prompt',
+    name: 'Test Prompt',
+    description: 'A test prompt for unit testing',
     category: 'test-category',
     userMessageTemplate: 'Test template',
     systemMessage: 'Test system message',
+    arguments: [],
   };
 
   const mockContext: GateContext = {

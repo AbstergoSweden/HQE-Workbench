@@ -28,8 +28,8 @@ const createConfigManager = (llmEnabled: boolean) =>
   }) as any;
 
 const fakeRenderer: GateGuidanceRenderer = {
-  renderGuidance: jest.fn().mockResolvedValue('Guidance'),
-} as any;
+  renderGuidance: jest.fn<GateGuidanceRenderer['renderGuidance']>().mockResolvedValue('Guidance'),
+} as unknown as GateGuidanceRenderer;
 
 const fakeValidator: any = {
   validateGates: jest.fn(),
