@@ -108,7 +108,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@types/nunjucks": "^3.2.6",
     "cors": "^2.8.6",
     "diff": "^8.0.3",
