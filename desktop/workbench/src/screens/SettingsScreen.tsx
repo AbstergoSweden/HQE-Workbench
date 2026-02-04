@@ -169,12 +169,12 @@ export function SettingsScreen() {
       }
       if (!keyLocked && keyToUse) {
         await invoke('set_session_api_key', {
-          profile_name: name,
-          api_key: keyToUse,
+          profileName: name,
+          apiKey: keyToUse,
         })
       }
       const result = await invoke<ProviderModelList>('discover_models', {
-        profile_name: name,
+        profileName: name,
       })
       if (result.models.length === 0) {
         setDiscoverError('No models discovered')
@@ -209,12 +209,12 @@ export function SettingsScreen() {
       }
       if (!keyLocked && keyToUse) {
         await invoke('set_session_api_key', {
-          profile_name: name,
-          api_key: keyToUse,
+          profileName: name,
+          apiKey: keyToUse,
         })
       }
       const result = await invoke<boolean>('test_provider_connection', {
-        profile_name: name,
+        profileName: name,
       })
       setTestResult(result)
       toast.success(result ? 'Connection successful' : 'Connection failed')
@@ -242,8 +242,8 @@ export function SettingsScreen() {
     try {
       if (!keyLocked && key) {
         await invoke('set_session_api_key', {
-          profile_name: name,
-          api_key: key,
+          profileName: name,
+          apiKey: key,
         })
       }
       await invoke('save_provider_profile', {
@@ -521,11 +521,11 @@ export function SettingsScreen() {
                       }
                       if (!keyLocked && keyToUse) {
                         await invoke('set_session_api_key', {
-                          profile_name: name,
-                          api_key: keyToUse,
+                          profileName: name,
+                          apiKey: keyToUse,
                         })
                       }
-                      await invoke('discover_models', { profile_name: name })
+                      await invoke('discover_models', { profileName: name })
                       toast.success('✓ API key is valid')
                     } catch (error) {
                       const msg = error instanceof Error ? error.message : String(error)
