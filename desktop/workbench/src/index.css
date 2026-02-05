@@ -8,7 +8,7 @@
   --dracula-selection: #44475a;
   --dracula-fg: #f8f8f2;
   --dracula-comment: #6272a4;
-  
+
   /* Accent Colors */
   --dracula-cyan: #8be9fd;
   --dracula-green: #50fa7b;
@@ -17,7 +17,7 @@
   --dracula-purple: #bd93f9;
   --dracula-red: #ff5555;
   --dracula-yellow: #f1fa8c;
-  
+
   /* Semantic mappings */
   --color-bg: var(--dracula-bg);
   --color-surface: var(--dracula-current-line);
@@ -39,8 +39,11 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   min-height: 100vh;
+  font-size: 16px;
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
   background: var(--color-bg);
   color: var(--color-text);
@@ -69,8 +72,16 @@ html, body, #root {
 
 /* Terminal Cursor Animation */
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .terminal-cursor {
@@ -96,8 +107,13 @@ html, body, #root {
 
 /* Scan Line Animation */
 @keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100vh);
+  }
 }
 
 .scanline {
@@ -131,12 +147,10 @@ html, body, #root {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(189, 147, 249, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(189, 147, 249, 0.2),
+      transparent);
   transition: left 0.3s;
 }
 
@@ -191,12 +205,10 @@ html, body, #root {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--dracula-purple),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      var(--dracula-purple),
+      transparent);
 }
 
 /* Terminal Input */
@@ -325,8 +337,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {
@@ -334,8 +351,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 @keyframes typewriter {
-  from { width: 0; }
-  to { width: 100%; }
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
 }
 
 .typewriter {
@@ -345,8 +367,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(80, 250, 123, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(80, 250, 123, 0.6); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(80, 250, 123, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(80, 250, 123, 0.6);
+  }
 }
 
 .animate-glow {
@@ -354,14 +383,37 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* Terminal Text Colors */
-.text-terminal-green { color: var(--dracula-green); }
-.text-terminal-cyan { color: var(--dracula-cyan); }
-.text-terminal-purple { color: var(--dracula-purple); }
-.text-terminal-pink { color: var(--dracula-pink); }
-.text-terminal-yellow { color: var(--dracula-yellow); }
-.text-terminal-orange { color: var(--dracula-orange); }
-.text-terminal-red { color: var(--dracula-red); }
-.text-terminal-comment { color: var(--dracula-comment); }
+.text-terminal-green {
+  color: var(--dracula-green);
+}
+
+.text-terminal-cyan {
+  color: var(--dracula-cyan);
+}
+
+.text-terminal-purple {
+  color: var(--dracula-purple);
+}
+
+.text-terminal-pink {
+  color: var(--dracula-pink);
+}
+
+.text-terminal-yellow {
+  color: var(--dracula-yellow);
+}
+
+.text-terminal-orange {
+  color: var(--dracula-orange);
+}
+
+.text-terminal-red {
+  color: var(--dracula-red);
+}
+
+.text-terminal-comment {
+  color: var(--dracula-comment);
+}
 
 /* Terminal Border */
 .border-terminal {
@@ -370,7 +422,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* Grid Pattern Background */
 .terminal-bg {
-  background-image: 
+  background-image:
     linear-gradient(rgba(68, 71, 90, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(68, 71, 90, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
