@@ -4,7 +4,7 @@ Date: 2026-01-31
 
 This document is a deep dive into every prompt currently present in this repository that can influence runtime behavior:
 
-1) **Workbench "Thinktank" prompt templates** under `prompts/**/*.toml` (loaded by the Workbench app).
+1) **Workbench "Thinktank" prompt templates** under `mcp-server/**/*.toml` (loaded by the Workbench app).
 2) **LLM scan prompts** embedded in Rust under `crates/hqe-openai/src/prompts.rs` (used by the HQE scan pipeline).
 
 It focuses on: intended behavior, actual behavior in this codebase, missing inputs, logic lapses, and compatibility with “single-shot, text-only models” execution.
@@ -50,7 +50,7 @@ Implicit args behavior:
 - If the template contains `{{args}}` and no explicit `args` include `args`, the loader auto-adds a required string input named `args`.
 
 Naming:
-- A file at `prompts/cli-prompt-library/commands/docs/write-readme.toml` becomes:
+- A file at `mcp-server/cli-prompt-library/commands/docs/write-readme.toml` becomes:
   `cli_prompt_library_commands_docs_write_readme`
 
 ### 1.3 LLM Scan Prompts (HQE analysis pipeline)
@@ -71,22 +71,22 @@ Flow:
 
 ## 2) Repository Prompt Inventory
 
-### 2.1 Workbench Thinktank prompt files (`prompts/**/*.toml`)
+### 2.1 Workbench Thinktank prompt files (`mcp-server/**/*.toml`)
 
-There are 38 TOML prompt templates under `prompts/`:
+There are 42 TOML prompt templates under `mcp-server/`:
 
-- `prompts/cli-prompt-library/commands/architecture/*.toml` (4)
-- `prompts/cli-prompt-library/commands/code-review/*.toml` (4)
-- `prompts/cli-prompt-library/commands/debugging/*.toml` (3)
-- `prompts/cli-prompt-library/commands/docs/*.toml` (4)
-- `prompts/cli-prompt-library/commands/learning/*.toml` (4)
-- `prompts/cli-prompt-library/commands/prompts/*.toml` (3)
-- `prompts/cli-prompt-library/commands/testing/*.toml` (4)
-- `prompts/cli-prompt-library/commands/writing/*.toml` (3)
-- `prompts/cli-security/commands/security/*.toml` (2)
-- `prompts/conductor/*.toml` (5)
-- `prompts/criticalthink/criticalthink.toml` (1)
-- `prompts/code-review.toml` (1)
+- `mcp-server/cli-prompt-library/commands/architecture/*.toml` (5)
+- `mcp-server/cli-prompt-library/commands/code-review/*.toml` (4)
+- `mcp-server/cli-prompt-library/commands/debugging/*.toml` (3)
+- `mcp-server/cli-prompt-library/commands/docs/*.toml` (4)
+- `mcp-server/cli-prompt-library/commands/learning/*.toml` (5)
+- `mcp-server/cli-prompt-library/commands/prompts/*.toml` (4)
+- `mcp-server/cli-prompt-library/commands/testing/*.toml` (4)
+- `mcp-server/cli-prompt-library/commands/writing/*.toml` (4)
+- `mcp-server/cli-security/commands/security/*.toml` (2)
+- `mcp-server/conductor/*.toml` (5)
+- `mcp-server/criticalthink/criticalthink.toml` (1)
+- `mcp-server/code-review.toml` (1)
 
 ### 2.2 LLM scan prompts (Rust)
 
@@ -104,7 +104,7 @@ Notes:
 - “Inputs” refers to what Thinktank can provide via `{{args}}` (or explicit schema args).
 - “Fits Thinktank?” indicates if the prompt can succeed with *only* the text LLM call.
 
-### 3.1 `prompts/code-review.toml` (tool: `code_review`)
+### 3.1 `mcp-server/code-review.toml` (tool: `code_review`)
 
 Purpose:
 - A strict code review rubric with severity classification and location constraints.
@@ -127,7 +127,7 @@ Suggested improvements:
 - Allow referencing hunk ranges (e.g. `@@ -12,6 +12,9 @@`) instead of absolute line numbers.
 - Add an explicit “If the diff lacks file paths or hunks, ask for a proper unified diff” guardrail.
 
-### 3.2 `prompts/criticalthink/criticalthink.toml` (tool: `criticalthink_criticalthink`)
+### 3.2 `mcp-server/criticalthink/criticalthink.toml` (tool: `criticalthink_criticalthink`)
 
 Purpose:
 - Structured critique rubric to identify assumptions, fallacies, risks, and revised recommendation.
@@ -149,7 +149,7 @@ Suggested improvements:
 - Add “If the text is mixed-language, use the user’s UI language / most common language.”
 - Allow “Partial / Mixed” on Pass/Fail items.
 
-### 3.3 `prompts/cli-security/commands/security/analyze.toml` (tool: `cli_security_commands_security_analyze`)
+### 3.3 `mcp-server/cli-security/commands/security/analyze.toml` (tool: `cli_security_commands_security_analyze`)
 
 Purpose:
 - A taint-analysis workflow intended for an agent with file system access + specialized MCP tools.
@@ -172,7 +172,7 @@ Suggested improvements:
 - Either hide from Thinktank by default, or add a banner: “Requires agent tooling; not supported in Thinktank.”
 - If kept, add `{{args}}` so users can paste file lists + diffs and request a purely text-only review.
 
-### 3.4 `prompts/cli-security/commands/security/analyze-github-pr.toml` (tool: `cli_security_commands_security_analyze_github_pr`)
+### 3.4 `mcp-server/cli-security/commands/security/analyze-github-pr.toml` (tool: `cli_security_commands_security_analyze_github_pr`)
 
 Purpose:
 - Same taint-analysis flow as above, but explicitly targeting GitHub Actions env vars + PR tooling.
@@ -189,7 +189,7 @@ Risks:
 Suggested improvements:
 - Same as `analyze.toml`: hide/tag, or refactor into “paste PR diff here” variant for Thinktank.
 
-### 3.5 `prompts/conductor/*.toml` (tools: `conductor_setup`, `conductor_newTrack`, `conductor_status`, `conductor_implement`, `conductor_revert`)
+### 3.5 `mcp-server/conductor/*.toml` (tools: `conductor_setup`, `conductor_newTrack`, `conductor_status`, `conductor_implement`, `conductor_revert`)
 
 Purpose:
 - “Conductor” methodology prompts designed for an interactive agent that can:
@@ -211,7 +211,7 @@ Logic lapses / risks:
 Suggested improvements:
 - Same: tag/hide from Thinktank; consider moving these prompts to an “agent prompts” folder.
 
-### 3.6 `prompts/cli-prompt-library/**` (31 prompts)
+### 3.6 `mcp-server/cli-prompt-library/**` (33 prompts)
 
 These are “LLM-only” text prompts that largely follow the same pattern:
 - A heading describing the task.
@@ -228,49 +228,53 @@ Common risks across these prompts:
 Below is the full per-file intent summary (each expects `{{args}}` as the main input):
 
 Architecture:
-- `prompts/cli-prompt-library/commands/architecture/system-design.toml`: full system design rubric (requirements, capacity, architecture, data flow).
-- `prompts/cli-prompt-library/commands/architecture/design-api.toml`: API design guidance (endpoints, payloads, auth, versioning).
-- `prompts/cli-prompt-library/commands/architecture/design-database.toml`: database schema/queries/indexing guidance.
-- `prompts/cli-prompt-library/commands/architecture/design-patterns.toml`: selects/compares design patterns and their tradeoffs.
+- `mcp-server/cli-prompt-library/commands/architecture/system-design.toml`: full system design rubric (requirements, capacity, architecture, data flow).
+- `mcp-server/cli-prompt-library/commands/architecture/design-api.toml`: API design guidance (endpoints, payloads, auth, versioning).
+- `mcp-server/cli-prompt-library/commands/architecture/design-database.toml`: database schema/queries/indexing guidance.
+- `mcp-server/cli-prompt-library/commands/architecture/design-patterns.toml`: selects/compares design patterns and their tradeoffs.
+- `mcp-server/cli-prompt-library/commands/architecture/ddd-modeling.toml`: DDD modeling prompts (bounded contexts, aggregates).
 
 Code review:
-- `prompts/cli-prompt-library/commands/code-review/security.toml`: security-focused review rubric.
-- `prompts/cli-prompt-library/commands/code-review/performance.toml`: performance-focused review rubric.
-- `prompts/cli-prompt-library/commands/code-review/best-practices.toml`: best practices review rubric.
-- `prompts/cli-prompt-library/commands/code-review/refactor.toml`: refactoring plan suggestions with constraints.
+- `mcp-server/cli-prompt-library/commands/code-review/security.toml`: security-focused review rubric.
+- `mcp-server/cli-prompt-library/commands/code-review/performance.toml`: performance-focused review rubric.
+- `mcp-server/cli-prompt-library/commands/code-review/best-practices.toml`: best practices review rubric.
+- `mcp-server/cli-prompt-library/commands/code-review/refactor.toml`: refactoring plan suggestions with constraints.
 
 Debugging:
-- `prompts/cli-prompt-library/commands/debugging/debug-error.toml`: root cause analysis for an error; expects logs/code in `{{args}}`.
-- `prompts/cli-prompt-library/commands/debugging/trace-issue.toml`: systematic tracing strategy.
-- `prompts/cli-prompt-library/commands/debugging/performance-profile.toml`: profiling plan and interpretation.
+- `mcp-server/cli-prompt-library/commands/debugging/debug-error.toml`: root cause analysis for an error; expects logs/code in `{{args}}`.
+- `mcp-server/cli-prompt-library/commands/debugging/trace-issue.toml`: systematic tracing strategy.
+- `mcp-server/cli-prompt-library/commands/debugging/performance-profile.toml`: profiling plan and interpretation.
 
 Docs:
-- `prompts/cli-prompt-library/commands/docs/write-readme.toml`: README drafting.
-- `prompts/cli-prompt-library/commands/docs/write-contributing.toml`: CONTRIBUTING guide drafting.
-- `prompts/cli-prompt-library/commands/docs/write-changelog.toml`: changelog entry drafting.
-- `prompts/cli-prompt-library/commands/docs/write-api-docs.toml`: API documentation drafting.
+- `mcp-server/cli-prompt-library/commands/docs/write-readme.toml`: README drafting.
+- `mcp-server/cli-prompt-library/commands/docs/write-contributing.toml`: CONTRIBUTING guide drafting.
+- `mcp-server/cli-prompt-library/commands/docs/write-changelog.toml`: changelog entry drafting.
+- `mcp-server/cli-prompt-library/commands/docs/write-api-docs.toml`: API documentation drafting.
 
 Learning:
-- `prompts/cli-prompt-library/commands/learning/eli5.toml`: simple explanation.
-- `prompts/cli-prompt-library/commands/learning/explain-concept.toml`: structured explanation with examples.
-- `prompts/cli-prompt-library/commands/learning/compare-tech.toml`: compares technologies.
-- `prompts/cli-prompt-library/commands/learning/roadmap.toml`: learning roadmap.
+- `mcp-server/cli-prompt-library/commands/learning/eli5.toml`: simple explanation.
+- `mcp-server/cli-prompt-library/commands/learning/explain-concept.toml`: structured explanation with examples.
+- `mcp-server/cli-prompt-library/commands/learning/compare-tech.toml`: compares technologies.
+- `mcp-server/cli-prompt-library/commands/learning/roadmap.toml`: learning roadmap.
+- `mcp-server/cli-prompt-library/commands/learning/explain-code.toml`: code explanation with walkthrough.
 
 Prompt engineering:
-- `prompts/cli-prompt-library/commands/prompts/best-practices.toml`: prompt engineering guidance (contains a “show reasoning” example; consider rewording).
-- `prompts/cli-prompt-library/commands/prompts/create-template.toml`: creates a reusable prompt template; includes `{{var}}` examples (these are literal examples, not Workbench variables).
-- `prompts/cli-prompt-library/commands/prompts/improve.toml`: improves a prompt (rewrites + changelog + questions).
+- `mcp-server/cli-prompt-library/commands/prompts/best-practices.toml`: prompt engineering guidance (contains a “show reasoning” example; consider rewording).
+- `mcp-server/cli-prompt-library/commands/prompts/create-template.toml`: creates a reusable prompt template; includes `{{var}}` examples (these are literal examples, not Workbench variables).
+- `mcp-server/cli-prompt-library/commands/prompts/improve.toml`: improves a prompt (rewrites + changelog + questions).
+- `mcp-server/cli-prompt-library/commands/prompts/optimize-prompt.toml`: optimizes an existing prompt with revisions and rationale.
 
 Testing:
-- `prompts/cli-prompt-library/commands/testing/generate-unit-tests.toml`: unit test generation plan.
-- `prompts/cli-prompt-library/commands/testing/generate-e2e-tests.toml`: end-to-end test plan.
-- `prompts/cli-prompt-library/commands/testing/coverage-analysis.toml`: test coverage analysis rubric.
-- `prompts/cli-prompt-library/commands/testing/edge-cases.toml`: edge cases enumeration rubric.
+- `mcp-server/cli-prompt-library/commands/testing/generate-unit-tests.toml`: unit test generation plan.
+- `mcp-server/cli-prompt-library/commands/testing/generate-e2e-tests.toml`: end-to-end test plan.
+- `mcp-server/cli-prompt-library/commands/testing/coverage-analysis.toml`: test coverage analysis rubric.
+- `mcp-server/cli-prompt-library/commands/testing/edge-cases.toml`: edge cases enumeration rubric.
 
 Writing:
-- `prompts/cli-prompt-library/commands/writing/email.toml`: email drafting.
-- `prompts/cli-prompt-library/commands/writing/presentation.toml`: presentation outline.
-- `prompts/cli-prompt-library/commands/writing/technical-blog.toml`: technical blog post outline.
+- `mcp-server/cli-prompt-library/commands/writing/email.toml`: email drafting.
+- `mcp-server/cli-prompt-library/commands/writing/presentation.toml`: presentation outline.
+- `mcp-server/cli-prompt-library/commands/writing/technical-blog.toml`: technical blog post outline.
+- `mcp-server/cli-prompt-library/commands/writing/write-readme.toml`: README drafting (writing template).
 
 ---
 
@@ -347,8 +351,8 @@ Risks:
 
 4) **Library relevance**
 - The repo currently contains two different “prompt ecosystems”:
-  - Workbench templates (`prompts/**/*.toml`)
-  - Vendored MCP server resources (`prompts/prompts/server/**`)
+  - Workbench templates (`mcp-server/**/*.toml`)
+  - Vendored MCP server resources (`mcp-server/prompts/server/**`)
 - These should be separated or filtered so Workbench doesn’t load irrelevant files.
 
 ---
@@ -360,4 +364,3 @@ Priority order:
 2) Add descriptions to `cli-prompt-library` templates to improve browsing UX.
 3) Add optional support for “system” role templates in prompt files (so templates can supply system + user messages instead of only user content).
 4) Consider stricter placeholder validation (warn/error if template contains `{{...}}` not provided and not explicitly declared as literal).
-

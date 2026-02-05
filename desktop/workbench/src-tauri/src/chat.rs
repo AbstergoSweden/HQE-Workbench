@@ -568,7 +568,12 @@ fn resolve_prompts_dir() -> Result<std::path::PathBuf, String> {
     let cwd = std::env::current_dir()
         .map_err(|e| log_and_wrap_error("Failed to resolve prompts directory", e))?;
     for ancestor in cwd.ancestors() {
-        let cli_library = ancestor.join("mcp-server").join("cli-prompt-library");
+        let mcp_root = ancestor.join("mcp-server");
+        if mcp_root.exists() {
+            return Ok(mcp_root);
+        }
+
+        let cli_library = mcp_root.join("cli-prompt-library");
         if cli_library.exists() {
             return Ok(cli_library);
         }

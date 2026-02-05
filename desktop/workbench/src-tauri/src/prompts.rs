@@ -199,8 +199,14 @@ fn get_prompts_dir(app: &AppHandle) -> Option<PathBuf> {
 
 fn find_prompts_dir(start: &Path) -> Option<PathBuf> {
     for ancestor in start.ancestors() {
-        // Prefer TOML prompt templates in cli-prompt-library (compatible with PromptLoader)
-        let cli_library = ancestor.join("mcp-server").join("cli-prompt-library");
+        // Prefer the MCP server root (includes the full Thinktank prompt library).
+        let mcp_root = ancestor.join("mcp-server");
+        if mcp_root.exists() && contains_loadable_prompts(&mcp_root) {
+            return Some(mcp_root);
+        }
+
+        // Fallback to TOML prompt templates in cli-prompt-library.
+        let cli_library = mcp_root.join("cli-prompt-library");
         if cli_library.exists() && contains_loadable_prompts(&cli_library) {
             return Some(cli_library);
         }

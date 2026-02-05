@@ -423,7 +423,7 @@ export const ThinktankScreen: FC = () => {
                 No prompts found
               </p>
               <p className="text-xs" style={{ color: 'var(--dracula-comment)' }}>
-                Add <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>.toml</code> files to your <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>prompts/</code> folder
+                Add <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>.toml</code> files to your <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>mcp-server/</code> folder or set <code className="px-1 py-0.5 rounded" style={{ background: 'var(--dracula-current-line)' }}>HQE_PROMPTS_DIR</code>
               </p>
               <button
                 onClick={refresh}
