@@ -389,7 +389,7 @@ impl PromptRunner {
             let placeholder = cap.get(1).map(|m| m.as_str()).unwrap_or("");
 
             // Validate placeholder name to prevent injection attacks
-            if !is_valid_placeholder_name(placeholder) {
+            if !Self::is_valid_placeholder_name(placeholder) {
                 return Err(PromptRunnerError::TemplateError(format!(
                     "Invalid placeholder name: {}", placeholder
                 )));

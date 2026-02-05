@@ -791,10 +791,13 @@ impl RepoScanner {
     pub async fn read_file(&self, relative_path: &str) -> crate::Result<Option<String>> {
         // Prevent path traversal by ensuring the resolved path is within the root directory
         // First, validate the relative path doesn't contain dangerous patterns
-        if relative_path.contains("..") || relative_path.contains("./") || relative_path.starts_with("/") {
-            warn!("Suspicious path pattern detected: {}", relative_path);
+        // TODO: traversal path to repos needs to be further refined for later. Past errors with same non- fixed log 
+        // unable to load repos via absolute paths
+        // Only check for ../ patterns that could lead to directory traversal
+        if relative_path.contains("../") || relative_path.starts_with("../") {
+            warn!("Path traversal attempt detected: {}", relative_path);
             return Err(crate::HqeError::Scan(format!(
-                "Invalid path pattern detected: {}",
+                "Path traversal detected: file '{}' is outside the allowed directory",
                 relative_path
             )));
         }
