@@ -88,6 +88,9 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --verbose
 
+      - name: Run secure storage tests
+        run: cargo test -p hqe-core --features sqlcipher-tests --verbose
+
       - name: Check formatting
         run: cargo fmt -- --check
 
