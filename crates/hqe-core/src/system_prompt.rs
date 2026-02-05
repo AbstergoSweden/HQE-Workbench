@@ -58,7 +58,7 @@ pub const SYSTEM_PROMPT_VERSION: &str = "1.0.0";
 
 /// Expected SHA-256 hash of BASELINE_SYSTEM_PROMPT.
 /// This is used to verify integrity at runtime.
-pub const SYSTEM_PROMPT_HASH: &str = "sha256:a1b2c3d4e5f6"; // Will be computed and updated
+pub const SYSTEM_PROMPT_HASH: &str = "sha256:c2aeec3d43499e071ead315e64e9aa8c92c1d846634541d03d4c25d618eb6eab"; // Actual computed hash
 
 /// Computed hash storage (computed once on first access)
 static COMPUTED_HASH: OnceLock<String> = OnceLock::new();

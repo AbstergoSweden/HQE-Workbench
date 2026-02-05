@@ -387,11 +387,30 @@ impl PromptRunner {
 
         for cap in placeholder_regex.captures_iter(&template.template) {
             let placeholder = cap.get(1).map(|m| m.as_str()).unwrap_or("");
+
+            // Validate placeholder name to prevent injection attacks
+            if !is_valid_placeholder_name(placeholder) {
+                return Err(PromptRunnerError::TemplateError(format!(
+                    "Invalid placeholder name: {}", placeholder
+                )));
+            }
+
             let value = inputs.get(placeholder).cloned().unwrap_or_default();
             result = result.replace(&format!("{{{{{}}}}}", placeholder), &value);
         }
 
         Ok(result)
+    }
+
+    /// Validate that a placeholder name is safe to use
+    fn is_valid_placeholder_name(name: &str) -> bool {
+        // Only allow alphanumeric characters, underscores, and hyphens
+        !name.is_empty()
+            && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+            // Prevent names that could break out of template delimiters
+            && !name.contains("{{")
+            && !name.contains("}}")
+            && !name.contains('\0')
     }
 
     fn truncate_to_bytes(input: &str, max_bytes: usize) -> String {

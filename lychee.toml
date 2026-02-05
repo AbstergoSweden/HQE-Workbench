@@ -1,0 +1,29 @@
+# Lychee configuration file
+# See https://lychee.cli.rs/usage/config/
+
+# Exclude private email addresses
+exclude = [
+    'mailto:2-craze-headmen@icloud.com',
+    'mailto:api-support@securewebapp.com',
+    'mailto:conduct@hqeworkbench.com',
+    'mailto:security@hqeworkbench.com',
+    'https://github.com/AbstergoSweden/HQE-Workbench/releases/tag/v.*', # Unpublished releases
+    'https://github.com/AbstergoSweden/HQE-Workbench/compare/.*', # Compare links for unmerged branches
+    'https://developers.securewebapp.com/', # Flaky external link
+    'https://github.com/minipuft/.*', # External 404s
+    'https://www.npmjs.com/package/.*', # NPM 403s
+    'https://smithery.ai/.*', # Rate limited
+    'cursor://.*', # Deep links
+]
+
+# Check markdown files
+include = [
+    "**/*.md",
+    "**/*.markdown",
+]
+
+# Ignore timeout errors
+timeout = 20
+
+# Retry failed links
+retries = 3

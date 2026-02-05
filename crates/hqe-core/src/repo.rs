@@ -790,6 +790,15 @@ impl RepoScanner {
     /// handles canonicalization to prevent path traversal.
     pub async fn read_file(&self, relative_path: &str) -> crate::Result<Option<String>> {
         // Prevent path traversal by ensuring the resolved path is within the root directory
+        // First, validate the relative path doesn't contain dangerous patterns
+        if relative_path.contains("..") || relative_path.contains("./") || relative_path.starts_with("/") {
+            warn!("Suspicious path pattern detected: {}", relative_path);
+            return Err(crate::HqeError::Scan(format!(
+                "Invalid path pattern detected: {}",
+                relative_path
+            )));
+        }
+
         let full_path = self.root_path.join(relative_path);
 
         if !full_path.exists() {

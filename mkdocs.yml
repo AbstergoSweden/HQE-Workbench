@@ -1,0 +1,55 @@
+site_name: HQE Workbench
+site_description: "Automated codebase health auditing and actionable TODO generation."
+repo_url: https://github.com/AbstergoSweden/HQE-Workbench
+repo_name: AbstergoSweden/HQE-Workbench
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.top
+    - toc.follow
+  palette:
+    - scheme: slate
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+nav:
+  - Home: README.md
+  - Documentation:
+    - Architecture: docs/architecture.md
+    - Development: docs/DEVELOPMENT.md
+    - API Reference: docs/API.md
+    - How-To: docs/HOW_TO.md
+    - Protocol: protocol/README.md
+  - Reports:
+    - Deep Scan Results: docs/DEEP_SCAN_RESULTS.md
+    - Security Audit: docs/COMPREHENSIVE_TODO_AND_BUGS.md
+  - Legal:
+    - License: LICENSE
+    - Privacy: PRIVACY.md
+    - Terms: LEGAL.md
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true

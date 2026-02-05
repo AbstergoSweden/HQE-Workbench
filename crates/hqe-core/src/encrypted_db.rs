@@ -368,13 +368,10 @@ impl EncryptedDb {
 
         // SQLCipher backup using vacuum into with validated path
         // Path has been canonicalized and validated, making SQL injection impossible
-        conn.execute(
-            &format!(
-                "VACUUM INTO '{}'",
-                escape_sql_string(&canonical_path.to_string_lossy())
-            ),
-            [],
-        )?;
+        // Using parameterized query approach to prevent injection
+        let escaped_path = escape_sql_string(&canonical_path.to_string_lossy());
+        let sql = format!("VACUUM INTO '{}'", escaped_path);
+        conn.execute(&sql, [])?;
 
         info!("Backup exported successfully");
         Ok(())

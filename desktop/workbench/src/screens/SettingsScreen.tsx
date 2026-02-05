@@ -3,6 +3,7 @@ import { LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/solid'
 import { invoke } from '@tauri-apps/api/core'
 import { useToast } from '../context/ToastContext'
 import { ProviderModelList, ProviderProfile, ProviderModel, ProviderSpec } from '../types'
+import { getApiKeyId } from '../constants/identifiers'
 
 export function SettingsScreen() {
   const [profiles, setProfiles] = useState<ProviderProfile[]>([])
@@ -140,7 +141,7 @@ export function SettingsScreen() {
     setHeadersError(null)
     setTestResult(null)
     try {
-      const apiKeyId = `api_key:${profile.name}`
+      const apiKeyId = getApiKeyId(profile.name)
       const stored = await invoke<string | null>('get_api_key', { apiKeyId })
       setStoredApiKey(stored)
     } catch {

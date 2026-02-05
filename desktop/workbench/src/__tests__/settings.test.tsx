@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { invoke } from '@tauri-apps/api/core'
 import { SettingsScreen } from '../screens/SettingsScreen'
 import { renderWithProviders } from './test-utils'
+import { getApiKeyId } from '../constants/identifiers'
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
@@ -54,7 +55,7 @@ describe('SettingsScreen', () => {
     const profile = {
       name: 'Venice',
       base_url: 'https://api.venice.ai/api/v1',
-      api_key_id: 'api_key:Venice',
+      api_key_id: getApiKeyId('Venice'),
       default_model: 'venice-text-1',
       headers: { 'X-Test': '1' },
       organization: null,
@@ -87,7 +88,7 @@ describe('SettingsScreen', () => {
 
     // Verify that get_api_key was called to retrieve the stored API key
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith('get_api_key', { apiKeyId: 'api_key:Venice' })
+      expect(invoke).toHaveBeenCalledWith('get_api_key', { apiKeyId: getApiKeyId('Venice') })
     })
 
     const discover = screen.getByRole('button', { name: /^discover$/i })
