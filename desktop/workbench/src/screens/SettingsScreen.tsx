@@ -401,10 +401,11 @@ export function SettingsScreen() {
             <div className="space-y-4">
               {/* Provider Spec Selector */}
               <div>
-                <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                <label htmlFor="provider-template" className="text-terminal-cyan font-mono text-sm block mb-1">
                   --provider_template
                 </label>
                 <select
+                  id="provider-template"
                   value={selectedSpec}
                   onChange={(e) => {
                     const specId = e.target.value
@@ -453,10 +454,11 @@ export function SettingsScreen() {
 
               {/* Name */}
               <div>
-                <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                <label htmlFor="profile-name" className="text-terminal-cyan font-mono text-sm block mb-1">
                   --name
                 </label>
                 <input
+                  id="profile-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -467,10 +469,11 @@ export function SettingsScreen() {
 
               {/* URL */}
               <div>
-                <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                <label htmlFor="profile-url" className="text-terminal-cyan font-mono text-sm block mb-1">
                   --url
                 </label>
                 <input
+                  id="profile-url"
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
@@ -481,7 +484,7 @@ export function SettingsScreen() {
 
               {/* API Key */}
               <div>
-                <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                <label htmlFor="profile-key" className="text-terminal-cyan font-mono text-sm block mb-1">
                   --api-key
                   {storedApiKey && (
                     <span className="text-terminal-green text-xs ml-2">(stored)</span>
@@ -501,6 +504,7 @@ export function SettingsScreen() {
                   </button>
                 </label>
                 <input
+                  id="profile-key"
                   type="password"
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
@@ -552,11 +556,12 @@ export function SettingsScreen() {
 
               {/* Model */}
               <div>
-                <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                <label htmlFor="profile-model" className="text-terminal-cyan font-mono text-sm block mb-1">
                   --model
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id="profile-model"
                     type="text"
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
@@ -584,6 +589,7 @@ export function SettingsScreen() {
                 )}
                 {availableModels.length > 0 && (
                   <select
+                    aria-label="Select discovered model"
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     className="input mt-2"
@@ -599,10 +605,11 @@ export function SettingsScreen() {
 
               {/* Headers */}
               <div>
-                <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                <label htmlFor="profile-headers" className="text-terminal-cyan font-mono text-sm block mb-1">
                   --headers
                 </label>
                 <textarea
+                  id="profile-headers"
                   value={headersText}
                   onChange={(e) => {
                     setHeadersText(e.target.value)
@@ -618,11 +625,12 @@ export function SettingsScreen() {
 
               {/* Timeout */}
               <div>
-                <label className="text-terminal-cyan font-mono text-sm block mb-1">
+                <label htmlFor="profile-timeout" className="text-terminal-cyan font-mono text-sm block mb-1">
                   --timeout
                 </label>
                 <div className="flex items-center gap-3">
                   <input
+                    id="profile-timeout"
                     type="range"
                     min="10"
                     max="300"
