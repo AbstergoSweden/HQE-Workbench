@@ -3,7 +3,7 @@ import { LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/solid'
 import { invoke } from '@tauri-apps/api/core'
 import { useToast } from '../context/ToastContext'
 import { ProviderModelList, ProviderProfile, ProviderModel, ProviderSpec } from '../types'
-import { getApiKeyId } from '../constants/identifiers'
+import { getApiKeyId, PROVIDER_IDS } from '../constants/identifiers'
 
 export function SettingsScreen() {
   const [profiles, setProfiles] = useState<ProviderProfile[]>([])
@@ -288,12 +288,12 @@ export function SettingsScreen() {
 
   // Default profiles to import
   const defaultProfiles = [
-    { name: 'openai', base_url: 'https://api.openai.com/v1', default_model: 'gpt-4o-mini', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
-    { name: 'anthropic', base_url: 'https://api.anthropic.com/v1', default_model: 'claude-3-5-sonnet-latest', headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' }, timeout_s: 60 },
-    { name: 'venice', base_url: 'https://api.venice.ai/api/v1', default_model: 'deepseek-r1-671b', headers: { 'Content-Type': 'application/json' }, timeout_s: 120 },
-    { name: 'openrouter', base_url: 'https://openrouter.ai/api/v1', default_model: 'openai/gpt-4o-mini', headers: { 'Content-Type': 'application/json', 'HTTP-Referer': 'https://hqe-workbench.local', 'X-Title': 'HQE Workbench' }, timeout_s: 120 },
-    { name: 'xai-grok', base_url: 'https://api.x.ai/v1', default_model: 'grok-2-latest', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
-    { name: 'google-gemini', base_url: 'https://generativelanguage.googleapis.com/v1beta/openai', default_model: 'gemini-2.0-flash', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
+    { name: PROVIDER_IDS.OPENAI, base_url: 'https://api.openai.com/v1', default_model: 'gpt-4o-mini', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
+    { name: PROVIDER_IDS.ANTHROPIC, base_url: 'https://api.anthropic.com/v1', default_model: 'claude-3-5-sonnet-latest', headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' }, timeout_s: 60 },
+    { name: PROVIDER_IDS.VENICE, base_url: 'https://api.venice.ai/api/v1', default_model: 'deepseek-r1-671b', headers: { 'Content-Type': 'application/json' }, timeout_s: 120 },
+    { name: PROVIDER_IDS.OPENROUTER, base_url: 'https://openrouter.ai/api/v1', default_model: 'openai/gpt-4o-mini', headers: { 'Content-Type': 'application/json', 'HTTP-Referer': 'https://hqe-workbench.local', 'X-Title': 'HQE Workbench' }, timeout_s: 120 },
+    { name: PROVIDER_IDS.XAI_GROK, base_url: 'https://api.x.ai/v1', default_model: 'grok-2-latest', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
+    { name: PROVIDER_IDS.GOOGLE_GEMINI, base_url: 'https://generativelanguage.googleapis.com/v1beta/openai', default_model: 'gemini-2.0-flash', headers: { 'Content-Type': 'application/json' }, timeout_s: 60 },
   ]
 
   const handleLoadDefaults = async () => {

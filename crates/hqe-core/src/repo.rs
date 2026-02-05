@@ -791,7 +791,7 @@ impl RepoScanner {
     pub async fn read_file(&self, relative_path: &str) -> crate::Result<Option<String>> {
         // Prevent path traversal by ensuring the resolved path is within the root directory
         // First, validate the relative path doesn't contain dangerous patterns
-        // TODO: traversal path to repos needs to be further refined for later. Past errors with same non- fixed log 
+        // TODO: traversal path to repos needs to be further refined for later. Past errors with same non- fixed log
         // unable to load repos via absolute paths
         // Only check for ../ patterns that could lead to directory traversal
         if relative_path.contains("../") || relative_path.starts_with("../") {

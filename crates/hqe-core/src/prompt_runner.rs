@@ -391,7 +391,8 @@ impl PromptRunner {
             // Validate placeholder name to prevent injection attacks
             if !Self::is_valid_placeholder_name(placeholder) {
                 return Err(PromptRunnerError::TemplateError(format!(
-                    "Invalid placeholder name: {}", placeholder
+                    "Invalid placeholder name: {}",
+                    placeholder
                 )));
             }
 

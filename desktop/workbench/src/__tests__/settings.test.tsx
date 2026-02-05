@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { invoke } from '@tauri-apps/api/core'
 import { SettingsScreen } from '../screens/SettingsScreen'
 import { renderWithProviders } from './test-utils'
-import { getApiKeyId } from '../constants/identifiers'
+import { getApiKeyId, PROVIDER_IDS } from '../constants/identifiers'
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
@@ -60,7 +60,7 @@ describe('SettingsScreen', () => {
       headers: { 'X-Test': '1' },
       organization: null,
       project: null,
-      provider_kind: 'venice',
+      provider_kind: PROVIDER_IDS.VENICE,
       timeout_s: 60,
     }
 

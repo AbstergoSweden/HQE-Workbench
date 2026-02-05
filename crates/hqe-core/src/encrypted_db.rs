@@ -111,6 +111,7 @@ impl EncryptedDb {
         }
 
         // Get or create encryption key
+        debug!("Initializing EncryptedDb at {:?}", config.db_path);
         let key = Self::get_or_create_key(&config)?;
 
         // Open database with encryption
@@ -200,6 +201,7 @@ impl EncryptedDb {
                 id TEXT PRIMARY KEY,
                 repo_path TEXT,
                 prompt_id TEXT,
+                name TEXT,
                 provider TEXT NOT NULL,
                 model TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -392,12 +394,14 @@ impl EncryptedDb {
             }
         };
 
-        match conn.execute("PRAGMA integrity_check", []) {
-            Ok(_) => Ok(true),
-            Err(e) => {
-                warn!("Database integrity check failed: {}", e);
-                Ok(false)
-            }
+        let mut stmt = conn.prepare("PRAGMA integrity_check")?;
+        let result: String = stmt.query_row([], |row| row.get(0))?;
+
+        if result == "ok" {
+            Ok(true)
+        } else {
+            warn!("Database integrity check failed: {}", result);
+            Ok(false)
         }
     }
 
@@ -661,11 +665,12 @@ impl ChatOperations for EncryptedDb {
     fn create_session(&self, session: &ChatSession) -> Result<()> {
         let conn = self.connection()?;
         conn.execute(
-            "INSERT INTO chat_sessions (id, repo_path, prompt_id, provider, model, created_at, updated_at, metadata_json)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+            "INSERT INTO chat_sessions (id, repo_path, prompt_id, name, provider, model, created_at, updated_at, metadata_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
              ON CONFLICT(id) DO UPDATE SET
                  repo_path = excluded.repo_path,
                  prompt_id = excluded.prompt_id,
+                 name = excluded.name,
                  provider = excluded.provider,
                  model = excluded.model,
                  updated_at = excluded.updated_at,
@@ -674,6 +679,7 @@ impl ChatOperations for EncryptedDb {
                 session.id,
                 session.repo_path,
                 session.prompt_id,
+                session.name,
                 session.provider,
                 session.model,
                 session.created_at.to_rfc3339(),
@@ -687,7 +693,7 @@ impl ChatOperations for EncryptedDb {
     fn get_session(&self, session_id: &str) -> Result<Option<ChatSession>> {
         let conn = self.connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, repo_path, prompt_id, provider, model, created_at, updated_at, metadata_json
+            "SELECT id, repo_path, prompt_id, name, provider, model, created_at, updated_at, metadata_json
              FROM chat_sessions WHERE id = ?1"
         )?;
 
@@ -716,10 +722,10 @@ impl ChatOperations for EncryptedDb {
         let conn = self.connection()?;
 
         let query = if repo_path.is_some() {
-            "SELECT id, repo_path, prompt_id, provider, model, created_at, updated_at, metadata_json
+            "SELECT id, repo_path, prompt_id, name, provider, model, created_at, updated_at, metadata_json
              FROM chat_sessions WHERE repo_path = ?1 ORDER BY updated_at DESC"
         } else {
-            "SELECT id, repo_path, prompt_id, provider, model, created_at, updated_at, metadata_json
+            "SELECT id, repo_path, prompt_id, name, provider, model, created_at, updated_at, metadata_json
              FROM chat_sessions ORDER BY updated_at DESC"
         };
 
@@ -1073,6 +1079,7 @@ mod tests {
             id: "test-session-1".to_string(),
             repo_path: Some("/path/to/repo".to_string()),
             prompt_id: Some("security_audit".to_string()),
+            name: "Test Session".to_string(),
             provider: "openai".to_string(),
             model: "gpt-4o".to_string(),
             created_at: chrono::Utc::now(),
@@ -1097,6 +1104,7 @@ mod tests {
             id: "session-msg".to_string(),
             repo_path: None,
             prompt_id: None,
+            name: "Message Session".to_string(),
             provider: "test".to_string(),
             model: "test".to_string(),
             created_at: chrono::Utc::now(),
@@ -1146,6 +1154,7 @@ mod tests {
             id: "s1".to_string(),
             repo_path: Some("/repo/a".to_string()),
             prompt_id: None,
+            name: "Session 1".to_string(),
             provider: "test".to_string(),
             model: "test".to_string(),
             created_at: chrono::Utc::now(),
@@ -1157,6 +1166,7 @@ mod tests {
             id: "s2".to_string(),
             repo_path: Some("/repo/a".to_string()),
             prompt_id: None,
+            name: "Session 2".to_string(),
             provider: "test".to_string(),
             model: "test".to_string(),
             created_at: chrono::Utc::now(),
@@ -1183,6 +1193,7 @@ mod tests {
             id: "del-session".to_string(),
             repo_path: None,
             prompt_id: None,
+            name: "Delete Session".to_string(),
             provider: "test".to_string(),
             model: "test".to_string(),
             created_at: chrono::Utc::now(),
@@ -1221,6 +1232,7 @@ mod tests {
             id: "fb-session".to_string(),
             repo_path: None,
             prompt_id: None,
+            name: "Feedback Session".to_string(),
             provider: "test".to_string(),
             model: "test".to_string(),
             created_at: chrono::Utc::now(),
@@ -1228,6 +1240,18 @@ mod tests {
             metadata: None,
         };
         db.create_session(&session).unwrap();
+
+        let msg = ChatMessage {
+            id: "msg-123".to_string(),
+            session_id: "fb-session".to_string(),
+            parent_id: None,
+            role: MessageRole::User,
+            content: "Test Msg".to_string(),
+            context_refs: None,
+            timestamp: chrono::Utc::now(),
+            metadata: None,
+        };
+        db.add_message(&msg).unwrap();
 
         let feedback = FeedbackRecord {
             id: "fb-1".to_string(),
