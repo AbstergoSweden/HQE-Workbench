@@ -33,14 +33,14 @@ describe('SettingsScreen', () => {
 
     renderWithProviders(<SettingsScreen />)
 
-    const nameInput = screen.getByPlaceholderText('my-provider')
+    const nameInput = screen.getByLabelText(/--name/i)
     await userEvent.type(nameInput, 'Venice')
 
-    const baseUrl = screen.getByPlaceholderText('https://api.openai.com/v1')
+    const baseUrl = screen.getByLabelText(/--url/i)
     await userEvent.type(baseUrl, 'https://api.venice.ai/api/v1')
 
     // API key is also required for discovery
-    const apiKey = screen.getByPlaceholderText('sk-...')
+    const apiKey = screen.getByLabelText(/--api-key/i, { selector: 'input' })
     await userEvent.type(apiKey, 'test-api-key')
 
     const discover = screen.getByRole('button', { name: /^discover$/i })
