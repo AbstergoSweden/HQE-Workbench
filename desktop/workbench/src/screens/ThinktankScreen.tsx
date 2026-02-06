@@ -372,6 +372,7 @@ export const ThinktankScreen: FC = () => {
               setFilters(prev => ({ ...prev, selectedCategory: e.target.value }))
             }
             className="input text-sm"
+            disabled={executing}
           >
             <option value="all">All Categories ({prompts.length})</option>
             {categories.map(cat => (
@@ -390,6 +391,7 @@ export const ThinktankScreen: FC = () => {
               setFilters(prev => ({ ...prev, searchQuery: e.target.value }))
             }
             className="input text-sm"
+            disabled={executing}
           />
 
           {/* Agent prompt toggle */}
@@ -400,6 +402,7 @@ export const ThinktankScreen: FC = () => {
               onChange={(e) =>
                 setFilters(prev => ({ ...prev, showAgentPrompts: e.target.checked }))
               }
+              disabled={executing}
             />
             Show agent prompts {hiddenAgentCount > 0 && `(${hiddenAgentCount} hidden)`}
           </label>
@@ -439,7 +442,8 @@ export const ThinktankScreen: FC = () => {
                 <button
                   key={p.name}
                   onClick={() => handleSelectPrompt(p as PromptTool)}
-                  className="p-3 text-left text-sm border-b transition-all duration-150"
+                  disabled={executing}
+                  className="p-3 text-left text-sm border-b transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     borderColor: 'var(--dracula-comment)',
                     backgroundColor: selectedPrompt?.name === p.name
@@ -572,6 +576,7 @@ export const ThinktankScreen: FC = () => {
                       setSelectedModel(profile?.default_model || 'default')
                     }}
                     className="input text-sm"
+                    disabled={executing}
                   >
                     {profiles.length === 0 && (
                       <option value="">No profiles configured</option>
@@ -593,6 +598,7 @@ export const ThinktankScreen: FC = () => {
                     onChange={(e) => setSelectedModel(e.target.value)}
                     className="input text-sm"
                     placeholder={selectedProfileInfo?.default_model || 'default'}
+                    disabled={executing}
                   />
                 </div>
               </div>
@@ -663,6 +669,7 @@ export const ThinktankScreen: FC = () => {
                             setArgs((prev) => ({ ...prev, [key]: selected ?? e.target.value }))
                           }}
                           className="input"
+                          disabled={executing}
                         >
                           {enumValues.map((opt) => (
                             <option key={String(opt)} value={String(opt)}>
@@ -677,6 +684,7 @@ export const ThinktankScreen: FC = () => {
                             type="checkbox"
                             checked={Boolean(value)}
                             onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.checked }))}
+                            disabled={executing}
                           />
                           {schema.description || `Enable ${key}`}
                         </label>
@@ -689,6 +697,7 @@ export const ThinktankScreen: FC = () => {
                           onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
                           className="input"
                           placeholder={schema.description || `Enter ${key}...`}
+                          disabled={executing}
                         />
                       ) : type === 'object' || type === 'array' || key === 'args' || (type === 'string' && !schema.description?.includes('short')) ? (
                         <textarea
@@ -697,6 +706,7 @@ export const ThinktankScreen: FC = () => {
                           onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
                           className="input min-h-[100px]"
                           placeholder={schema.description || `Enter ${key}...`}
+                          disabled={executing}
                         />
                       ) : (
                         <input
@@ -706,6 +716,7 @@ export const ThinktankScreen: FC = () => {
                           onChange={(e) => setArgs((prev) => ({ ...prev, [key]: e.target.value }))}
                           className="input"
                           placeholder={schema.description || `Enter ${key}...`}
+                          disabled={executing}
                         />
                       )}
                     </div>

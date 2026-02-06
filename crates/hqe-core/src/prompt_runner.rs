@@ -278,7 +278,10 @@ impl PromptRunner {
         self.validate_inputs(request)?;
 
         // 2. Check for jailbreak/prompt injection attempts in user message
-        if let Some(attempt) = self.system_guard.detect_override_attempt(&request.user_message) {
+        if let Some(attempt) = self
+            .system_guard
+            .detect_override_attempt(&request.user_message)
+        {
             warn!(pattern = %attempt.pattern, "Potential jailbreak attempt detected in prompt building");
             return Err(PromptRunnerError::InvalidInput {
                 field: "user_message".to_string(),
@@ -413,7 +416,7 @@ impl PromptRunner {
     }
 
     /// Validate that a placeholder name is safe to use
-    /// 
+    ///
     /// # Security
     /// This validation prevents:
     /// - Delimiter injection ({{ or }} in name)
@@ -422,29 +425,29 @@ impl PromptRunner {
     /// - Numeric-only names that could be confused with array indices
     fn is_valid_placeholder_name(name: &str) -> bool {
         const MAX_PLACEHOLDER_LENGTH: usize = 64;
-        
+
         // Check length to prevent DoS
         if name.is_empty() || name.len() > MAX_PLACEHOLDER_LENGTH {
             return false;
         }
-        
+
         // Must start with a letter (prevents numeric confusion)
         let mut chars = name.chars();
         match chars.next() {
             Some(c) if c.is_ascii_alphabetic() => {}
             _ => return false,
         }
-        
+
         // Remaining chars must be alphanumeric, underscore, or hyphen
         if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
             return false;
         }
-        
+
         // Extra safety: prevent any delimiter characters
         if name.contains("{{") || name.contains("}}") || name.contains('\0') {
             return false;
         }
-        
+
         true
     }
 

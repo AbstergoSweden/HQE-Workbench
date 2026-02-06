@@ -329,7 +329,7 @@ impl EncryptedDb {
     /// # Security
     /// The backup_path is validated to prevent directory traversal attacks.
     /// Only safe path characters are allowed.
-    /// 
+    ///
     /// # Implementation Details
     /// Uses a two-step approach to avoid SQL injection:
     /// 1. VACUUM INTO a temporary file in a controlled directory
@@ -346,11 +346,11 @@ impl EncryptedDb {
         // This avoids SQL injection by not using user input in SQL
         let temp_dir = std::env::temp_dir().join("hqe-backup-temp");
         std::fs::create_dir_all(&temp_dir).map_err(EncryptedDbError::Io)?;
-        
+
         // Generate a safe temporary filename using UUID
         let temp_filename = format!("backup-{}.db", uuid::Uuid::new_v4());
         let temp_path = temp_dir.join(&temp_filename);
-        
+
         // VACUUM INTO the temporary file (path is controlled, not user input)
         let temp_path_str = temp_path.to_string_lossy();
         // Additional safety: ensure temp_path contains only safe characters
@@ -359,22 +359,22 @@ impl EncryptedDb {
                 "Invalid characters in temporary path".to_string(),
             ));
         }
-        
+
         let sql = format!("VACUUM INTO '{}'", temp_path_str);
         conn.execute(&sql, [])?;
 
         // Copy the temporary file to the requested location using safe filesystem operations
         std::fs::copy(&temp_path, backup_path).map_err(EncryptedDbError::Io)?;
-        
+
         // Clean up temporary file
         let _ = std::fs::remove_file(&temp_path);
 
         info!("Backup exported successfully to {:?}", backup_path);
         Ok(())
     }
-    
+
     /// Validate backup path for security
-    /// 
+    ///
     /// Ensures:
     /// - No directory traversal attempts
     /// - Valid file extension
@@ -387,17 +387,17 @@ impl EncryptedDb {
                 "Backup path must be absolute".to_string(),
             ));
         }
-        
+
         // Get the path string for validation
         let path_str = backup_path.to_string_lossy();
-        
+
         // Check for null bytes
         if path_str.contains('\0') {
             return Err(EncryptedDbError::Validation(
                 "Path cannot contain null bytes".to_string(),
             ));
         }
-        
+
         // Validate extension is safe
         let ext = backup_path
             .extension()
@@ -408,21 +408,22 @@ impl EncryptedDb {
                 "Backup must have .db, .encrypted, .sql, .sqlite, or .backup extension".to_string(),
             ));
         }
-        
+
         // Validate filename characters (alphanumeric, hyphen, underscore, dot)
         let filename = backup_path
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| EncryptedDbError::Validation(
-                "Invalid filename".to_string(),
-            ))?;
-        
-        if !filename.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.') {
+            .ok_or_else(|| EncryptedDbError::Validation("Invalid filename".to_string()))?;
+
+        if !filename
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
+        {
             return Err(EncryptedDbError::Validation(
                 "Filename contains invalid characters".to_string(),
             ));
         }
-        
+
         Ok(())
     }
 
@@ -452,14 +453,14 @@ impl EncryptedDb {
     }
 
     /// Execute operations within a transaction
-    /// 
+    ///
     /// # Arguments
     /// * `f` - A closure that receives a mutable reference to a transaction
     ///   and returns a Result
-    /// 
+    ///
     /// # Returns
     /// The result of the closure, or an error if the transaction failed
-    /// 
+    ///
     /// # Example
     /// ```rust,ignore
     /// db.with_transaction(|tx| {
@@ -488,17 +489,11 @@ impl EncryptedDb {
 }
 
 /// Check if a path string contains only safe characters
-/// 
+///
 /// Safe characters are alphanumeric, path separators, hyphens, underscores, and dots.
 fn is_safe_path_string(s: &str) -> bool {
     s.chars().all(|c| {
-        c.is_alphanumeric() 
-            || c == '-' 
-            || c == '_' 
-            || c == '.'
-            || c == '/'
-            || c == '\\'
-            || c == ':'
+        c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/' || c == '\\' || c == ':'
     })
 }
 
@@ -652,9 +647,9 @@ impl Pagination {
     pub const MAX_LIMIT: usize = 1000;
     /// Default page size for message queries
     pub const DEFAULT_LIMIT: usize = 100;
-    
+
     /// Create a new pagination with the given limit and offset
-    /// 
+    ///
     /// # Arguments
     /// * `limit` - Number of items per page (capped at MAX_LIMIT)
     /// * `offset` - Number of items to skip
@@ -666,7 +661,7 @@ impl Pagination {
     }
 
     /// Create with validated limit, ensuring reasonable bounds
-    /// 
+    ///
     /// # Arguments
     /// * `limit` - Desired limit (will be clamped between 1 and MAX_LIMIT)
     /// * `offset` - Number of items to skip
@@ -685,12 +680,12 @@ impl Pagination {
             offset: self.offset + self.limit,
         }
     }
-    
+
     /// Check if this pagination would exceed the given total count
     pub fn is_within_bounds(&self, total: usize) -> bool {
         self.offset < total
     }
-    
+
     /// Get the remaining items count from this offset
     pub fn remaining(&self, total: usize) -> usize {
         total.saturating_sub(self.offset)
@@ -1152,7 +1147,9 @@ fn is_valid_hex_key(key: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
+    #[allow(unused_imports)]
     use tempfile::tempdir;
 
     // SQLCipher tests require the sqlcipher-tests feature

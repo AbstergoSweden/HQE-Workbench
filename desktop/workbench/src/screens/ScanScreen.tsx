@@ -188,6 +188,7 @@ export function ScanScreen() {
                 type="checkbox"
                 checked={localOnly}
                 onChange={(e) => setLocalOnly(e.target.checked)}
+                disabled={isScanning}
               />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -218,6 +219,7 @@ export function ScanScreen() {
                 max="100"
                 value={maxFiles}
                 onChange={(e) => setMaxFiles(parseInt(e.target.value))}
+                disabled={isScanning}
               />
             </div>
 
@@ -237,6 +239,7 @@ export function ScanScreen() {
                     value={selectedProfile}
                     onChange={(e) => setSelectedProfile(e.target.value)}
                     className="input"
+                    disabled={isScanning}
                   >
                     {profiles.map((p) => (
                       <option key={p.name} value={p.name}>
@@ -268,6 +271,7 @@ export function ScanScreen() {
                     onChange={(e) => setVeniceParameters(e.target.value)}
                     placeholder='{"enable_web_search": "off", "include_venice_system_prompt": true}'
                     className="input min-h-[80px] text-xs"
+                    disabled={isScanning}
                   />
                 </div>
 
@@ -279,6 +283,7 @@ export function ScanScreen() {
                     value={parallelToolCalls}
                     onChange={(e) => setParallelToolCalls(e.target.value as 'default' | 'true' | 'false')}
                     className="input"
+                    disabled={isScanning}
                   >
                     <option value="default">default</option>
                     <option value="true">true</option>

@@ -215,13 +215,10 @@ pub async fn discover_models(
         "Failed to initialize model discovery".to_string()
     })?;
 
-    let models = client
-        .discover_chat_models()
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Model discovery failed");
-            "Failed to discover models. Please try again later.".to_string()
-        })?;
+    let models = client.discover_chat_models().await.map_err(|e| {
+        error!(error = %e, "Model discovery failed");
+        "Failed to discover models. Please try again later.".to_string()
+    })?;
 
     Ok(models
         .models
@@ -287,9 +284,9 @@ fn resolve_profile(
         Some(name) => name,
         None => {
             let profiles = manager.load_profiles().map_err(|e| {
-        error!(error = %e, "Failed to load profiles");
-        "Failed to load provider profiles".to_string()
-    })?;
+                error!(error = %e, "Failed to load profiles");
+                "Failed to load provider profiles".to_string()
+            })?;
             let profile = profiles
                 .first()
                 .ok_or_else(|| "No provider profiles configured".to_string())?;

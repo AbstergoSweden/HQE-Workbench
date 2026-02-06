@@ -1,4 +1,5 @@
 use crate::llm::{run_llm, LlmResponse};
+use crate::log_and_wrap_error;
 use hqe_core::prompt_runner::{
     Compatibility, InputSpec, InputType, PromptExecutionRequest, PromptTemplate,
 };
@@ -48,7 +49,9 @@ pub async fn get_available_prompts(app: AppHandle) -> Result<Vec<PromptToolInfo>
 
     hqe_mcp::PromptLoader::clear_cache(&prompts_dir);
     let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
-    let loaded_tools = loader.load().map_err(|e| e.to_string())?;
+    let loaded_tools = loader
+        .load()
+        .map_err(|e| log_and_wrap_error("Failed to load prompts", e))?;
 
     Ok(loaded_tools
         .into_iter()
@@ -100,7 +103,9 @@ pub async fn get_available_prompts_with_metadata(
             // Fallback to basic loader
             hqe_mcp::PromptLoader::clear_cache(&prompts_dir);
             let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
-            let loaded_tools = loader.load().map_err(|e| e.to_string())?;
+            let loaded_tools = loader
+                .load()
+                .map_err(|e| log_and_wrap_error("Failed to load prompts", e))?;
 
             Ok(loaded_tools
                 .into_iter()
@@ -296,7 +301,9 @@ fn resolve_prompt_template(app: &AppHandle, tool_name: &str) -> Result<PromptTem
     hqe_mcp::PromptLoader::clear_cache(&prompts_dir);
     let loader = hqe_mcp::PromptLoader::new(&prompts_dir);
     let mut registry = hqe_mcp::registry_v2::PromptRegistry::new(loader);
-    registry.load_all().map_err(|e| e.to_string())?;
+    registry
+        .load_all()
+        .map_err(|e| log_and_wrap_error("Failed to load prompt registry", e))?;
 
     let prompt = registry
         .get(tool_name)

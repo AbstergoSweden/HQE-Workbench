@@ -4,14 +4,15 @@
 //! via the encrypted local database.
 
 use crate::llm::run_llm;
+use crate::log_and_wrap_error;
 use hqe_core::encrypted_db::{ChatMessage, ChatOperations, ChatSession, MessageRole, Pagination};
 use hqe_core::prompt_runner::{
     Compatibility, ContentType, InputSpec, InputType, PromptCategory, PromptExecutionRequest,
     PromptTemplate, UntrustedContext,
 };
-use hqe_core::system_prompt::SystemPromptGuard;
 use hqe_core::redaction::RedactionEngine;
 use hqe_core::repo::RepoScanner;
+use hqe_core::system_prompt::SystemPromptGuard;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -201,7 +202,10 @@ pub async fn add_chat_message(
 
     // Validate message length to prevent DoS
     if content.len() > MAX_MESSAGE_LENGTH_CHARS {
-        return Err(format!("Message too long. Maximum length is {} characters", MAX_MESSAGE_LENGTH_CHARS));
+        return Err(format!(
+            "Message too long. Maximum length is {} characters",
+            MAX_MESSAGE_LENGTH_CHARS
+        ));
     }
 
     // Check for jailbreak/prompt injection attempts (only for user messages)
@@ -296,7 +300,10 @@ pub async fn send_chat_message(
 
     // Validate message length to prevent DoS
     if content.len() > MAX_MESSAGE_LENGTH_CHARS {
-        return Err(format!("Message too long. Maximum length is {} characters", MAX_MESSAGE_LENGTH_CHARS));
+        return Err(format!(
+            "Message too long. Maximum length is {} characters",
+            MAX_MESSAGE_LENGTH_CHARS
+        ));
     }
 
     // Check for jailbreak/prompt injection attempts
@@ -344,12 +351,10 @@ pub async fn send_chat_message(
         registry
             .load_all()
             .map_err(|e| log_and_wrap_error("Failed to load prompts", e))?;
-        let prompt = registry
-            .get(prompt_id)
-            .ok_or_else(|| {
-                error!(prompt_id = %prompt_id, "Prompt not found in registry");
-                "Prompt not found".to_string()
-            })?;
+        let prompt = registry.get(prompt_id).ok_or_else(|| {
+            error!(prompt_id = %prompt_id, "Prompt not found in registry");
+            "Prompt not found".to_string()
+        })?;
 
         PromptTemplate {
             id: prompt.metadata.id.clone(),
@@ -634,11 +639,6 @@ fn map_prompt_input_type(
         | hqe_mcp::registry_v2::InputType::Select
         | hqe_mcp::registry_v2::InputType::MultiSelect => InputType::String,
     }
-}
-
-fn log_and_wrap_error(context: &str, error: impl std::fmt::Display) -> String {
-    error!(error = %error, "{context}");
-    context.to_string()
 }
 
 fn resolve_pagination(

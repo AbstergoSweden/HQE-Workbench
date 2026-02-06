@@ -14,6 +14,16 @@ use secrecy::SecretString;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::error;
+
+/// Log an internal error and return a generic user-facing message.
+///
+/// This prevents leaking implementation details to the frontend while
+/// preserving the full error in structured logs for debugging.
+pub(crate) fn log_and_wrap_error(context: &str, error: impl std::fmt::Display) -> String {
+    error!(error = %error, "{context}");
+    context.to_string()
+}
 
 /// Application state shared across commands
 pub struct AppState {

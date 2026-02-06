@@ -42,18 +42,24 @@ const BLOCKED_PROPERTY_KEYS: &[&str] = &[
 /// Errors that can occur during analytics operations
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum AnalyticsError {
+    /// The event rate limit has been exceeded
     #[error("Rate limit exceeded")]
     RateLimitExceeded,
+    /// The event name is invalid or contains suspicious patterns
     #[error("Invalid event name: {0}")]
     InvalidEventName(String),
+    /// Event properties failed validation
     #[error("Invalid properties: {0}")]
     InvalidProperties(String),
+    /// The analytics backend is not available
     #[error("Analytics backend unavailable")]
     BackendUnavailable,
+    /// Event validation failed for a specific reason
     #[error("Event validation failed: {0}")]
     ValidationFailed(String),
 }
 
+/// Convenience alias for analytics results
 pub type Result<T> = std::result::Result<T, AnalyticsError>;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -63,24 +69,35 @@ pub type Result<T> = std::result::Result<T, AnalyticsError>;
 /// A validated analytics event ready for transmission
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct AnalyticsEvent {
+    /// The validated event name (must match allowed prefixes)
     pub name: String,
+    /// Sanitized key-value properties attached to the event
     pub properties: HashMap<String, serde_json::Value>,
+    /// UTC timestamp of when the event was created
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    /// Unique session identifier for this analytics session
     pub session_id: String,
+    /// Unique identifier for this specific event
     pub event_id: String,
 }
 
 /// Event severity for filtering and routing
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum EventSeverity {
+    /// Low-priority diagnostic events
     Debug,
+    /// Normal informational events
     Info,
+    /// Events that may indicate a problem
     Warning,
+    /// Error conditions
     Error,
+    /// Security-relevant events (always logged)
     Security,
 }
 
 impl EventSeverity {
+    /// Returns the severity as a static string slice
     pub fn as_str(&self) -> &'static str {
         match self {
             EventSeverity::Debug => "debug",
@@ -104,6 +121,7 @@ pub struct RateLimiter {
 }
 
 impl RateLimiter {
+    /// Create a new rate limiter with the given maximum events per window
     pub fn new(max_events: u32, window_secs: u64) -> Self {
         Self {
             events: Mutex::new(Vec::new()),
@@ -135,17 +153,19 @@ impl RateLimiter {
 
     /// Get current event count in window
     pub fn current_count(&self) -> usize {
-        let events = self.events.lock().unwrap_or_else(|poisoned| {
-            poisoned.into_inner()
-        });
+        let events = self
+            .events
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         events.len()
     }
 
     /// Reset all events
     pub fn reset(&self) {
-        let mut events = self.events.lock().unwrap_or_else(|poisoned| {
-            poisoned.into_inner()
-        });
+        let mut events = self
+            .events
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         events.clear();
     }
 }
@@ -220,9 +240,9 @@ impl EventValidator {
         for (key, value) in properties {
             // Check for blocked keys
             let key_lower = key.to_lowercase();
-            let is_blocked = BLOCKED_PROPERTY_KEYS.iter().any(|blocked| {
-                key_lower == *blocked || key_lower == blocked.replace("_", "")
-            });
+            let is_blocked = BLOCKED_PROPERTY_KEYS
+                .iter()
+                .any(|blocked| key_lower == *blocked || key_lower == blocked.replace("_", ""));
 
             if is_blocked {
                 warn!(key = %key, "Removing sensitive property from analytics event");
@@ -373,7 +393,10 @@ impl AnalyticsBackend for PostHogBackend {
         let mut properties = event.properties.clone();
         properties.insert("distinct_id".to_string(), event.session_id.clone().into());
         properties.insert("$event_id".to_string(), event.event_id.clone().into());
-        properties.insert("$timestamp".to_string(), event.timestamp.to_rfc3339().into());
+        properties.insert(
+            "$timestamp".to_string(),
+            event.timestamp.to_rfc3339().into(),
+        );
         properties.insert("$lib".to_string(), "hqe-workbench-rust".into());
         properties.insert("$lib_version".to_string(), env!("CARGO_PKG_VERSION").into());
 
@@ -425,6 +448,7 @@ pub struct PostHogBackend;
 
 #[cfg(not(feature = "analytics-reqwest"))]
 impl PostHogBackend {
+    /// Create a stub backend (logs a warning; enable `analytics-reqwest` feature for real support)
     pub fn new(_api_key: String, _api_host: Option<String>) -> Self {
         warn!("PostHog backend requires 'analytics-reqwest' feature");
         Self
@@ -460,10 +484,12 @@ pub struct FallbackBackend {
 }
 
 impl FallbackBackend {
+    /// Create a new fallback backend that logs to console only
     pub fn new() -> Self {
         Self { log_file: None }
     }
 
+    /// Create a fallback backend that also writes to a log file
     pub fn with_log_file(log_file: std::path::PathBuf) -> Self {
         Self {
             log_file: Some(log_file),
@@ -659,9 +685,10 @@ impl AnalyticsManager {
     /// Flush pending events
     pub fn flush(&self) -> Result<()> {
         let pending = {
-            let mut events = self.pending_events.lock().unwrap_or_else(|poisoned| {
-                poisoned.into_inner()
-            });
+            let mut events = self
+                .pending_events
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             std::mem::take(&mut *events)
         };
 
@@ -703,9 +730,19 @@ fn generate_session_id() -> String {
     let mut rng = rand::rng();
     let random_part: String = (0..16)
         .map(|_| rng.random_range(0..36))
-        .map(|i| if i < 10 { (b'0' + i as u8) as char } else { (b'a' + (i - 10) as u8) as char })
+        .map(|i| {
+            if i < 10 {
+                (b'0' + i as u8) as char
+            } else {
+                (b'a' + (i - 10) as u8) as char
+            }
+        })
         .collect();
-    format!("session_{}_{}", chrono::Utc::now().timestamp_millis(), random_part)
+    format!(
+        "session_{}_{}",
+        chrono::Utc::now().timestamp_millis(),
+        random_part
+    )
 }
 
 fn generate_event_id() -> String {
@@ -713,9 +750,19 @@ fn generate_event_id() -> String {
     let mut rng = rand::rng();
     let random_part: String = (0..16)
         .map(|_| rng.random_range(0..36))
-        .map(|i| if i < 10 { (b'0' + i as u8) as char } else { (b'a' + (i - 10) as u8) as char })
+        .map(|i| {
+            if i < 10 {
+                (b'0' + i as u8) as char
+            } else {
+                (b'a' + (i - 10) as u8) as char
+            }
+        })
         .collect();
-    format!("evt_{}_{}", chrono::Utc::now().timestamp_millis(), random_part)
+    format!(
+        "evt_{}_{}",
+        chrono::Utc::now().timestamp_millis(),
+        random_part
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -729,7 +776,7 @@ mod tests {
     #[test]
     fn test_rate_limiter() {
         let limiter = RateLimiter::new(3, 60);
-        
+
         assert!(limiter.check_and_record());
         assert!(limiter.check_and_record());
         assert!(limiter.check_and_record());
@@ -763,7 +810,7 @@ mod tests {
         props.insert("api_key".to_string(), "key123".into());
 
         let result = EventValidator::validate_properties(props).unwrap();
-        
+
         assert!(result.contains_key("normal_key"));
         assert!(!result.contains_key("password"));
         assert!(!result.contains_key("api_key"));
@@ -771,9 +818,8 @@ mod tests {
 
     #[test]
     fn test_validate_properties_limits_count() {
-        let props: HashMap<String, serde_json::Value> = (0..100)
-            .map(|i| (format!("key_{}", i), i.into()))
-            .collect();
+        let props: HashMap<String, serde_json::Value> =
+            (0..100).map(|i| (format!("key_{}", i), i.into())).collect();
 
         assert!(EventValidator::validate_properties(props).is_err());
     }
@@ -782,7 +828,7 @@ mod tests {
     fn test_session_id_generation() {
         let id1 = generate_session_id();
         let id2 = generate_session_id();
-        
+
         assert_ne!(id1, id2);
         assert!(id1.starts_with("session_"));
         assert!(id2.starts_with("session_"));

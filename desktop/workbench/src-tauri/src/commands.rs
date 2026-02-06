@@ -1,6 +1,6 @@
 //! Tauri commands for the workbench UI
 
-use crate::AppState;
+use crate::{log_and_wrap_error, AppState};
 use hqe_artifacts::ArtifactWriter;
 use hqe_core::models::*;
 use hqe_core::scan::ScanPipeline;
@@ -55,7 +55,8 @@ pub async fn scan_repo(
     }
 
     // Run scan
-    let mut pipeline = ScanPipeline::new(&path, config.clone()).map_err(|e| e.to_string())?;
+    let mut pipeline = ScanPipeline::new(&path, config.clone())
+        .map_err(|e| log_and_wrap_error("Failed to initialize scan pipeline", e))?;
     if config.llm_enabled && !config.local_only {
         let profile_name = config
             .provider_profile
@@ -84,14 +85,21 @@ pub async fn scan_repo(
         pipeline = pipeline.with_llm_analyzer(Arc::new(analyzer));
     }
 
-    let result = pipeline.run().await.map_err(|e| e.to_string())?;
+    let result = pipeline
+        .run()
+        .await
+        .map_err(|e| log_and_wrap_error("Scan failed", e))?;
 
     let output_root = get_output_root(&app)?;
-    std::fs::create_dir_all(&output_root).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&output_root)
+        .map_err(|e| log_and_wrap_error("Failed to create output directory", e))?;
 
     let run_dir = output_root.join(format!("hqe_run_{}", result.manifest.run_id));
     let writer = ArtifactWriter::new(&run_dir);
-    writer.write_all(&result).await.map_err(|e| e.to_string())?;
+    writer
+        .write_all(&result)
+        .await
+        .map_err(|e| log_and_wrap_error("Failed to write scan artifacts", e))?;
 
     Ok(result.report)
 }
@@ -140,7 +148,7 @@ pub async fn get_repo_info(repo_path: String) -> Result<RepoInfo, String> {
     let (remote, commit) = if is_git {
         let repo = hqe_git::GitRepo::open(&path)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| log_and_wrap_error("Failed to open git repository", e))?;
 
         let remote = repo.remote_url("origin").await.ok().flatten();
         let commit = repo.current_commit().await.ok();
@@ -202,9 +210,10 @@ pub async fn load_report(
 
     let content = tokio::fs::read_to_string(&canonical_path)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| log_and_wrap_error("Failed to read report", e))?;
 
-    let report: HqeReport = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    let report: HqeReport = serde_json::from_str(&content)
+        .map_err(|e| log_and_wrap_error("Failed to parse report", e))?;
 
     Ok(Some(report))
 }
@@ -251,26 +260,35 @@ pub async fn export_artifacts(
 
     tokio::fs::create_dir_all(&target)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| log_and_wrap_error("Failed to create export directory", e))?;
 
     // Copy artifacts
-    for entry in std::fs::read_dir(&canonical_source).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
-        if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
+    for entry in std::fs::read_dir(&canonical_source)
+        .map_err(|e| log_and_wrap_error("Failed to read artifacts", e))?
+    {
+        let entry = entry.map_err(|e| log_and_wrap_error("Failed to read artifact entry", e))?;
+        if entry
+            .file_type()
+            .map_err(|e| log_and_wrap_error("Failed to read file type", e))?
+            .is_dir()
+        {
             continue;
         }
         let target_file = target.join(entry.file_name());
 
         tokio::fs::copy(entry.path(), target_file)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| log_and_wrap_error("Failed to copy artifact", e))?;
     }
 
     Ok(())
 }
 
 fn get_output_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| log_and_wrap_error("Failed to resolve app data directory", e))?;
     Ok(base.join("hqe-output"))
 }
 
@@ -287,7 +305,7 @@ pub async fn discover_models(
     let manager = ProfileManager::default();
     let profile = manager
         .get_profile_with_key(&profile_name)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| log_and_wrap_error("Failed to load provider profile", e))?
         .ok_or_else(|| "Profile not found".to_string())?
         .0;
 
@@ -295,7 +313,9 @@ pub async fn discover_models(
         let keys = state.session_keys.lock().await;
         keys.get(&profile_name).cloned()
     };
-    let normalized_url = profile.normalized_base_url().map_err(|e| e.to_string())?;
+    let normalized_url = profile
+        .normalized_base_url()
+        .map_err(|e| log_and_wrap_error("Failed to normalize provider URL", e))?;
     let kind = profile
         .provider_kind
         .unwrap_or_else(|| ProviderKind::detect(&normalized_url));
@@ -328,7 +348,9 @@ pub async fn discover_models(
 #[command]
 pub async fn list_provider_profiles() -> Result<Vec<ProviderProfile>, String> {
     let store = DefaultProfilesStore;
-    store.load_profiles().map_err(|e| e.to_string())
+    store
+        .load_profiles()
+        .map_err(|e| log_and_wrap_error("Failed to load profiles", e))
 }
 
 /// Import default profiles (only adds new ones, doesn't overwrite existing)
@@ -337,7 +359,9 @@ pub async fn import_default_profiles(profiles: Vec<ProviderProfile>) -> Result<u
     let manager = ProfileManager::default();
     let existing = manager
         .load_profiles()
-        .map_err(|e: hqe_openai::profile::ProfileError| e.to_string())?;
+        .map_err(|e: hqe_openai::profile::ProfileError| {
+            log_and_wrap_error("Failed to load existing profiles", e)
+        })?;
     let existing_names: std::collections::HashSet<&str> =
         existing.iter().map(|p| p.name.as_str()).collect();
 
@@ -346,7 +370,7 @@ pub async fn import_default_profiles(profiles: Vec<ProviderProfile>) -> Result<u
         if !existing_names.contains(profile.name.as_str()) {
             manager
                 .save_profile(profile, None)
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| log_and_wrap_error("Failed to import profile", e))?;
             imported += 1;
         }
     }
@@ -359,13 +383,15 @@ pub async fn get_provider_profile(name: String) -> Result<Option<(ProviderProfil
     let store = DefaultProfilesStore;
     let key_store = KeychainStore::default();
 
-    let profile = store.get_profile(&name).map_err(|e| e.to_string())?;
+    let profile = store
+        .get_profile(&name)
+        .map_err(|e| log_and_wrap_error("Failed to get provider profile", e))?;
 
     match profile {
         Some(p) => {
             let has_key = key_store
                 .get_api_key(&name)
-                .map_err(|e| e.to_string())?
+                .map_err(|e| log_and_wrap_error("Failed to check API key", e))?
                 .is_some();
             Ok(Some((p, has_key)))
         }
@@ -382,14 +408,16 @@ pub async fn save_provider_profile(
     let manager = ProfileManager::default();
     manager
         .save_profile(profile, api_key.as_deref())
-        .map_err(|e| e.to_string())
+        .map_err(|e| log_and_wrap_error("Failed to save provider profile", e))
 }
 
 /// Delete a provider profile and its API key
 #[command]
 pub async fn delete_provider_profile(name: String) -> Result<bool, String> {
     let manager = ProfileManager::default();
-    manager.delete_profile(&name).map_err(|e| e.to_string())
+    manager
+        .delete_profile(&name)
+        .map_err(|e| log_and_wrap_error("Failed to delete provider profile", e))
 }
 
 /// Test provider connection using a stored profile
@@ -463,7 +491,7 @@ pub async fn save_provider_config(
     let manager = ProfileManager::default();
     manager
         .save_profile(new_profile, Some(&api_key))
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| log_and_wrap_error("Failed to save migrated provider profile", e))?;
 
     Ok(())
 }
