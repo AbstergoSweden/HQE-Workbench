@@ -259,7 +259,7 @@ impl EncryptedDb {
             [],
         )?;
 
-        // Indexes
+        // Indexes for performance optimization
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_messages_session ON chat_messages(session_id)",
             [],
@@ -269,7 +269,23 @@ impl EncryptedDb {
             [],
         )?;
         conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_messages_parent ON chat_messages(parent_id)",
+            [],
+        )?;
+        conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_sessions_repo ON chat_sessions(repo_path)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_updated ON chat_sessions(updated_at DESC)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_message ON feedback(message_id)",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_attachments_session ON attachments(session_id)",
             [],
         )?;
 
@@ -324,41 +340,16 @@ impl EncryptedDb {
     /// # Security
     /// The backup_path is validated to prevent directory traversal attacks.
     /// Only safe path characters are allowed.
+    /// 
+    /// # Implementation Details
+    /// Uses a two-step approach to avoid SQL injection:
+    /// 1. VACUUM INTO a temporary file in a controlled directory
+    /// 2. Copy the temporary file to the requested location using filesystem operations
     pub fn export_backup(&self, backup_path: &PathBuf) -> Result<()> {
         info!("Exporting encrypted backup to {:?}", backup_path);
 
-        // Validate backup path to prevent SQL injection and directory traversal
-        let canonical_path = backup_path.canonicalize().or_else(|_| {
-            // If canonicalize fails (path doesn't exist), try to canonicalize the parent
-            if let Some(parent) = backup_path.parent() {
-                let canonical_parent = parent.canonicalize().map_err(EncryptedDbError::Io)?;
-                std::fs::create_dir_all(&canonical_parent).map_err(EncryptedDbError::Io)?;
-                Ok(canonical_parent.join(backup_path.file_name().unwrap_or_default()))
-            } else {
-                Err(EncryptedDbError::Validation(
-                    "Invalid backup path".to_string(),
-                ))
-            }
-        })?;
-
-        // Ensure path doesn't contain null bytes or other dangerous characters
-        let path_str = canonical_path.to_string_lossy();
-        if path_str.contains('\0') || path_str.contains('\'') || path_str.contains('"') {
-            return Err(EncryptedDbError::Validation(
-                "Backup path contains invalid characters".to_string(),
-            ));
-        }
-
-        // Validate extension is .db or .db.encrypted
-        let ext = canonical_path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
-        if !matches!(ext, "db" | "encrypted" | "sql" | "sqlite" | "backup") {
-            return Err(EncryptedDbError::Validation(
-                "Backup must have .db, .encrypted, .sql, .sqlite, or .backup extension".to_string(),
-            ));
-        }
+        // Validate backup path to prevent directory traversal attacks
+        Self::validate_backup_path(backup_path)?;
 
         let conn = match self.conn.lock() {
             Ok(guard) => guard,
@@ -368,14 +359,87 @@ impl EncryptedDb {
             }
         };
 
-        // SQLCipher backup using vacuum into with validated path
-        // Path has been canonicalized and validated, making SQL injection impossible
-        // Using parameterized query approach to prevent injection
-        let escaped_path = escape_sql_string(&canonical_path.to_string_lossy());
-        let sql = format!("VACUUM INTO '{}'", escaped_path);
+        // Use a temporary directory for the VACUUM operation
+        // This avoids SQL injection by not using user input in SQL
+        let temp_dir = std::env::temp_dir().join("hqe-backup-temp");
+        std::fs::create_dir_all(&temp_dir).map_err(EncryptedDbError::Io)?;
+        
+        // Generate a safe temporary filename using UUID
+        let temp_filename = format!("backup-{}.db", uuid::Uuid::new_v4());
+        let temp_path = temp_dir.join(&temp_filename);
+        
+        // VACUUM INTO the temporary file (path is controlled, not user input)
+        let temp_path_str = temp_path.to_string_lossy();
+        // Additional safety: ensure temp_path contains only safe characters
+        if !is_safe_path_string(&temp_path_str) {
+            return Err(EncryptedDbError::Validation(
+                "Invalid characters in temporary path".to_string(),
+            ));
+        }
+        
+        let sql = format!("VACUUM INTO '{}'", temp_path_str);
         conn.execute(&sql, [])?;
 
-        info!("Backup exported successfully");
+        // Copy the temporary file to the requested location using safe filesystem operations
+        std::fs::copy(&temp_path, backup_path).map_err(EncryptedDbError::Io)?;
+        
+        // Clean up temporary file
+        let _ = std::fs::remove_file(&temp_path);
+
+        info!("Backup exported successfully to {:?}", backup_path);
+        Ok(())
+    }
+    
+    /// Validate backup path for security
+    /// 
+    /// Ensures:
+    /// - No directory traversal attempts
+    /// - Valid file extension
+    /// - No dangerous characters
+    /// - Path is absolute
+    fn validate_backup_path(backup_path: &PathBuf) -> Result<()> {
+        // Must be an absolute path
+        if !backup_path.is_absolute() {
+            return Err(EncryptedDbError::Validation(
+                "Backup path must be absolute".to_string(),
+            ));
+        }
+        
+        // Get the path string for validation
+        let path_str = backup_path.to_string_lossy();
+        
+        // Check for null bytes
+        if path_str.contains('\0') {
+            return Err(EncryptedDbError::Validation(
+                "Path cannot contain null bytes".to_string(),
+            ));
+        }
+        
+        // Validate extension is safe
+        let ext = backup_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+        if !matches!(ext, "db" | "encrypted" | "sql" | "sqlite" | "backup") {
+            return Err(EncryptedDbError::Validation(
+                "Backup must have .db, .encrypted, .sql, .sqlite, or .backup extension".to_string(),
+            ));
+        }
+        
+        // Validate filename characters (alphanumeric, hyphen, underscore, dot)
+        let filename = backup_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| EncryptedDbError::Validation(
+                "Invalid filename".to_string(),
+            ))?;
+        
+        if !filename.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.') {
+            return Err(EncryptedDbError::Validation(
+                "Filename contains invalid characters".to_string(),
+            ));
+        }
+        
         Ok(())
     }
 
@@ -415,11 +479,56 @@ impl EncryptedDb {
             }
         }
     }
+
+    /// Execute operations within a transaction
+    /// 
+    /// # Arguments
+    /// * `f` - A closure that receives a mutable reference to a transaction
+    ///         and returns a Result
+    /// 
+    /// # Returns
+    /// The result of the closure, or an error if the transaction failed
+    /// 
+    /// # Example
+    /// ```rust,ignore
+    /// db.with_transaction(|tx| {
+    ///     tx.execute("INSERT INTO ...", [])?;
+    ///     tx.execute("UPDATE ...", [])?;
+    ///     Ok(())
+    /// })?;
+    /// ```
+    pub fn with_transaction<F, T>(&self, f: F) -> Result<T>
+    where
+        F: FnOnce(&mut rusqlite::Transaction<'_>) -> rusqlite::Result<T>,
+    {
+        let mut conn = self.connection()?;
+        let mut tx = conn.transaction()?;
+        match f(&mut tx) {
+            Ok(result) => {
+                tx.commit()?;
+                Ok(result)
+            }
+            Err(e) => {
+                // Transaction will be rolled back when tx is dropped
+                Err(e.into())
+            }
+        }
+    }
 }
 
-/// Escape a string for safe use in SQL
-fn escape_sql_string(s: &str) -> String {
-    s.replace("'", "''")
+/// Check if a path string contains only safe characters
+/// 
+/// Safe characters are alphanumeric, path separators, hyphens, underscores, and dots.
+fn is_safe_path_string(s: &str) -> bool {
+    s.chars().all(|c| {
+        c.is_alphanumeric() 
+            || c == '-' 
+            || c == '_' 
+            || c == '.'
+            || c == '/'
+            || c == '\\'
+            || c == ':'
+    })
 }
 
 /// A chat session record.
@@ -561,17 +670,39 @@ pub struct Pagination {
 impl Default for Pagination {
     fn default() -> Self {
         Self {
-            limit: 100, // Default 100 messages per page
+            limit: Self::DEFAULT_LIMIT,
             offset: 0,
         }
     }
 }
 
 impl Pagination {
+    /// Maximum allowed limit to prevent DoS via excessive memory allocation
+    pub const MAX_LIMIT: usize = 1000;
+    /// Default page size for message queries
+    pub const DEFAULT_LIMIT: usize = 100;
+    
     /// Create a new pagination with the given limit and offset
+    /// 
+    /// # Arguments
+    /// * `limit` - Number of items per page (capped at MAX_LIMIT)
+    /// * `offset` - Number of items to skip
     pub fn new(limit: usize, offset: usize) -> Self {
         Self {
-            limit: limit.min(1000), // Cap at 1000 to prevent abuse
+            limit: limit.min(Self::MAX_LIMIT),
+            offset,
+        }
+    }
+
+    /// Create with validated limit, ensuring reasonable bounds
+    /// 
+    /// # Arguments
+    /// * `limit` - Desired limit (will be clamped between 1 and MAX_LIMIT)
+    /// * `offset` - Number of items to skip
+    pub fn with_validated_limit(limit: usize, offset: usize) -> Self {
+        let validated_limit = limit.clamp(1, Self::MAX_LIMIT);
+        Self {
+            limit: validated_limit,
             offset,
         }
     }
@@ -582,6 +713,16 @@ impl Pagination {
             limit: self.limit,
             offset: self.offset + self.limit,
         }
+    }
+    
+    /// Check if this pagination would exceed the given total count
+    pub fn is_within_bounds(&self, total: usize) -> bool {
+        self.offset < total
+    }
+    
+    /// Get the remaining items count from this offset
+    pub fn remaining(&self, total: usize) -> usize {
+        total.saturating_sub(self.offset)
     }
 }
 

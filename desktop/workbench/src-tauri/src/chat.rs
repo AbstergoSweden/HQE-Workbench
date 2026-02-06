@@ -55,6 +55,7 @@ const MAX_HISTORY_CHARS: usize = 8_000;
 const MAX_HISTORY_MESSAGES: usize = 200;
 const DEFAULT_MESSAGE_PAGE_LIMIT: usize = 100;
 const MIN_MESSAGE_INTERVAL_SECS: u64 = 1;
+const MAX_MESSAGE_LENGTH_CHARS: usize = 50_000; // ~50KB of text
 
 static LAST_MESSAGE_TIME_SECS: AtomicU64 = AtomicU64::new(0);
 
@@ -316,7 +317,10 @@ pub async fn send_chat_message(
             .map_err(|e| log_and_wrap_error("Failed to load prompts", e))?;
         let prompt = registry
             .get(prompt_id)
-            .ok_or_else(|| format!("Prompt '{}' not found", prompt_id))?;
+            .ok_or_else(|| {
+                error!(prompt_id = %prompt_id, "Prompt not found in registry");
+                "Prompt not found".to_string()
+            })?;
 
         PromptTemplate {
             id: prompt.metadata.id.clone(),

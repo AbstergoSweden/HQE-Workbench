@@ -9,6 +9,7 @@ use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::time::Duration;
+use tracing::error;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LlmResponse {
@@ -33,7 +34,10 @@ pub async fn run_llm(
     model_override: Option<String>,
 ) -> Result<LlmResponse, String> {
     let runner = PromptRunner::default();
-    let prompt = runner.build_prompt(&request).map_err(|e| e.to_string())?;
+    let prompt = runner.build_prompt(&request).map_err(|e| {
+        error!(error = %e, "Failed to build prompt");
+        "Failed to build prompt".to_string()
+    })?;
 
     let (profile, api_key) = resolve_profile(profile_name, session_key)?;
     let allow_missing_key = is_local_or_private_base_url(&profile.base_url).unwrap_or(false);
@@ -43,7 +47,10 @@ pub async fn run_llm(
         None => return Err("No API key stored for profile".to_string()),
     };
 
-    let headers = profile.sanitized_headers().map_err(|e| e.to_string())?;
+    let headers = profile.sanitized_headers().map_err(|e| {
+        error!(error = %e, "Failed to sanitize headers");
+        "Failed to configure request".to_string()
+    })?;
     let model = normalize_model_override(&profile.default_model, model_override);
     let config = hqe_openai::ClientConfig {
         base_url: profile.base_url.clone(),
@@ -60,7 +67,10 @@ pub async fn run_llm(
         daily_budget: 1.0,
     };
 
-    let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;
+    let client = OpenAIClient::new(config).map_err(|e| {
+        error!(error = %e, "Failed to create OpenAI client");
+        "Failed to initialize AI client".to_string()
+    })?;
 
     let response = client
         .chat(ChatRequest {
@@ -100,7 +110,10 @@ pub async fn run_llm(
             response_format: None,
         })
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            error!(error = %e, "LLM request failed");
+            "AI request failed. Please try again later.".to_string()
+        })?;
 
     let content = response
         .choices
@@ -136,7 +149,10 @@ pub async fn test_connection(
         None => return Err("No API key stored for profile".to_string()),
     };
 
-    let headers = profile.sanitized_headers().map_err(|e| e.to_string())?;
+    let headers = profile.sanitized_headers().map_err(|e| {
+        error!(error = %e, "Failed to sanitize headers");
+        "Failed to configure request".to_string()
+    })?;
     let config = hqe_openai::ClientConfig {
         base_url: profile.base_url.clone(),
         api_key,
@@ -152,8 +168,14 @@ pub async fn test_connection(
         daily_budget: 1.0,
     };
 
-    let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;
-    client.test_connection().await.map_err(|e| e.to_string())
+    let client = OpenAIClient::new(config).map_err(|e| {
+        error!(error = %e, "Failed to create OpenAI client");
+        "Failed to initialize AI client".to_string()
+    })?;
+    client.test_connection().await.map_err(|e| {
+        error!(error = %e, "Connection test failed");
+        "Connection test failed. Please check your settings.".to_string()
+    })
 }
 
 pub async fn discover_models(
@@ -174,7 +196,10 @@ pub async fn discover_models(
 
     let headers: BTreeMap<String, String> = profile
         .sanitized_headers()
-        .map_err(|e| e.to_string())?
+        .map_err(|e| {
+            error!(error = %e, "Failed to sanitize headers");
+            "Failed to configure request".to_string()
+        })?
         .into_iter()
         .collect();
 
@@ -185,12 +210,18 @@ pub async fn discover_models(
         Duration::from_secs(profile.timeout_s),
         Some(hqe_openai::provider_discovery::DiskCache::default()),
     )
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| {
+        error!(error = %e, "Failed to create discovery client");
+        "Failed to initialize model discovery".to_string()
+    })?;
 
     let models = client
         .discover_chat_models()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            error!(error = %e, "Model discovery failed");
+            "Failed to discover models. Please try again later.".to_string()
+        })?;
 
     Ok(models
         .models
@@ -217,7 +248,10 @@ pub fn build_scan_analyzer(
         None => return Err("No API key stored for profile".to_string()),
     };
 
-    let headers = profile.sanitized_headers().map_err(|e| e.to_string())?;
+    let headers = profile.sanitized_headers().map_err(|e| {
+        error!(error = %e, "Failed to sanitize headers");
+        "Failed to configure request".to_string()
+    })?;
     let config = hqe_openai::ClientConfig {
         base_url: profile.base_url.clone(),
         api_key,
@@ -233,7 +267,10 @@ pub fn build_scan_analyzer(
         daily_budget: 1.0,
     };
 
-    let client = OpenAIClient::new(config).map_err(|e| e.to_string())?;
+    let client = OpenAIClient::new(config).map_err(|e| {
+        error!(error = %e, "Failed to create OpenAI client");
+        "Failed to initialize AI client".to_string()
+    })?;
     let analyzer = hqe_openai::OpenAIAnalyzer::new(client)
         .with_venice_parameters(venice_parameters)
         .with_parallel_tool_calls(parallel_tool_calls);
@@ -249,7 +286,10 @@ fn resolve_profile(
     let name = match profile_name {
         Some(name) => name,
         None => {
-            let profiles = manager.load_profiles().map_err(|e| e.to_string())?;
+            let profiles = manager.load_profiles().map_err(|e| {
+        error!(error = %e, "Failed to load profiles");
+        "Failed to load provider profiles".to_string()
+    })?;
             let profile = profiles
                 .first()
                 .ok_or_else(|| "No provider profiles configured".to_string())?;
@@ -258,7 +298,10 @@ fn resolve_profile(
     };
     let (profile, api_key) = manager
         .get_profile_with_key(&name)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| {
+            error!(error = %e, "Failed to get profile");
+            "Failed to load provider profile".to_string()
+        })?
         .ok_or_else(|| "Profile not found".to_string())?;
     Ok((profile, session_key.or(api_key)))
 }

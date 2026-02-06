@@ -39,6 +39,8 @@ export interface ChatState {
   setCurrentSession: (session: ChatSession | null) => void
   setMessages: (messages: ChatMessage[]) => void
   setChatState: (session: ChatSession | null, messages: ChatMessage[]) => void
+  /** Atomic update of session, messages, and hasMoreHistory to prevent race conditions */
+  setFullChatState: (session: ChatSession | null, messages: ChatMessage[], hasMoreHistory: boolean) => void
   addMessage: (message: ChatMessage) => void
   prependMessages: (messages: ChatMessage[]) => void
   setIsLoading: (loading: boolean) => void
@@ -98,6 +100,8 @@ export const useChatStore = create<ChatState>((set) => ({
   setCurrentSession: (session) => set({ currentSession: session }),
   setMessages: (messages) => set({ messages }),
   setChatState: (session, messages) => set({ currentSession: session, messages }),
+  setFullChatState: (session, messages, hasMoreHistory) => 
+    set({ currentSession: session, messages, hasMoreHistory }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   prependMessages: (messages) => set((state) => ({ messages: [...messages, ...state.messages] })),
   setIsLoading: (loading) => set({ isLoading: loading }),

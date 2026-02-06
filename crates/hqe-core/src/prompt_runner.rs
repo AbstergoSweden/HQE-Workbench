@@ -404,14 +404,39 @@ impl PromptRunner {
     }
 
     /// Validate that a placeholder name is safe to use
+    /// 
+    /// # Security
+    /// This validation prevents:
+    /// - Delimiter injection ({{ or }} in name)
+    /// - Command injection via special characters
+    /// - DoS via extremely long names
+    /// - Numeric-only names that could be confused with array indices
     fn is_valid_placeholder_name(name: &str) -> bool {
-        // Only allow alphanumeric characters, underscores, and hyphens
-        !name.is_empty()
-            && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-            // Prevent names that could break out of template delimiters
-            && !name.contains("{{")
-            && !name.contains("}}")
-            && !name.contains('\0')
+        const MAX_PLACEHOLDER_LENGTH: usize = 64;
+        
+        // Check length to prevent DoS
+        if name.is_empty() || name.len() > MAX_PLACEHOLDER_LENGTH {
+            return false;
+        }
+        
+        // Must start with a letter (prevents numeric confusion)
+        let mut chars = name.chars();
+        match chars.next() {
+            Some(c) if c.is_ascii_alphabetic() => {}
+            _ => return false,
+        }
+        
+        // Remaining chars must be alphanumeric, underscore, or hyphen
+        if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+            return false;
+        }
+        
+        // Extra safety: prevent any delimiter characters
+        if name.contains("{{") || name.contains("}}") || name.contains('\0') {
+            return false;
+        }
+        
+        true
     }
 
     fn truncate_to_bytes(input: &str, max_bytes: usize) -> String {

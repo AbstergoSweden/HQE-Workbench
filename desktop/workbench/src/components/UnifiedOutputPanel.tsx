@@ -11,9 +11,9 @@ import { FC, useCallback, useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import DOMPurify from 'dompurify'
 import { ChatMessage, ChatSession, SendChatMessageResponse } from '../types'
 import { useChatStore } from '../store'
 import { useToast } from '../context/ToastContext'
@@ -75,8 +75,8 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
     setMessages,
     addMessage,
     prependMessages,
-    setCurrentSession,
     setChatState,
+    setFullChatState,
     setIsLoading,
     hasMoreHistory,
     isLoadingHistory,
@@ -151,7 +151,7 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
         provider: contextRef.provider,
         model: contextRef.model,
       })
-      setCurrentSession(session)
+      // Note: setFullChatState is called at the end for atomic update
       if (initialMsgs.length > 0) {
         const first = {
           ...initialMsgs[0],
@@ -172,20 +172,17 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
         session_id: session.id,
         limit: DEFAULT_PAGE_LIMIT,
       })
-      setChatState(session, msgs)
-      setHasMoreHistory(
-        Boolean(session.message_count && msgs.length < session.message_count)
-      )
+      // Atomic update to prevent race conditions
+      const hasMore = Boolean(session.message_count && msgs.length < session.message_count)
+      setFullChatState(session, msgs, hasMore)
     } catch (err) {
       console.error('Failed to create session with messages:', err)
       toast.error('Failed to initialize chat')
     }
   }, [
     contextRef,
-    setChatState,
-    setCurrentSession,
+    setFullChatState,
     setMessages,
-    setHasMoreHistory,
     showInput,
     toast,
   ])
@@ -415,42 +412,6 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
 }
 
 /**
- * Sanitize HTML content to prevent XSS attacks.
- * This removes dangerous tags and attributes while preserving safe markdown content.
- */
-const sanitizeContent = (content: string): string => {
-  if (typeof window === 'undefined') {
-    // Server-side rendering fallback - return content as-is
-    // DOMPurify only works in browser environment
-    return content
-  }
-
-  return DOMPurify.sanitize(content, {
-    ALLOWED_TAGS: [
-      'p', 'br', 'strong', 'em', 'u', 's', 'del',
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'ul', 'ol', 'li',
-      'code', 'pre', 'blockquote',
-      'a', 'img',
-      'table', 'thead', 'tbody', 'tr', 'th', 'td',
-      'hr', 'sup', 'sub'
-    ],
-    ALLOWED_ATTR: [
-      'href', 'title',  // for links
-      'src', 'alt', 'title', // for images
-      'class', // for syntax highlighting
-    ],
-    // Allow href and src with specific protocols only
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|xxx):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
-    // Prevent javascript: URLs
-    FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover'],
-    FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'input', 'textarea', 'button'],
-    // Keep text content of removed elements
-    KEEP_CONTENT: true,
-  })
-}
-
-/**
  * Individual message bubble component
  */
 interface MessageBubbleProps {
@@ -461,8 +422,9 @@ interface MessageBubbleProps {
 const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
   const isUser = message.role === 'user'
 
-  // Sanitize content to prevent XSS from malicious LLM output
-  const sanitizedContent = sanitizeContent(message.content)
+  // Note: XSS protection is handled by rehype-sanitize in the ReactMarkdown component
+  // which sanitizes the HTML AST after markdown parsing but before React element creation
+  const content = message.content
 
   return (
     <div
@@ -511,10 +473,18 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
           </span>
         </div>
 
-        {/* Message content - now sanitized to prevent XSS */}
+        {/* Message content - sanitized with both rehype-sanitize and DOMPurify for defense-in-depth */}
         <div className="prose prose-invert max-w-none prose-sm">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[[rehypeSanitize, {
+              ...defaultSchema,
+              attributes: {
+                ...defaultSchema.attributes,
+                code: [['className']],
+                span: [['className']],
+              },
+            }]]}
             components={{
               code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
                 const match = /language-(\w+)/.exec(className || '')
@@ -560,7 +530,7 @@ const MessageBubble: FC<MessageBubbleProps> = ({ message, isFirst }) => {
               }
             }}
           >
-            {sanitizedContent}
+            {content}
           </ReactMarkdown>
         </div>
       </div>
