@@ -5,7 +5,7 @@
 name = "HQE Enhanced Prompt Library"
 version = "2.0.0"
 description = "Comprehensive prompt templates with structured reasoning, XML formatting, and actionable outputs"
-total_prompts = 30
+total_prompts = 31
 
 [[categories]]
 name = "code-review"
@@ -202,6 +202,12 @@ name = "improve"
 file = "commands/prompts/improve.toml"
 description = "Improve existing prompts for better results"
 tags = ["improvement", "iteration"]
+
+[[categories.prompts]]
+name = "meta-prompt-architect"
+file = "commands/prompts/meta-prompt-architect.toml"
+description = "Convert rough ideas into production-ready system prompts (args: user request or existing prompt)"
+tags = ["prompt-engineering", "system-prompts", "elicitation", "validation"]
 
 [[categories.prompts]]
 name = "best-practices"
