@@ -267,7 +267,7 @@ impl PromptRunner {
     /// This composes:
     /// 1. Static system prompt (baseline)
     /// 2. Instruction prompt (from template)
-    /// 3. User message
+    /// 3. User message (validated for jailbreak attempts)
     /// 4. Delimited untrusted context
     #[instrument(skip(self, request), fields(prompt_id = %request.prompt_template.id))]
     pub fn build_prompt(
@@ -277,14 +277,23 @@ impl PromptRunner {
         // 1. Validate inputs against template spec
         self.validate_inputs(request)?;
 
-        // 2. Substitute template placeholders
+        // 2. Check for jailbreak/prompt injection attempts in user message
+        if let Some(attempt) = self.system_guard.detect_override_attempt(&request.user_message) {
+            warn!(pattern = %attempt.pattern, "Potential jailbreak attempt detected in prompt building");
+            return Err(PromptRunnerError::InvalidInput {
+                field: "user_message".to_string(),
+                reason: "Potentially harmful content detected".to_string(),
+            });
+        }
+
+        // 3. Substitute template placeholders
         let instruction_prompt =
             self.substitute_template(&request.prompt_template, &request.inputs)?;
 
-        // 3. Build untrusted context block
+        // 4. Build untrusted context block
         let context_block = self.build_context_block(&request.context, request.max_context_size)?;
 
-        // 4. Assemble final prompt
+        // 5. Assemble final prompt
         let full_prompt = format!(
             "{system_prompt}\n\n---\n\n{instruction_prompt}\n\n{user_message}\n\n{context_block}",
             system_prompt = self.system_guard.content,

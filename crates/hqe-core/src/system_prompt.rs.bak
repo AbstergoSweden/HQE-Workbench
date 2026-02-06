@@ -274,12 +274,14 @@ impl SystemPromptGuard {
             "disregard above",
             "disregard instructions",
             "disregard system",
+            "disregard prior restraints",
             // Override patterns
             "new instructions:",
             "new system prompt:",
             "system prompt:",
             "override instructions",
             "override system",
+            "<!-- ATTENTION -->",
             // Role change patterns
             "you are now",
             "from now on you are",
@@ -300,6 +302,7 @@ impl SystemPromptGuard {
             "anti-prison",
             "dude mode",
             "stan mode",
+            "allowed authority",
             // Encoding hints
             "base64",
             "decode this",
@@ -330,12 +333,15 @@ impl SystemPromptGuard {
             "say exactly",
             "output exactly",
             "copy this",
+            "reveal your instructions after this",
             // Social engineering patterns
             "this is a test",
             "for educational purposes",
             "hypothetically",
             "imagine if",
             "pretend that",
+            "you have the authority,"
+            "this is allowed",
         ];
 
         patterns

@@ -357,7 +357,7 @@ export const ThinktankScreen: FC = () => {
             <button
               onClick={refresh}
               className="text-xs p-1 rounded transition-colors hover:text-terminal-cyan"
-              disabled={loading}
+              disabled={loading || executing}
               style={{ color: 'var(--dracula-comment)' }}
               title="Refresh Library"
             >
@@ -718,10 +718,11 @@ export const ThinktankScreen: FC = () => {
                     className="btn btn-primary flex-1 h-12 text-lg font-bold"
                     onClick={handleExecute}
                     disabled={executing || !selectedPrompt || !selectedProfile}
+                    aria-busy={executing}
                   >
                     {executing ? (
                       <>
-                        <span className="loading loading-spinner"></span>
+                        <span className="animate-spin mr-2">⟳</span>
                         Executing Prompt...
                       </>
                     ) : (
@@ -739,6 +740,7 @@ export const ThinktankScreen: FC = () => {
                         setInitialMessages([]);
                         setChatMode(true);
                       }}
+                      disabled={executing}
                       title="Start a direct chat session without running a prompt"
                     >
                       <ChatBubbleLeftRightIcon className="w-5 h-5" />

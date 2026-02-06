@@ -21,6 +21,7 @@
     "@tauri-apps/plugin-fs": "^2.0.0",
     "@tauri-apps/plugin-shell": "^2.3.5",
     "dompurify": "^3.3.1",
+    "posthog-js": "^1.342.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",

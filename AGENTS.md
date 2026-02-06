@@ -7,6 +7,7 @@
 HQE-Workbench is a local-first macOS desktop application + CLI for running the HQE (High Quality Engineering) Engineer Protocol. It automates codebase health auditing and produces actionable, evidence-backed TODOs using a combination of local heuristics and (optional) LLM-powered analysis.
 
 **Key Features:**
+
 - **Repository Scanning**: Automated codebase health auditing with local static analysis
 - **Secret Redaction**: Intelligent detection and removal of sensitive data (API keys, tokens)
 - **Local-Only Mode**: Privacy-first operation without external API calls
@@ -17,7 +18,7 @@ HQE-Workbench is a local-first macOS desktop application + CLI for running the H
 ## System Identity
 
 | Attribute | Value | Source |
-|-----------|-------|--------|
+| --------- | ----- | ------ |
 | Language | Rust 2021 Edition | `Cargo.toml:19` |
 | Rust Version | 1.75+ | `Cargo.toml:23` |
 | TypeScript | 5.3+ (Workbench) | `desktop/workbench/package.json:49` |
@@ -31,7 +32,7 @@ HQE-Workbench is a local-first macOS desktop application + CLI for running the H
 > Cargo workspace with 11 members | `Cargo.toml:3-15`
 
 | Package | Path | Purpose | Type |
-|---------|------|---------|------|
+| ------- | ---- | ------- | ---- |
 | `hqe` | `cli/hqe` | CLI entry point | Binary |
 | `hqe-workbench-app` | `desktop/workbench/src-tauri` | Tauri desktop app | Binary |
 | `hqe-core` | `crates/hqe-core` | Scan pipeline, engine, encrypted chat DB | Library |
@@ -47,6 +48,7 @@ HQE-Workbench is a local-first macOS desktop application + CLI for running the H
 ### Module Responsibilities
 
 #### `hqe-core`
+
 - Scan orchestration and pipeline
 - Repo walking + ingestion
 - Secret detection and redaction
@@ -55,6 +57,7 @@ HQE-Workbench is a local-first macOS desktop application + CLI for running the H
 - Producing `HqeReport` + `RunManifest`
 
 #### `hqe-openai`
+
 - OpenAI-compatible chat completion client
 - Provider profiles + keychain storage
 - `/models` discovery + filtering to text models
@@ -62,26 +65,31 @@ HQE-Workbench is a local-first macOS desktop application + CLI for running the H
 - Retry logic and error classification
 
 #### `hqe-git`
+
 - Repository detection
 - Patch generation/apply flows
 - Shelling out to system `git`
 
 #### `hqe-artifacts`
+
 - Writing `run-manifest.json`
 - Writing `report.json` and `report.md`
 - Writing `session-log.json` and redaction logs
 
 #### `hqe-mcp`
+
 - Thinktank prompt library management
 - Agent contexts and tools
 - Prompt registry with metadata
 
 #### `hqe-ingest`
+
 - Efficient file system walking
 - Handling ignore patterns (gitignore)
 - File change notifications
 
 #### `hqe-flow`
+
 - Multi-step agent flow execution
 - Protocol invariant validation
 - MCP tool orchestration
@@ -107,7 +115,7 @@ cd desktop/workbench && npm run tauri:dev
 ### Root Level
 
 | Intent | Command | Notes | Source |
-|--------|---------|-------|--------|
+| -------- | ------- | ----- | ------ |
 | Preflight (All) | `npm run preflight` | Rust tests + JS lint/test | `package.json:5` |
 | Preflight Rust | `npm run preflight:rust` | Tests, clippy, fmt check | `package.json:6` |
 | Preflight JS | `npm run preflight:js` | Workbench lint + test | `package.json:7` |
@@ -118,7 +126,7 @@ cd desktop/workbench && npm run tauri:dev
 ### Rust Workspace
 
 | Intent | Command | Notes | Source |
-|--------|---------|-------|--------|
+| -------- | ------- | ----- | ------ |
 | Build CLI | `cargo build --release -p hqe` | Output: `target/release/hqe` | `README.md:163` |
 | Test | `cargo test --workspace` | All workspace crates | `.github/workflows/ci.yml:89` |
 | Test SQLCipher | `cargo test --workspace --features sqlcipher-tests` | Requires SQLCipher lib | `hqe-core/Cargo.toml` |
@@ -128,7 +136,7 @@ cd desktop/workbench && npm run tauri:dev
 ### Workbench UI (desktop/workbench)
 
 | Intent | Command | Notes | Source |
-|--------|---------|-------|--------|
+| -------- | ------- | ----- | ------ |
 | Dev (Vite) | `npm run dev` | Port 1420 | `package.json:7` |
 | Dev (Tauri) | `npm run tauri:dev` | Desktop app dev mode | `package.json:11` |
 | Build | `npm run build` | TypeScript + Vite | `package.json:8` |
@@ -167,6 +175,7 @@ cd desktop/workbench && npm run tauri:dev
 ### Commit Messages
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
 - `feat(core): add new scanner`
 - `fix(ui): resolve button alignment`
 - `docs: update readme`
@@ -225,6 +234,7 @@ pre-commit install
 ```
 
 Hooks include:
+
 - Trailing whitespace removal
 - JSON/YAML/TOML validation
 - Secret scanning (Gitleaks)
@@ -239,7 +249,7 @@ Hooks include:
 ### Implemented Protections
 
 | Threat | Mitigation | Status | Implementation |
-|--------|------------|--------|----------------|
+| ------ | ---------- | ------ | -------------- |
 | XSS via LLM output | DOMPurify with strict allowlist | ✅ Implemented | `ConversationPanel.tsx` |
 | SQL Injection | Parameterized queries, path validation | ✅ Implemented | `encrypted_db.rs` |
 | Prompt Injection | Key validation, delimiter protection | ✅ Implemented | `prompts.rs` |
@@ -275,7 +285,7 @@ See [SECURITY.md](SECURITY.md) for full policy.
 ### GitHub Actions Workflows
 
 | Event | Workflow | Actions |
-|-------|----------|---------|
+| ----- | -------- | ------- |
 | Push/PR to main | `.github/workflows/ci.yml` | Secret scan, build, test, clippy, fmt, JS lint/test |
 | Weekly schedule | `.github/workflows/security.yml` | `cargo audit` |
 | Release | `.github/workflows/release.yml` | Build macOS universal binary, create DMG |
@@ -305,7 +315,7 @@ target/release/hqe
 ## Environment Variables
 
 | Variable | Required | Purpose | Source |
-|----------|----------|---------|--------|
+| -------- | -------- | ------- | ------ |
 | `HQE_OPENAI_TIMEOUT_SECONDS` | No | Override LLM timeout | `crates/hqe-openai/src/lib.rs` |
 | `HQE_PROMPTS_DIR` | No | Custom prompts directory | `desktop/workbench/src-tauri/src/prompts.rs` |
 | `HQE_CHAT_DB_PATH` | No | Custom chat database path | `crates/hqe-core/src/encrypted_db.rs` |
@@ -315,7 +325,7 @@ target/release/hqe
 ## Critical Files
 
 | Path | Purpose |
-|------|---------|
+| ---- | ------- |
 | `Cargo.toml` | Workspace configuration |
 | `cli/hqe/src/main.rs` | CLI implementation |
 | `desktop/workbench/src-tauri/src/lib.rs` | Tauri commands, AppState |
@@ -331,7 +341,7 @@ target/release/hqe
 ## Architecture
 
 | Aspect | Details | Source |
-|--------|---------|--------|
+| -------- | ------- | ------ |
 | CLI Entry | `cli/hqe/src/main.rs` | `cli/hqe/Cargo.toml:14` |
 | Workbench UI Entry | `desktop/workbench/src/main.tsx` | `vite.config.ts` |
 | Tauri Backend | `desktop/workbench/src-tauri/src/lib.rs` | `Cargo.toml` |
@@ -345,7 +355,7 @@ target/release/hqe
 
 ## Project Structure
 
-```
+```text
 hqe-workbench/
 ├── .github/             # CI/CD and Issue Templates
 ├── cli/
@@ -421,22 +431,26 @@ cd desktop/workbench && npm run tauri:dev
 
 ### Common Issues
 
-**"No module named 'yaml'"**
+#### "No module named 'yaml'"
+
 ```bash
 pip3 install pyyaml jsonschema
 ```
 
-**"command not found: cargo"**
+#### "command not found: cargo"
+
 ```bash
 source $HOME/.cargo/env
 ```
 
-**"No such file: tauri.conf.json"**
+#### "No such file: tauri.conf.json"
+
 ```bash
 cd desktop/workbench && npm install
 ```
 
-**macOS Gatekeeper blocks app**
+#### macOS Gatekeeper blocks app
+
 ```bash
 xattr -cr /Applications/HQE\ Workbench.app
 ```

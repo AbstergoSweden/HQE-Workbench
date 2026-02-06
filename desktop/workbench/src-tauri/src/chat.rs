@@ -9,13 +9,14 @@ use hqe_core::prompt_runner::{
     Compatibility, ContentType, InputSpec, InputType, PromptCategory, PromptExecutionRequest,
     PromptTemplate, UntrustedContext,
 };
+use hqe_core::system_prompt::SystemPromptGuard;
 use hqe_core::redaction::RedactionEngine;
 use hqe_core::repo::RepoScanner;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::command;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
 /// Chat session DTO for frontend
@@ -198,6 +199,21 @@ pub async fn add_chat_message(
 ) -> Result<ChatMessageDto, String> {
     debug!(session_id = %session_id, role = %role, "Adding chat message");
 
+    // Validate message length to prevent DoS
+    if content.len() > MAX_MESSAGE_LENGTH_CHARS {
+        return Err(format!("Message too long. Maximum length is {} characters", MAX_MESSAGE_LENGTH_CHARS));
+    }
+
+    // Check for jailbreak/prompt injection attempts (only for user messages)
+    if role == "user" {
+        let system_guard = SystemPromptGuard::new()
+            .map_err(|e| log_and_wrap_error("Failed to initialize security guard", e))?;
+        if let Some(attempt) = system_guard.detect_override_attempt(&content) {
+            warn!(pattern = %attempt.pattern, "Potential jailbreak attempt detected");
+            return Err("Message rejected: potentially harmful content detected".to_string());
+        }
+    }
+
     let db = state.db.lock().await;
 
     let role_enum = match role.as_str() {
@@ -277,6 +293,19 @@ pub async fn send_chat_message(
     parent_id: Option<String>,
 ) -> Result<SendChatMessageResponse, String> {
     info!(session_id = %session_id, "Sending chat message");
+
+    // Validate message length to prevent DoS
+    if content.len() > MAX_MESSAGE_LENGTH_CHARS {
+        return Err(format!("Message too long. Maximum length is {} characters", MAX_MESSAGE_LENGTH_CHARS));
+    }
+
+    // Check for jailbreak/prompt injection attempts
+    let system_guard = SystemPromptGuard::new()
+        .map_err(|e| log_and_wrap_error("Failed to initialize security guard", e))?;
+    if let Some(attempt) = system_guard.detect_override_attempt(&content) {
+        warn!(pattern = %attempt.pattern, "Potential jailbreak attempt detected");
+        return Err("Message rejected: potentially harmful content detected".to_string());
+    }
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)

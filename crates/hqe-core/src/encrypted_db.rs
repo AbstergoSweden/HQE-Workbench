@@ -9,10 +9,11 @@
 //! - Key derivation: PBKDF2-HMAC-SHA256
 //! - No plaintext transcripts on disk
 
+use parking_lot::Mutex;
 use rusqlite::OptionalExtension;
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 /// Errors that can occur in encrypted database operations
@@ -187,13 +188,7 @@ impl EncryptedDb {
 
     /// Initialize database schema
     fn initialize_schema(&self) -> Result<()> {
-        let conn = match self.conn.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => {
-                warn!("EncryptedDb mutex poisoned; recovering");
-                poisoned.into_inner()
-            }
-        };
+        let conn = self.conn.lock();
 
         // Chat sessions table
         conn.execute(
@@ -310,13 +305,7 @@ impl EncryptedDb {
             return Err(EncryptedDbError::InvalidKey);
         }
 
-        let conn = match self.conn.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => {
-                warn!("EncryptedDb mutex poisoned; recovering");
-                poisoned.into_inner()
-            }
-        };
+        let conn = self.conn.lock();
 
         // Re-key the database using pragma_update to avoid SQL injection
         // The key is validated to be hex-only, making SQL injection impossible
@@ -351,13 +340,7 @@ impl EncryptedDb {
         // Validate backup path to prevent directory traversal attacks
         Self::validate_backup_path(backup_path)?;
 
-        let conn = match self.conn.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => {
-                warn!("EncryptedDb mutex poisoned; recovering");
-                poisoned.into_inner()
-            }
-        };
+        let conn = self.conn.lock();
 
         // Use a temporary directory for the VACUUM operation
         // This avoids SQL injection by not using user input in SQL
@@ -397,7 +380,7 @@ impl EncryptedDb {
     /// - Valid file extension
     /// - No dangerous characters
     /// - Path is absolute
-    fn validate_backup_path(backup_path: &PathBuf) -> Result<()> {
+    fn validate_backup_path(backup_path: &std::path::Path) -> Result<()> {
         // Must be an absolute path
         if !backup_path.is_absolute() {
             return Err(EncryptedDbError::Validation(
@@ -450,13 +433,7 @@ impl EncryptedDb {
 
     /// Verify database integrity
     pub fn verify_integrity(&self) -> Result<bool> {
-        let conn = match self.conn.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => {
-                warn!("EncryptedDb mutex poisoned; recovering");
-                poisoned.into_inner()
-            }
-        };
+        let conn = self.conn.lock();
 
         let mut stmt = conn.prepare("PRAGMA integrity_check")?;
         let result: String = stmt.query_row([], |row| row.get(0))?;
@@ -470,21 +447,15 @@ impl EncryptedDb {
     }
 
     /// Get connection for direct queries
-    pub fn connection(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
-        match self.conn.lock() {
-            Ok(guard) => Ok(guard),
-            Err(poisoned) => {
-                warn!("EncryptedDb mutex poisoned; recovering");
-                Ok(poisoned.into_inner())
-            }
-        }
+    pub fn connection(&self) -> Result<parking_lot::MutexGuard<'_, Connection>> {
+        Ok(self.conn.lock())
     }
 
     /// Execute operations within a transaction
     /// 
     /// # Arguments
     /// * `f` - A closure that receives a mutable reference to a transaction
-    ///         and returns a Result
+    ///   and returns a Result
     /// 
     /// # Returns
     /// The result of the closure, or an error if the transaction failed
@@ -1187,6 +1158,7 @@ mod tests {
     // SQLCipher tests require the sqlcipher-tests feature
     // Run with: cargo test --features sqlcipher-tests
 
+    #[cfg(feature = "sqlcipher-tests")]
     fn create_test_db() -> (EncryptedDb, tempfile::TempDir) {
         let dir = tempdir().unwrap();
         let db_path = dir.path().join("test.db");

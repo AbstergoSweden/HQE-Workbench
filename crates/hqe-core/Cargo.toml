@@ -41,9 +41,13 @@ dirs = { workspace = true }
 
 # Persistence
 rusqlite = { version = "0.38", features = ["bundled-sqlcipher"] }
+parking_lot = "0.12"
 
 # Unicode normalization for security
 unicode-normalization = "0.1"
+
+# HTTP client for analytics
+reqwest = { workspace = true, optional = true }
 
 # HQE internal
 hqe-protocol = { path = "../hqe-protocol" }
@@ -57,3 +61,5 @@ tempfile = { workspace = true }
 default = []
 # Enable SQLCipher tests - requires SQLCipher library to be installed
 sqlcipher-tests = []
+# Enable PostHog analytics backend with HTTP client
+analytics-reqwest = ["dep:reqwest"]
