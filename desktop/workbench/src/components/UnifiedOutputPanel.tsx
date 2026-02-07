@@ -383,11 +383,13 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
               onClick={handleSend}
               disabled={!inputValue.trim() || loading || !currentSession}
               className="btn btn-primary px-4"
+              aria-label="Send message"
+              title="Send message"
             >
               {loading ? (
-                <span className="animate-spin">⟳</span>
+                <span className="animate-spin" aria-hidden="true">⟳</span>
               ) : (
-                <span>➤</span>
+                <span aria-hidden="true">➤</span>
               )}
             </button>
           </div>
