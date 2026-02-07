@@ -1,37 +1,37 @@
-name: '🔀 Qwen Code Triage'
+name: "🔀 Qwen Code Triage"
 
 on:
   workflow_call:
     inputs:
       additional_context:
-        type: 'string'
-        description: 'Any additional context from the request'
+        type: "string"
+        description: "Any additional context from the request"
         required: false
 
 concurrency:
-  group: '${{ github.workflow }}-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}'
+  group: "${{ github.workflow }}-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}"
   cancel-in-progress: true
 
 defaults:
   run:
-    shell: 'bash'
+    shell: "bash"
 
 jobs:
   triage:
-    runs-on: 'ubuntu-latest'
+    runs-on: "ubuntu-latest"
     timeout-minutes: 7
     outputs:
-      available_labels: '${{ steps.get_labels.outputs.available_labels }}'
-      selected_labels: '${{ env.SELECTED_LABELS }}'
+      available_labels: "${{ steps.get_labels.outputs.available_labels }}"
+      selected_labels: "${{ env.SELECTED_LABELS }}"
     permissions:
-      contents: 'read'
-      id-token: 'write'
-      issues: 'read'
-      pull-requests: 'read'
+      contents: "read"
+      id-token: "write"
+      issues: "read"
+      pull-requests: "read"
     steps:
-      - name: 'Get repository labels'
-        id: 'get_labels'
-        uses: 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd' # ratchet:actions/github-script@v8.0.0
+      - name: "Get repository labels"
+        id: "get_labels"
+        uses: "actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd" # ratchet:actions/github-script@v8.0.0
         with:
           # NOTE: we intentionally do not use the given token. The default
           # GITHUB_TOKEN provided by the action has enough permissions to read
@@ -55,24 +55,24 @@ jobs:
             core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
             return labelNames;
 
-      - name: 'Run Qwen Code issue analysis'
-        id: 'qwen_analysis'
+      - name: "Run Qwen Code issue analysis"
+        id: "qwen_analysis"
         if: |-
-          ${{ steps.get_labels.outputs.available_labels != '' }}
-        uses: 'QwenLM/qwen-code-action@v1' # ratchet:exclude
+          steps.get_labels.outputs.available_labels != ''
+        uses: "QwenLM/qwen-code-action@v1" # ratchet:exclude
         env:
-          GITHUB_TOKEN: '' # Do NOT pass any auth tokens here since this runs on untrusted inputs
-          ISSUE_TITLE: '${{ github.event.issue.title }}'
-          ISSUE_BODY: '${{ github.event.issue.body }}'
-          AVAILABLE_LABELS: '${{ steps.get_labels.outputs.available_labels }}'
+          GITHUB_TOKEN: "" # Do NOT pass any auth tokens here since this runs on untrusted inputs
+          ISSUE_TITLE: "${{ github.event.issue.title }}"
+          ISSUE_BODY: "${{ github.event.issue.body }}"
+          AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         with:
-          openai_api_key: '${{ secrets.QWEN_API_KEY }}'
-          openai_base_url: '${{ vars.QWEN_BASE_URL }}'
-          openai_model: '${{ vars.QWEN_MODEL }}'
-          qwen_cli_version: '${{ vars.QWEN_CLI_VERSION }}'
-          qwen_debug: '${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
-          upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
-          workflow_name: 'qwen-triage'
+          openai_api_key: "${{ secrets.QWEN_API_KEY }}"
+          openai_base_url: "${{ vars.QWEN_BASE_URL }}"
+          openai_model: "${{ vars.QWEN_MODEL }}"
+          qwen_cli_version: "${{ vars.QWEN_CLI_VERSION }}"
+          qwen_debug: "${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}"
+          upload_artifacts: "${{ vars.UPLOAD_ARTIFACTS }}"
+          workflow_name: "qwen-triage"
           settings: |-
             {
               "model": {
@@ -89,41 +89,41 @@ jobs:
                 ]
               }
             }
-          prompt: '/qwen-triage'
+          prompt: "/qwen-triage"
 
   label:
-    runs-on: 'ubuntu-latest'
+    runs-on: "ubuntu-latest"
     needs:
-      - 'triage'
+      - "triage"
     if: |-
-      ${{ needs.triage.outputs.selected_labels != '' }}
+      needs.triage.outputs.selected_labels != ''
     permissions:
-      contents: 'read'
-      issues: 'write'
-      pull-requests: 'write'
+      contents: "read"
+      issues: "write"
+      pull-requests: "write"
     steps:
-      - name: 'Mint identity token'
-        id: 'mint_identity_token'
+      - name: "Mint identity token"
+        id: "mint_identity_token"
         if: |-
-          ${{ vars.APP_ID }}
-        uses: 'actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf' # ratchet:actions/create-github-app-token@v2
+          vars.APP_ID
+        uses: "actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf" # ratchet:actions/create-github-app-token@v2
         with:
-          app-id: '${{ vars.APP_ID }}'
-          private-key: '${{ secrets.APP_PRIVATE_KEY }}'
-          permission-contents: 'read'
-          permission-issues: 'write'
-          permission-pull-requests: 'write'
+          app-id: "${{ vars.APP_ID }}"
+          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
+          permission-contents: "read"
+          permission-issues: "write"
+          permission-pull-requests: "write"
 
-      - name: 'Apply labels'
+      - name: "Apply labels"
         env:
-          ISSUE_NUMBER: '${{ github.event.issue.number }}'
-          AVAILABLE_LABELS: '${{ needs.triage.outputs.available_labels }}'
-          SELECTED_LABELS: '${{ needs.triage.outputs.selected_labels }}'
-        uses: 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd' # ratchet:actions/github-script@v8.0.0
+          ISSUE_NUMBER: "${{ github.event.issue.number }}"
+          AVAILABLE_LABELS: "${{ needs.triage.outputs.available_labels }}"
+          SELECTED_LABELS: "${{ needs.triage.outputs.selected_labels }}"
+        uses: "actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd" # ratchet:actions/github-script@v8.0.0
         with:
           # Use the provided token so that the "gemini-cli" is the actor in the
           # log for what changed the labels.
-          github-token: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          github-token: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
           script: |-
             // Parse the available labels
             const availableLabels = (process.env.AVAILABLE_LABELS || '').split(',')

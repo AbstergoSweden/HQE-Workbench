@@ -1,0 +1,19 @@
+# Actionlint configuration
+# https://github.com/rhysd/actionlint/blob/main/docs/usage.md#configuration
+
+self-hosted-runner:
+  labels:
+    - ubuntu-latest
+    - macos-latest
+    - windows-latest
+
+# Define known repository/secret names to suppress "Context access might be invalid" errors
+# when the linter doesn't have access to the repository configuration.
+config-variables:
+  - APP_ID
+  - QWEN_BASE_URL
+  - QWEN_MODEL
+  - QWEN_CLI_VERSION
+  - UPLOAD_ARTIFACTS
+  - DEBUG
+  - ACTIONS_STEP_DEBUG

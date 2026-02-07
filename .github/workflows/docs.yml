@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2f359ebeacfa986c913 # v5.3.0
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -51,7 +51,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
+      name: "github-pages"
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages

@@ -1,64 +1,64 @@
-name: '🔎 Qwen Code Review'
+name: "🔎 Qwen Code Review"
 
 on:
   workflow_call:
     inputs:
       additional_context:
-        type: 'string'
-        description: 'Any additional context from the request'
+        type: "string"
+        description: "Any additional context from the request"
         required: false
 
 concurrency:
-  group: '${{ github.workflow }}-review-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}'
+  group: "${{ github.workflow }}-review-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}"
   cancel-in-progress: true
 
 defaults:
   run:
-    shell: 'bash'
+    shell: "bash"
 
 jobs:
   review:
-    runs-on: 'ubuntu-latest'
+    runs-on: "ubuntu-latest"
     timeout-minutes: 7
     permissions:
-      contents: 'read'
-      id-token: 'write'
-      issues: 'write'
-      pull-requests: 'write'
+      contents: "read"
+      id-token: "write"
+      issues: "write"
+      pull-requests: "write"
     steps:
-      - name: 'Mint identity token'
-        id: 'mint_identity_token'
+      - name: "Mint identity token"
+        id: "mint_identity_token"
         if: |-
-          ${{ vars.APP_ID }}
-        uses: 'actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf' # ratchet:actions/create-github-app-token@v2
+          vars.APP_ID
+        uses: "actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf" # ratchet:actions/create-github-app-token@v2
         with:
-          app-id: '${{ vars.APP_ID }}'
-          private-key: '${{ secrets.APP_PRIVATE_KEY }}'
-          permission-contents: 'read'
-          permission-issues: 'write'
-          permission-pull-requests: 'write'
+          app-id: "${{ vars.APP_ID }}"
+          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
+          permission-contents: "read"
+          permission-issues: "write"
+          permission-pull-requests: "write"
 
-      - name: 'Checkout repository'
-        uses: 'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5' # ratchet:actions/checkout@v5
+      - name: "Checkout repository"
+        uses: "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" # ratchet:actions/checkout@v5
 
-      - name: 'Run Qwen Code pull request review'
-        uses: 'QwenLM/qwen-code-action@v1' # ratchet:exclude
-        id: 'qwen_pr_review'
+      - name: "Run Qwen Code pull request review"
+        uses: "QwenLM/qwen-code-action@v1" # ratchet:exclude
+        id: "qwen_pr_review"
         env:
-          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
-          ISSUE_TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
-          ISSUE_BODY: '${{ github.event.pull_request.body || github.event.issue.body }}'
-          PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
-          REPOSITORY: '${{ github.repository }}'
-          ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
+          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
+          ISSUE_TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
+          ISSUE_BODY: "${{ github.event.pull_request.body || github.event.issue.body }}"
+          PULL_REQUEST_NUMBER: "${{ github.event.pull_request.number || github.event.issue.number }}"
+          REPOSITORY: "${{ github.repository }}"
+          ADDITIONAL_CONTEXT: "${{ inputs.additional_context }}"
         with:
-          openai_api_key: '${{ secrets.QWEN_API_KEY }}'
-          openai_base_url: '${{ vars.QWEN_BASE_URL }}'
-          openai_model: '${{ vars.QWEN_MODEL }}'
-          qwen_cli_version: '${{ vars.QWEN_CLI_VERSION }}'
-          qwen_debug: '${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
-          upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
-          workflow_name: 'qwen-review'
+          openai_api_key: "${{ secrets.QWEN_API_KEY }}"
+          openai_base_url: "${{ vars.QWEN_BASE_URL }}"
+          openai_model: "${{ vars.QWEN_MODEL }}"
+          qwen_cli_version: "${{ vars.QWEN_CLI_VERSION }}"
+          qwen_debug: "${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}"
+          upload_artifacts: "${{ vars.UPLOAD_ARTIFACTS }}"
+          workflow_name: "qwen-review"
           settings: |-
             {
               "model": {
@@ -101,4 +101,4 @@ jobs:
                 ]
               }
             }
-          prompt: '/qwen-review'
+          prompt: "/qwen-review"
