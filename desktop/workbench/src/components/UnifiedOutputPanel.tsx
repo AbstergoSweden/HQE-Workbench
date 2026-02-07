@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
 import { ChatMessage, ChatSession, SendChatMessageResponse } from '../types'
 import { useChatStore } from '../store'
 import { useToast } from '../context/ToastContext'
@@ -383,11 +384,13 @@ export const UnifiedOutputPanel: FC<UnifiedOutputPanelProps> = ({
               onClick={handleSend}
               disabled={!inputValue.trim() || loading || !currentSession}
               className="btn btn-primary px-4"
+              aria-label="Send message"
+              title="Send message"
             >
               {loading ? (
-                <span className="animate-spin">⟳</span>
+                <ArrowPathIcon className="w-5 h-5 animate-spin" aria-hidden="true" />
               ) : (
-                <span>➤</span>
+                <PaperAirplaneIcon className="w-5 h-5" aria-hidden="true" />
               )}
             </button>
           </div>

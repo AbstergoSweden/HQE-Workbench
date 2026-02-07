@@ -21,7 +21,7 @@ HQE-Workbench is a local-first macOS desktop application + CLI for running the H
 | --------- | ----- | ------ |
 | Language | Rust 2021 Edition | `Cargo.toml:19` |
 | Rust Version | 1.75+ | `Cargo.toml:23` |
-| TypeScript | 5.3+ (Workbench) | `desktop/workbench/package.json:49` |
+| TypeScript | 5.3+ (Workbench) | `desktop/workbench/package.json:51` |
 | Python | 3.11+ (protocol validation) | `.github/workflows/ci.yml:116` |
 | Platform | macOS 12.0+ | `README.md:147` |
 | License | Apache-2.0 | `Cargo.toml:21` |
@@ -290,6 +290,11 @@ See [SECURITY.md](SECURITY.md) for full policy.
 | Weekly schedule | `.github/workflows/security.yml` | `cargo audit` |
 | Release | `.github/workflows/release.yml` | Build macOS universal binary, create DMG |
 | Stale issues | `.github/workflows/stale.yml` | Mark and close stale issues/PRs |
+| Qwen Triage | `.github/workflows/qwen-triage.yml` | AI-powered issue triage |
+| Qwen Review | `.github/workflows/qwen-review.yml` | AI-powered PR review |
+| Qwen Dispatch | `.github/workflows/qwen-dispatch.yml` | AI agent dispatch system |
+| Qwen Scheduled | `.github/workflows/qwen-scheduled-triage.yml` | Scheduled AI triage tasks |
+| Docs | `.github/workflows/docs.yml` | Documentation generation |
 
 ### CI Jobs (ci.yml)
 
@@ -358,6 +363,7 @@ target/release/hqe
 ```text
 hqe-workbench/
 ├── .github/             # CI/CD and Issue Templates
+│   └── workflows/       # GitHub Actions workflows
 ├── cli/
 │   └── hqe/             # CLI Application Entry Point
 ├── crates/              # Rust workspace crates
@@ -375,9 +381,21 @@ hqe-workbench/
 │       └── src-tauri/   # Rust backend
 ├── docs/                # Architecture & Guides
 ├── mcp-server/          # Thinktank Prompt Library & MCP Server
+│   ├── prompts/         # Prompt resources and server
+│   ├── conductor/       # Workflow orchestration
+│   ├── cli-security/    # Security-focused CLI tools
+│   ├── cli-prompt-library/ # Prompt library management
+│   └── criticalthink/   # Critical thinking utilities
 ├── prompts/             # Prompt Examples & Guidance (symlink)
 ├── protocol/            # HQE Protocol Schemas
+│   ├── hqe-engineer.yaml # Protocol definition
+│   ├── hqe-schema.json   # JSON schema
+│   └── *.py              # Validation scripts
 ├── scripts/             # Build & Test Scripts
+│   ├── bootstrap_macos.sh
+│   ├── build_dmg.sh
+│   ├── dev.sh
+│   └── validate_protocol.sh
 └── tests/               # Test fixtures
 ```
 
@@ -404,6 +422,7 @@ Use the desktop Settings screen or CLI to discover available models from provide
 - [HQE Protocol v3](protocol/README.md) - Protocol specification
 - [Security Audit](docs/COMPREHENSIVE_TODO_AND_BUGS.md) - Security findings and TODOs
 - [Tech Stack](docs/tech-stack.md) - Technology choices
+- [Threat Model](docs/threat-model.md) - Security threat analysis
 
 ## Verification
 
