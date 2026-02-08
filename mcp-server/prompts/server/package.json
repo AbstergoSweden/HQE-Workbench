@@ -108,7 +108,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@types/nunjucks": "^3.2.6",
     "cors": "^2.8.6",
     "diff": "^8.0.3",
@@ -118,13 +118,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "@types/cors": "^2.8.17",
     "@types/diff": "^8.0.0",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.2.0",
+    "@types/node": "^25.2.2",
     "@types/ws": "^8.5.14",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
