@@ -14,4 +14,4 @@ serde_yaml = "0.9"
 hqe-protocol = { path = "../hqe-protocol" }
 
 [dev-dependencies]
-tempfile = "3.9"
+tempfile = "3.25"

@@ -33,7 +33,7 @@ regex = { workspace = true }
 secrecy = { workspace = true }
 sha2 = "0.10"
 keyring = "3"
-rand = "0.9"
+rand = "0.10"
 hex = "0.4"
 
 # Filesystem
