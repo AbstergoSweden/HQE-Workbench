@@ -9,7 +9,7 @@ edition = "2021"
 tauri-build = { version = "2.0.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0.0", features = ["protocol-asset"] }
+tauri = { version = "2.10.2", features = ["protocol-asset"] }
 tauri-plugin-shell = "2.3.5"
 tauri-plugin-dialog = "2.0.0"
 tauri-plugin-fs = "2.0.0"
@@ -31,5 +31,5 @@ hqe-protocol = { path = "../../../crates/hqe-protocol" }
 hqe-ingest = { path = "../../../crates/hqe-ingest" }
 hqe-mcp = { path = "../../../crates/hqe-mcp" }
 hqe-flow = { path = "../../../crates/hqe-flow" }
-uuid = { version = "1.10", features = ["v4", "serde"] }
+uuid = { version = "1.21", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
