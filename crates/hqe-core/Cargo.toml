@@ -33,14 +33,14 @@ regex = { workspace = true }
 secrecy = { workspace = true }
 sha2 = "0.10"
 keyring = "3"
-rand = "0.9"
+rand = "0.10"
 hex = "0.4"
 
 # Filesystem
 dirs = { workspace = true }
 
 # Persistence
-rusqlite = { version = "0.38", features = ["bundled-sqlcipher"] }
+rusqlite = { version = "0.39", features = ["bundled-sqlcipher"] }
 parking_lot = "0.12"
 
 # Unicode normalization for security
