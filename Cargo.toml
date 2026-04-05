@@ -24,14 +24,14 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # Core
-tokio = { version = "1.35", features = ["full"] }
+tokio = { version = "1.51", features = ["full"] }
 anyhow = "1.0"
 thiserror = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 toml = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.6", features = ["v4", "serde"] }
+uuid = { version = "1.23", features = ["v4", "serde"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
@@ -50,7 +50,7 @@ regex = "1.12"
 
 # Filesystem
 walkdir = "2.4"
-tempfile = "3.9"
+tempfile = "3.27"
 dirs = "6"
 
 # HQE internal
@@ -60,7 +60,7 @@ hqe-git = { path = "crates/hqe-git" }
 hqe-artifacts = { path = "crates/hqe-artifacts" }
 
 # CLI
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.6", features = ["derive"] }
 indicatif = "0.18"
 console = "0.16"
 
