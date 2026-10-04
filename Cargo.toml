@@ -51,7 +51,7 @@ regex = "1.12"
 # Filesystem
 walkdir = "2.4"
 tempfile = "3.9"
-dirs = "6"
+dirs = "7"
 
 # HQE internal
 hqe-core = { path = "crates/hqe-core" }
