@@ -23,7 +23,7 @@ hqe-core = { workspace = true }
 
 # Markdown
 pulldown-cmark = "0.13"
-pulldown-cmark-to-cmark = "22.0"
+pulldown-cmark-to-cmark = "23.0"
 
 [dev-dependencies]
 tempfile = { workspace = true }
